@@ -141,7 +141,8 @@ extern {
     // channels
     pub fn libssh2_channel_free(chan: *mut LIBSSH2_CHANNEL) -> c_int;
     pub fn libssh2_channel_close(chan: *mut LIBSSH2_CHANNEL) -> c_int;
-    pub fn libssh2_channel_wait_close(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_wait_closed(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_wait_eof(chan: *mut LIBSSH2_CHANNEL) -> c_int;
     pub fn libssh2_channel_eof(chan: *mut LIBSSH2_CHANNEL) -> c_int;
     pub fn libssh2_channel_process_startup(chan: *mut LIBSSH2_CHANNEL,
                                            req: *const c_char,

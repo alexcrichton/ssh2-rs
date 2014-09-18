@@ -56,7 +56,12 @@ impl<'a> Channel<'a> {
     ///
     /// Typically sent after `close` in order to examine the exit status.
     pub fn wait_close(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_channel_wait_close(self.raw)) }
+        unsafe { self.sess.rc(raw::libssh2_channel_wait_closed(self.raw)) }
+    }
+
+    /// Wait for the remote end to acknowledge an EOF request.
+    pub fn wait_eof(&mut self) -> Result<(), Error> {
+        unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
     }
 
     /// Check if the remote host has sent an EOF status for the selected stream.
@@ -125,7 +130,7 @@ impl<'a> Channel<'a> {
     }
 
     /// Get the remote exit signal.
-    pub fn get_exit_signal(&self) -> Result<ExitSignal, Error> {
+    pub fn exit_signal(&self) -> Result<ExitSignal, Error> {
         unsafe {
             let mut sig = 0 as *mut _;
             let mut siglen = 0;
@@ -160,12 +165,11 @@ impl<'a> Channel<'a> {
     ///
     /// Note that the exit status may not be available if the remote end has not
     /// yet set its status to closed.
-    pub fn get_exit_status(&self) -> Result<int, Error> {
+    pub fn exit_status(&self) -> Result<int, Error> {
         let ret = unsafe { raw::libssh2_channel_get_exit_status(self.raw) };
-        if ret == 0 {
-            Err(Error::last_error(self.sess).unwrap())
-        } else {
-            Ok(ret as int)
+        match Error::last_error(self.sess) {
+            Some(err) => Err(err),
+            None => Ok(ret as int)
         }
     }
 }
