@@ -1,4 +1,9 @@
+#![feature(phase)]
 #![allow(bad_style)]
+
+extern crate libc;
+#[phase(plugin)]
+extern crate "link-config" as link_conifg;
 
 use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint};
 
@@ -36,8 +41,12 @@ pub static LIBSSH2_METHOD_COMP_SC: c_int = 7;
 pub static LIBSSH2_METHOD_LANG_CS: c_int = 8;
 pub static LIBSSH2_METHOD_LANG_SC: c_int = 9;
 
+pub static LIBSSH2_CHANNEL_PACKET_DEFAULT: c_uint = 32768;
+pub static LIBSSH2_CHANNEL_WINDOW_DEFAULT: c_uint = 2 * 1024 * 1024;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
+pub enum LIBSSH2_CHANNEL {}
 
 #[repr(C)]
 pub struct libssh2_agent_publickey {
@@ -52,6 +61,9 @@ pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void
 pub type LIBSSH2_FREE_FUNC = extern fn(*mut c_void, *mut *mut c_void);
 pub type LIBSSH2_REALLOC_FUNC = extern fn(*mut c_void, size_t, *mut *mut c_void)
                                           -> *mut c_void;
+
+#[cfg(unix)]    pub type libssh2_socket_t = c_int;
+#[cfg(windows)] pub type libssh2_socket_t = libc::SOCKET;
 
 #[cfg(unix)]
 link_config!("libssh2", ["favor_static"])
@@ -68,10 +80,12 @@ extern {}
 extern {}
 
 extern {
+    // misc
     pub fn libssh2_init(flag: c_int) -> c_int;
     pub fn libssh2_exit();
     pub fn libssh2_free(sess: *mut LIBSSH2_SESSION, ptr: *mut c_void);
 
+    // session
     pub fn libssh2_session_init_ex(alloc: Option<LIBSSH2_ALLOC_FUNC>,
                                    free: Option<LIBSSH2_FREE_FUNC>,
                                    realloc: Option<LIBSSH2_REALLOC_FUNC>)
@@ -107,7 +121,10 @@ extern {
                                       msg: *mut *mut c_char,
                                       len: *mut c_int,
                                       want_buf: c_int) -> c_int;
+    pub fn libssh2_session_handshake(sess: *mut LIBSSH2_SESSION,
+                                     socket: libssh2_socket_t) -> c_int;
 
+    // agent
     pub fn libssh2_agent_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_AGENT;
     pub fn libssh2_agent_free(agent: *mut LIBSSH2_AGENT);
     pub fn libssh2_agent_connect(agent: *mut LIBSSH2_AGENT) -> c_int;
@@ -120,4 +137,42 @@ extern {
     pub fn libssh2_agent_userauth(agent: *mut LIBSSH2_AGENT,
                                   username: *const c_char,
                                   identity: *mut libssh2_agent_publickey) -> c_int;
+
+    // channels
+    pub fn libssh2_channel_free(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_close(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_wait_close(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_eof(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_process_startup(chan: *mut LIBSSH2_CHANNEL,
+                                           req: *const c_char,
+                                           req_len: c_uint,
+                                           msg: *const c_char,
+                                           msg_len: c_uint) -> c_int;
+    pub fn libssh2_channel_flush_ex(chan: *mut LIBSSH2_CHANNEL,
+                                    streamid: c_int) -> c_int;
+    pub fn libssh2_channel_write_ex(chan: *mut LIBSSH2_CHANNEL,
+                                    stream_id: c_int,
+                                    buf: *mut c_char,
+                                    buflen: size_t) -> c_int;
+    pub fn libssh2_channel_get_exit_signal(chan: *mut LIBSSH2_CHANNEL,
+                                           exitsignal: *mut *mut c_char,
+                                           exitsignal_len: *mut size_t,
+                                           errmsg: *mut *mut c_char,
+                                           errmsg_len: *mut size_t,
+                                           langtag: *mut *mut c_char,
+                                           langtag_len: *mut size_t) -> c_int;
+    pub fn libssh2_channel_get_exit_status(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_open_ex(sess: *mut LIBSSH2_SESSION,
+                                   channel_type: *const c_char,
+                                   channel_type_len: c_uint,
+                                   window_size: c_uint,
+                                   packet_size: c_uint,
+                                   message: *const c_char,
+                                   message_len: c_uint) -> *mut LIBSSH2_CHANNEL;
+
+    // userauth
+    pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;
+    pub fn libssh2_userauth_list(sess: *mut LIBSSH2_SESSION,
+                                 username: *const c_char,
+                                 username_len: c_uint) -> *const c_char;
 }

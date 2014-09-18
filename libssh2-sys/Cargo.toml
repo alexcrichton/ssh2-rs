@@ -1,0 +1,14 @@
+[package]
+  name = "libssh2-sys"
+  version = "0.0.1"
+  authors = ["Alex Crichton <alex@alexcrichton.com>"]
+
+[lib]
+  name = "libssh2-sys"
+  path = "lib.rs"
+
+[dependencies.libssh2-static-sys]
+  git = "https://github.com/alexcrichton/libssh2-static-sys"
+
+[dependencies.link-config]
+  git = "https://github.com/alexcrichton/link-config"

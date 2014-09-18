@@ -1,7 +1,56 @@
+//! Rust bindings to libssh2, an SSH client library.
+//!
+//! This library intends to provide a safe interface to the libssh2 library. It
+//! will build the library if it's not available on the local system, and
+//! otherwise link to an installed copy.
+//!
+//! Note that libssh2 only supports SSH *clients*, not SSH *servers*.
+//! Additionally it only supports protocol v2, not protocol v1.
+//!
+//! # Examples
+//!
+//! ## Inspecting ssh-agent
+//!
+//! ```
+//! use ssh2::Session;
+//!
+//! // Almost all APIs require a `Session` to be available
+//! let sess = Session::new().unwrap();
+//! let mut agent = sess.agent().unwrap();
+//!
+//! // Connect the agent and request a list of identities
+//! agent.connect().unwrap();
+//! agent.list_identities().unwrap();
+//!
+//! for identity in agent.identities() {
+//!     let identity = identity.unwrap(); // assume no I/O errors
+//!     println!("{}", identity.comment())
+//!     let pubkey = identity.blob();
+//! }
+//! ```
+//!
+//! ## Authenticating with ssh-agent
+//!
+//! ```no_run
+//! use ssh2::Session;
+//!
+//! // Almost all APIs require a `Session` to be available
+//! let sess = Session::new().unwrap();
+//! let mut agent = sess.agent().unwrap();
+//!
+//! // Try to authenticate with the first identity in the agent.
+//! agent.connect().unwrap();
+//! agent.list_identities().unwrap();
+//! let identity = agent.identities().next().unwrap().unwrap();
+//! agent.userauth("foo", &identity).unwrap();
+//!
+//! // Make sure we succeeded
+//! assert!(sess.authenticated());
+//! ```
+
 #![feature(phase, unsafe_destructor)]
 
-#[phase(plugin)]
-extern crate "link-config" as link_config;
+extern crate "libssh2-sys" as raw;
 extern crate libc;
 
 use std::c_str::CString;
@@ -10,11 +59,12 @@ use std::rt;
 use std::sync::{Once, ONCE_INIT};
 
 pub use agent::{Agent, Identities, PublicKey};
+pub use channel::{Channel, ExitSignal};
 pub use error::Error;
 pub use session::Session;
 
-pub mod raw;
 mod agent;
+mod channel;
 mod error;
 mod session;
 
@@ -96,3 +146,7 @@ pub enum MethodType {
     MethodLangCs = raw::LIBSSH2_METHOD_LANG_CS as int,
     MethodLangSc = raw::LIBSSH2_METHOD_LANG_SC as int,
 }
+
+pub static FlushExtendedData: uint = -1;
+pub static FlushAll: uint = -2;
+pub static ExtendedDataStderr: uint = 1;

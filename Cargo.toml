@@ -3,12 +3,8 @@
   version = "0.0.1"
   authors = ["Alex Crichton <alex@alexcrichton.com>"]
 
-[lib]
-  name = "ssh2"
-  doctest = false
+[[test]]
+  name = "all"
 
-[dependencies.libssh2-static-sys]
-  git = "https://github.com/alexcrichton/libssh2-static-sys"
-
-[dependencies.link-config]
-  git = "https://github.com/alexcrichton/link-config"
+[dependencies.libssh2-sys]
+  path = "libssh2-sys"
