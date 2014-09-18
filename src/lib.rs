@@ -43,20 +43,23 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
 
 #[allow(missing_doc)]
 pub enum DisconnectCode {
-    HostNotAllowedToConnect = raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as int,
+    HostNotAllowedToConnect =
+        raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as int,
     ProtocolError = raw::SSH_DISCONNECT_PROTOCOL_ERROR as int,
     KeyExchangeFailed = raw::SSH_DISCONNECT_KEY_EXCHANGE_FAILED as int,
     Reserved = raw::SSH_DISCONNECT_RESERVED as int,
     MacError = raw::SSH_DISCONNECT_MAC_ERROR as int,
     CompressionError = raw::SSH_DISCONNECT_COMPRESSION_ERROR as int,
     ServiceNotAvailable = raw::SSH_DISCONNECT_SERVICE_NOT_AVAILABLE as int,
-    ProtocolVersionNotSupported = raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as int,
+    ProtocolVersionNotSupported =
+        raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as int,
     HostKeyNotVerifiable = raw::SSH_DISCONNECT_HOST_KEY_NOT_VERIFIABLE as int,
     ConnectionLost = raw::SSH_DISCONNECT_CONNECTION_LOST as int,
     ByApplication = raw::SSH_DISCONNECT_BY_APPLICATION as int,
     TooManyConnections = raw::SSH_DISCONNECT_TOO_MANY_CONNECTIONS as int,
     AuthCancelledByUser = raw::SSH_DISCONNECT_AUTH_CANCELLED_BY_USER as int,
-    NoMoreAuthMethodsAvailable = raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as int,
+    NoMoreAuthMethodsAvailable =
+        raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as int,
     IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as int,
 
 }
