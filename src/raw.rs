@@ -1,6 +1,6 @@
 #![allow(bad_style)]
 
-use libc::{c_int, size_t, c_void, c_char, c_long};
+use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint};
 
 pub static SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT: c_int = 1;
 pub static SSH_DISCONNECT_PROTOCOL_ERROR: c_int = 2;
@@ -37,6 +37,16 @@ pub static LIBSSH2_METHOD_LANG_CS: c_int = 8;
 pub static LIBSSH2_METHOD_LANG_SC: c_int = 9;
 
 pub enum LIBSSH2_SESSION {}
+pub enum LIBSSH2_AGENT {}
+
+#[repr(C)]
+pub struct libssh2_agent_publickey {
+    pub magic: c_uint,
+    pub node: *mut c_void,
+    pub blob: *mut c_uchar,
+    pub blob_len: size_t,
+    pub comment: *const c_char,
+}
 
 pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void;
 pub type LIBSSH2_FREE_FUNC = extern fn(*mut c_void, *mut *mut c_void);
@@ -93,4 +103,21 @@ extern {
     pub fn libssh2_session_supported_algs(session: *mut LIBSSH2_SESSION,
                                           method_type: c_int,
                                           algs: *mut *mut *const c_char) -> c_int;
+    pub fn libssh2_session_last_error(sess: *mut LIBSSH2_SESSION,
+                                      msg: *mut *mut c_char,
+                                      len: *mut c_int,
+                                      want_buf: c_int) -> c_int;
+
+    pub fn libssh2_agent_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_AGENT;
+    pub fn libssh2_agent_free(agent: *mut LIBSSH2_AGENT);
+    pub fn libssh2_agent_connect(agent: *mut LIBSSH2_AGENT) -> c_int;
+    pub fn libssh2_agent_disconnect(agent: *mut LIBSSH2_AGENT) -> c_int;
+    pub fn libssh2_agent_list_identities(agent: *mut LIBSSH2_AGENT) -> c_int;
+    pub fn libssh2_agent_get_identity(agent: *mut LIBSSH2_AGENT,
+                                      store: *mut *mut libssh2_agent_publickey,
+                                      prev: *mut libssh2_agent_publickey)
+                                      -> c_int;
+    pub fn libssh2_agent_userauth(agent: *mut LIBSSH2_AGENT,
+                                  username: *const c_char,
+                                  identity: *mut libssh2_agent_publickey) -> c_int;
 }

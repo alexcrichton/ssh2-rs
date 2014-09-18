@@ -1,4 +1,4 @@
-#![feature(phase)]
+#![feature(phase, unsafe_destructor)]
 
 #[phase(plugin)]
 extern crate "link-config" as link_config;
@@ -9,12 +9,14 @@ use std::mem;
 use std::rt;
 use std::sync::{Once, ONCE_INIT};
 
-pub use session::Session;
+pub use agent::{Agent, Identities, PublicKey};
 pub use error::Error;
+pub use session::Session;
 
 pub mod raw;
-mod session;
+mod agent;
 mod error;
+mod session;
 
 /// Initialize the libssh2 library.
 ///
