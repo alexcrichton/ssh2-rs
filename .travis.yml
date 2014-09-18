@@ -3,3 +3,19 @@ before_script:
   - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
   - eval `ssh-agent -s`
   - ssh-add ~/.ssh/id_rsa
+  - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+  - telnet localhost 22 &
+script:
+  - cargo build
+  - cargo test
+  - cargo doc
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  echo '<meta http-equiv=refresh content=0;url=ssh2/index.html>' > target/doc/index.html &&
+  sudo pip install ghp-import &&
+  ghp-import -n target/doc &&
+  git push -f https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+env:
+  global:
+    secure: Wrpw+jdyNWeNJ0SpVr3py3FOjzChb46oh12UV0oUVfSGDI4eHwWf0gcHkRg3vh4FxACPaWyT/bygaOTyVpYC4almV+IGUvywReH9rVYZ0B/72k6VIY+746xmJYcktQ2ZmyahVhOFmKnBoY5tCVWi/qbwT0gKMhch/R8Cin5whdc=
