@@ -237,17 +237,15 @@ impl Session {
                         window_size: uint, packet_size: uint,
                         message: Option<&str>) -> Result<Channel, Error> {
         let ret = unsafe {
-            let channel_type_len = channel_type.len();
-            let channel_type = channel_type.to_c_str();
             let message_len = message.map(|s| s.len()).unwrap_or(0);
-            let message = message.map(|s| s.to_c_str());
             raw::libssh2_channel_open_ex(self.raw,
-                                         channel_type.as_ptr(),
-                                         channel_type_len as c_uint,
+                                         channel_type.as_ptr() as *const _,
+                                         channel_type.len() as c_uint,
                                          window_size as c_uint,
                                          packet_size as c_uint,
                                          message.as_ref().map(|s| s.as_ptr())
-                                                .unwrap_or(0 as *const _),
+                                                .unwrap_or(0 as *const _)
+                                                as *const _,
                                          message_len as c_uint)
         };
         if ret.is_null() {

@@ -44,6 +44,54 @@ pub static LIBSSH2_METHOD_LANG_SC: c_int = 9;
 pub static LIBSSH2_CHANNEL_PACKET_DEFAULT: c_uint = 32768;
 pub static LIBSSH2_CHANNEL_WINDOW_DEFAULT: c_uint = 2 * 1024 * 1024;
 
+pub static LIBSSH2_ERROR_BANNER_RECV: c_int = -2;
+pub static LIBSSH2_ERROR_BANNER_SEND: c_int = -3;
+pub static LIBSSH2_ERROR_INVALID_MAC: c_int = -4;
+pub static LIBSSH2_ERROR_KEX_FAILURE: c_int = -5;
+pub static LIBSSH2_ERROR_ALLOC: c_int = -6;
+pub static LIBSSH2_ERROR_SOCKET_SEND: c_int = -7;
+pub static LIBSSH2_ERROR_KEY_EXCHANGE_FAILURE: c_int = -8;
+pub static LIBSSH2_ERROR_TIMEOUT: c_int = -9;
+pub static LIBSSH2_ERROR_HOSTKEY_INIT: c_int = -10;
+pub static LIBSSH2_ERROR_HOSTKEY_SIGN: c_int = -11;
+pub static LIBSSH2_ERROR_DECRYPT: c_int = -12;
+pub static LIBSSH2_ERROR_SOCKET_DISCONNECT: c_int = -13;
+pub static LIBSSH2_ERROR_PROTO: c_int = -14;
+pub static LIBSSH2_ERROR_PASSWORD_EXPIRED: c_int = -15;
+pub static LIBSSH2_ERROR_FILE: c_int = -16;
+pub static LIBSSH2_ERROR_METHOD_NONE: c_int = -17;
+pub static LIBSSH2_ERROR_AUTHENTICATION_FAILED: c_int = -18;
+pub static LIBSSH2_ERROR_PUBLICKEY_UNRECOGNIZED: c_int =
+                LIBSSH2_ERROR_AUTHENTICATION_FAILED;
+pub static LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED: c_int = -19;
+pub static LIBSSH2_ERROR_CHANNEL_OUTOFORDER: c_int = -20;
+pub static LIBSSH2_ERROR_CHANNEL_FAILURE: c_int = -21;
+pub static LIBSSH2_ERROR_CHANNEL_REQUEST_DENIED: c_int = -22;
+pub static LIBSSH2_ERROR_CHANNEL_UNKNOWN: c_int = -23;
+pub static LIBSSH2_ERROR_CHANNEL_WINDOW_EXCEEDED: c_int = -24;
+pub static LIBSSH2_ERROR_CHANNEL_PACKET_EXCEEDED: c_int = -25;
+pub static LIBSSH2_ERROR_CHANNEL_CLOSED: c_int = -26;
+pub static LIBSSH2_ERROR_CHANNEL_EOF_SENT: c_int = -27;
+pub static LIBSSH2_ERROR_SCP_PROTOCOL: c_int = -28;
+pub static LIBSSH2_ERROR_ZLIB: c_int = -29;
+pub static LIBSSH2_ERROR_SOCKET_TIMEOUT: c_int = -30;
+pub static LIBSSH2_ERROR_SFTP_PROTOCOL: c_int = -31;
+pub static LIBSSH2_ERROR_REQUEST_DENIED: c_int = -32;
+pub static LIBSSH2_ERROR_METHOD_NOT_SUPPORTED: c_int = -33;
+pub static LIBSSH2_ERROR_INVAL: c_int = -34;
+pub static LIBSSH2_ERROR_INVALID_POLL_TYPE: c_int = -35;
+pub static LIBSSH2_ERROR_PUBLICKEY_PROTOCOL: c_int = -36;
+pub static LIBSSH2_ERROR_EAGAIN: c_int = -37;
+pub static LIBSSH2_ERROR_BUFFER_TOO_SMALL: c_int = -38;
+pub static LIBSSH2_ERROR_BAD_USE: c_int = -39;
+pub static LIBSSH2_ERROR_COMPRESS: c_int = -40;
+pub static LIBSSH2_ERROR_OUT_OF_BOUNDARY: c_int = -41;
+pub static LIBSSH2_ERROR_AGENT_PROTOCOL: c_int = -42;
+pub static LIBSSH2_ERROR_SOCKET_RECV: c_int = -43;
+pub static LIBSSH2_ERROR_ENCRYPT: c_int = -44;
+pub static LIBSSH2_ERROR_BAD_SOCKET: c_int = -45;
+pub static LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
@@ -170,6 +218,16 @@ extern {
                                    packet_size: c_uint,
                                    message: *const c_char,
                                    message_len: c_uint) -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_channel_read_ex(chan: *mut LIBSSH2_CHANNEL,
+                                   stream_id: c_int,
+                                   buf: *mut c_char,
+                                   buflen: size_t) -> c_int;
+    pub fn libssh2_channel_setenv_ex(chan: *mut LIBSSH2_CHANNEL,
+                                     var: *const c_char,
+                                     varlen: c_uint,
+                                     val: *const c_char,
+                                     vallen: c_uint) -> c_int;
+    pub fn libssh2_channel_send_eof(chan: *mut LIBSSH2_CHANNEL) -> c_int;
 
     // userauth
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;

@@ -73,19 +73,41 @@ impl<'a> Channel<'a> {
     ///
     /// The SSH2 protocol currently defines shell, exec, and subsystem as
     /// standard process services.
-    pub fn process_startup(&mut self, request: &str, message: &str)
+    pub fn process_startup(&mut self, request: &str, message: Option<&str>)
                            -> Result<(), Error> {
+        let message_len = message.map(|s| s.len()).unwrap_or(0);
+        let message = message.map(|s| s.as_ptr()).unwrap_or(0 as *const _);
         unsafe {
             let rc = raw::libssh2_channel_process_startup(self.raw,
                         request.as_ptr() as *const _, request.len() as c_uint,
-                        message.as_ptr() as *const _, message.len() as c_uint);
+                        message as *const _, message_len as c_uint);
             self.sess.rc(rc)
         }
     }
 
     /// Execute a command
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use ssh2::Session;
+    /// # let session: Session = fail!();
+    /// let mut channel = session.channel_session().unwrap();
+    /// channel.exec("ls").unwrap();
+    /// println!("{}", channel.read_to_string().unwrap());
+    /// ```
     pub fn exec(&mut self, command: &str) -> Result<(), Error> {
-        self.process_startup("exec", command)
+        self.process_startup("exec", Some(command))
+    }
+
+    /// Start a shell
+    pub fn shell(&mut self) -> Result<(), Error> {
+        self.process_startup("shell", None)
+    }
+
+    /// Request a subsystem be started
+    pub fn subsystem(&mut self, system: &str) -> Result<(), Error> {
+        self.process_startup("subsystem", Some(system))
     }
 
     /// Flush the read buffer for a given channel instance.
@@ -172,6 +194,54 @@ impl<'a> Channel<'a> {
             None => Ok(ret as int)
         }
     }
+
+    /// Attempt to read data from an active channel stream.
+    ///
+    /// All channel streams have one standard I/O substream (stream_id == 0),
+    /// and may have up to 2^32 extended data streams as identified by the
+    /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
+    /// to be the stderr substream.
+    pub fn read_stream(&mut self, stream_id: uint, data: &mut [u8])
+                       -> Result<uint, Error> {
+        unsafe {
+            let rc = raw::libssh2_channel_read_ex(self.raw,
+                                                  stream_id as c_int,
+                                                  data.as_mut_ptr() as *mut _,
+                                                  data.len() as size_t);
+            if rc < 0 { try!(self.sess.rc(rc)); }
+            if rc == 0 && self.eof() { return Err(Error::eof()) }
+            Ok(rc as uint)
+        }
+    }
+
+    /// Read from the stderr stream .
+    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<uint, Error> {
+        self.read_stream(::ExtendedDataStderr, data)
+    }
+
+    /// Set an environment variable in the remote channel's process space.
+    ///
+    /// Note that this does not make sense for all channel types and may be
+    /// ignored by the server despite returning success.
+    pub fn setenv(&mut self, var: &str, val: &str) -> Result<(), Error> {
+        unsafe {
+            self.sess.rc(raw::libssh2_channel_setenv_ex(self.raw,
+                                                        var.as_ptr() as *const _,
+                                                        var.len() as c_uint,
+                                                        val.as_ptr() as *const _,
+                                                        val.len() as c_uint))
+        }
+    }
+
+    /// Tell the remote host that no further data will be sent on the specified
+    /// channel.
+    ///
+    /// Processes typically interpret this as a closed stdin descriptor.
+    pub fn send_eof(&mut self) -> Result<(), Error> {
+        unsafe {
+            self.sess.rc(raw::libssh2_channel_send_eof(self.raw))
+        }
+    }
 }
 
 impl<'a> Writer for Channel<'a> {
@@ -191,6 +261,22 @@ impl<'a> Writer for Channel<'a> {
                 kind: io::OtherIoError,
                 desc: "ssh write error",
                 detail: Some(e.to_string()),
+            }
+        })
+    }
+}
+
+impl<'a> Reader for Channel<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<uint> {
+        self.read_stream(0, buf).map_err(|e| {
+            if self.eof() {
+                io::standard_error(io::EndOfFile)
+            } else {
+                io::IoError {
+                    kind: io::OtherIoError,
+                    desc: "ssh read error",
+                    detail: Some(e.to_string()),
+                }
             }
         })
     }
