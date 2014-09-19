@@ -23,7 +23,7 @@ pub fn socket() -> TcpStream {
 
 pub fn authed_session() -> (TcpStream, ssh2::Session) {
     let user = os::getenv("USER").unwrap();
-    let sess = ssh2::Session::new().unwrap();
+    let mut sess = ssh2::Session::new().unwrap();
     let socket = socket();
     sess.handshake(socket.fd()).unwrap();
     assert!(!sess.authenticated());

@@ -222,7 +222,8 @@ impl Session {
     /// The socket provided is a connected socket descriptor. Typically a TCP
     /// connection though the protocol allows for any reliable transport and
     /// the library will attempt to use any berkeley socket.
-    pub fn handshake(&self, socket: raw::libssh2_socket_t) -> Result<(), Error> {
+    pub fn handshake(&mut self, socket: raw::libssh2_socket_t)
+                     -> Result<(), Error> {
         unsafe {
             self.rc(raw::libssh2_session_handshake(self.raw, socket))
         }

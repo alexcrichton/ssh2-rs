@@ -23,7 +23,7 @@ fn smoke() {
 #[test]
 fn smoke_handshake() {
     let user = os::getenv("USER").unwrap();
-    let sess = Session::new().unwrap();
+    let mut sess = Session::new().unwrap();
     let socket = ::socket();
     sess.handshake(socket.fd()).unwrap();
     sess.host_key().unwrap();
