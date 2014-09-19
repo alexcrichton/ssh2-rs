@@ -172,6 +172,11 @@ extern {
                                       want_buf: c_int) -> c_int;
     pub fn libssh2_session_handshake(sess: *mut LIBSSH2_SESSION,
                                      socket: libssh2_socket_t) -> c_int;
+    pub fn libssh2_keepalive_config(sess: *mut LIBSSH2_SESSION,
+                                    want_reply: c_int,
+                                    interval: c_uint) -> c_int;
+    pub fn libssh2_keepalive_send(sess: *mut LIBSSH2_SESSION,
+                                  seconds_to_next: *mut c_int) -> c_int;
 
     // agent
     pub fn libssh2_agent_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_AGENT;

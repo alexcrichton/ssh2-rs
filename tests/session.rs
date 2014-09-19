@@ -40,3 +40,10 @@ fn smoke_handshake() {
     }
     assert!(sess.authenticated());
 }
+
+#[test]
+fn keepalive() {
+    let (_tcp, sess) = ::authed_session();
+    sess.keepalive_set(false, 10).unwrap();
+    sess.keepalive_send().unwrap();
+}

@@ -349,6 +349,33 @@ impl Session {
         }
     }
 
+    /// Set how often keepalive messages should be sent.
+    ///
+    /// The want_reply argument indicates whether the keepalive messages should
+    /// request a response from the server.
+    ///
+    /// The interval argument is number of seconds that can pass without any
+    /// I/O, use 0 (the default) to disable keepalives. To avoid some busy-loop
+    /// corner-cases, if you specify an interval of 1 it will be treated as 2.
+    pub fn keepalive_set(&self, want_reply: bool, interval: uint)
+                         -> Result<(), Error> {
+        unsafe {
+            self.rc(raw::libssh2_keepalive_config(self.raw, want_reply as c_int,
+                                                  interval as c_uint))
+        }
+    }
+
+    /// Send a keepalive message if needed.
+    ///
+    /// Returns how many seconds you can sleep after this call before you need
+    /// to call it again.
+    pub fn keepalive_send(&self) -> Result<uint, Error> {
+        let mut ret = 0;
+        let rc = unsafe { raw::libssh2_keepalive_send(self.raw, &mut ret) };
+        try!(self.rc(rc));
+        Ok(ret as uint)
+    }
+
     /// Gain access to the underlying raw libssh2 session pointer.
     pub fn raw(&self) -> *mut raw::LIBSSH2_SESSION { self.raw }
 
