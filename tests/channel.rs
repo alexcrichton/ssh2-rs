@@ -56,15 +56,9 @@ fn shell() {
 #[test]
 fn setenv() {
     let (_tcp, sess) = ::authed_session();
-    {
     let mut channel = sess.channel_session().unwrap();
     let _ = channel.setenv("FOO", "BAR");
     channel.close().unwrap();
-    drop(channel);
-    }
-    sess.disconnect(None, "lol", None).unwrap();
-    drop(sess);
-    drop(_tcp);
 }
 
 #[test]

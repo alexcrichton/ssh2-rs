@@ -1,3 +1,4 @@
+use std::cmp;
 use std::io;
 use std::kinds::marker;
 use std::vec;
@@ -9,6 +10,7 @@ pub struct Channel<'a> {
     raw: *mut raw::LIBSSH2_CHANNEL,
     sess: &'a Session,
     marker: marker::NoSync,
+    read_limit: Option<u64>,
 }
 
 /// Data received from when a program exits with a signal.
@@ -53,6 +55,7 @@ impl<'a> Channel<'a> {
             raw: raw,
             sess: sess,
             marker: marker::NoSync,
+            read_limit: None,
         }
     }
 
@@ -86,7 +89,8 @@ impl<'a> Channel<'a> {
 
     /// Check if the remote host has sent an EOF status for the selected stream.
     pub fn eof(&self) -> bool {
-        unsafe { raw::libssh2_channel_eof(self.raw) != 0 }
+        self.read_limit == Some(0) ||
+            unsafe { raw::libssh2_channel_eof(self.raw) != 0 }
     }
 
     /// Initiate a request on a session type channel.
@@ -267,6 +271,15 @@ impl<'a> Channel<'a> {
     /// to be the stderr substream.
     pub fn read_stream(&mut self, stream_id: uint, data: &mut [u8])
                        -> Result<uint, Error> {
+        if self.eof() { return Err(Error::eof()) }
+
+        let data = match self.read_limit {
+            Some(amt) => {
+                let len = data.len();
+                data.slice_to_mut(cmp::min(amt as uint, len))
+            }
+            None => data,
+        };
         unsafe {
             let rc = raw::libssh2_channel_read_ex(self.raw,
                                                   stream_id as c_int,
@@ -274,6 +287,10 @@ impl<'a> Channel<'a> {
                                                   data.len() as size_t);
             if rc < 0 { try!(self.sess.rc(rc)); }
             if rc == 0 && self.eof() { return Err(Error::eof()) }
+            match self.read_limit {
+                Some(ref mut amt) => *amt -= rc as u64,
+                None => {}
+            }
             Ok(rc as uint)
         }
     }
@@ -354,6 +371,12 @@ impl<'a> Channel<'a> {
         };
         try!(self.sess.rc(rc));
         Ok(ret as uint)
+    }
+
+    /// Artificially limit the number of bytes that will be read from this
+    /// channel.
+    pub fn limit_read(&mut self, limit: u64) {
+        self.read_limit = Some(limit);
     }
 }
 

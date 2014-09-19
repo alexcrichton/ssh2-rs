@@ -1,8 +1,9 @@
+use std::io;
 use std::kinds::marker;
 use std::mem;
 use std::raw as stdraw;
 use std::str;
-use libc::{c_uint, c_int, c_void, c_long};
+use libc::{mod, c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, SessionFlag, HostKeyType};
 use {MethodType, Agent, Channel, Listener, HashType, KnownHosts};
@@ -482,6 +483,52 @@ impl Session {
         }
     }
 
+    /// Request a file from the remote host via SCP.
+    pub fn scp_recv(&self, path: &Path)
+                    -> Result<(Channel, io::FileStat), Error> {
+        let path = path.to_c_str();
+        unsafe {
+            let mut sb: libc::stat = mem::zeroed();
+            let ret = raw::libssh2_scp_recv(self.raw, path.as_ptr(), &mut sb);
+            if ret.is_null() { return Err(Error::last_error(self).unwrap()) }
+
+            // Hm, apparently when we scp_recv() a file the actual channel
+            // itself does not respond well to read_to_end(), and it also sends
+            // an extra 0 byte (or so it seems). To work around this we
+            // artificially limit the channel to a certain amount of bytes that
+            // can be read.
+            let mut c = Channel::from_raw(self, ret);
+            c.limit_read(sb.st_size as u64);
+            Ok((c, mkstat(&sb)))
+        }
+    }
+
+    /// Send a file to the remote host via SCP.
+    ///
+    /// The `remote_path` provided will the remote file name. The `times`
+    /// argument is a tuple of (mtime, atime), and will default to the remote
+    /// host's current time if not specified.
+    pub fn scp_send(&self, remote_path: &Path, mode: io::FilePermission,
+                    size: u64, times: Option<(u64, u64)>)
+                    -> Result<Channel, Error> {
+        let path = remote_path.to_c_str();
+        let (mtime, atime) = times.unwrap_or((0, 0));
+        unsafe {
+            let ret = raw::libssh2_scp_send64(self.raw,
+                                              path.as_ptr(),
+                                              mode.bits() as c_int,
+                                              size,
+                                              mtime as libc::time_t,
+                                              atime as libc::time_t);
+
+            if ret.is_null() {
+                Err(Error::last_error(self).unwrap())
+            } else {
+                Ok(Channel::from_raw(self, ret))
+            }
+        }
+    }
+
     /// Gain access to the underlying raw libssh2 session pointer.
     pub fn raw(&self) -> *mut raw::LIBSSH2_SESSION { self.raw }
 
@@ -494,6 +541,53 @@ impl Session {
                 Some(e) => Err(e),
                 None => Ok(()),
             }
+        }
+    }
+}
+
+// Sure do wish this was exported in libnative!
+fn mkstat(stat: &libc::stat) -> io::FileStat {
+    #[cfg(windows)] type Mode = libc::c_int;
+    #[cfg(unix)]    type Mode = libc::mode_t;
+
+    // FileStat times are in milliseconds
+    fn mktime(secs: u64, nsecs: u64) -> u64 { secs * 1000 + nsecs / 1000000 }
+
+    #[cfg(not(target_os = "linux"), not(target_os = "android"))]
+    fn flags(stat: &libc::stat) -> u64 { stat.st_flags as u64 }
+    #[cfg(target_os = "linux")] #[cfg(target_os = "android")]
+    fn flags(_stat: &libc::stat) -> u64 { 0 }
+
+    #[cfg(not(target_os = "linux"), not(target_os = "android"))]
+    fn gen(stat: &libc::stat) -> u64 { stat.st_gen as u64 }
+    #[cfg(target_os = "linux")] #[cfg(target_os = "android")]
+    fn gen(_stat: &libc::stat) -> u64 { 0 }
+
+    io::FileStat {
+        size: stat.st_size as u64,
+        kind: match (stat.st_mode as Mode) & libc::S_IFMT {
+            libc::S_IFREG => io::TypeFile,
+            libc::S_IFDIR => io::TypeDirectory,
+            libc::S_IFIFO => io::TypeNamedPipe,
+            libc::S_IFBLK => io::TypeBlockSpecial,
+            libc::S_IFLNK => io::TypeSymlink,
+            _ => io::TypeUnknown,
+        },
+        perm: io::FilePermission::from_bits_truncate(stat.st_mode as u32),
+        created: mktime(stat.st_ctime as u64, stat.st_ctime_nsec as u64),
+        modified: mktime(stat.st_mtime as u64, stat.st_mtime_nsec as u64),
+        accessed: mktime(stat.st_atime as u64, stat.st_atime_nsec as u64),
+        unstable: io::UnstableFileStat {
+            device: stat.st_dev as u64,
+            inode: stat.st_ino as u64,
+            rdev: stat.st_rdev as u64,
+            nlink: stat.st_nlink as u64,
+            uid: stat.st_uid as u64,
+            gid: stat.st_gid as u64,
+            blksize: stat.st_blksize as u64,
+            blocks: stat.st_blocks as u64,
+            flags: flags(stat),
+            gen: gen(stat),
         }
     }
 }

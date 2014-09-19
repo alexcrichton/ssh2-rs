@@ -392,4 +392,15 @@ extern {
                                        kind: c_int) -> c_int;
     pub fn libssh2_knownhost_init(sess: *mut LIBSSH2_SESSION)
                                   -> *mut LIBSSH2_KNOWNHOSTS;
+
+    // scp
+    pub fn libssh2_scp_recv(sess: *mut LIBSSH2_SESSION,
+                            path: *const c_char,
+                            sb: *mut libc::stat) -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_scp_send64(sess: *mut LIBSSH2_SESSION,
+                              path: *const c_char,
+                              mode: c_int,
+                              size: u64,
+                              mtime: libc::time_t,
+                              atime: libc::time_t) -> *mut LIBSSH2_CHANNEL;
 }
