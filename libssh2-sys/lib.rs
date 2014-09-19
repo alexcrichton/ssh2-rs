@@ -92,10 +92,31 @@ pub static LIBSSH2_ERROR_ENCRYPT: c_int = -44;
 pub static LIBSSH2_ERROR_BAD_SOCKET: c_int = -45;
 pub static LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
 
+pub static LIBSSH2_HOSTKEY_HASH_MD5: c_int = 1;
+pub static LIBSSH2_HOSTKEY_HASH_SHA1: c_int = 2;
+
+pub static LIBSSH2_KNOWNHOST_FILE_OPENSSH: c_int = 1;
+
+pub static LIBSSH2_KNOWNHOST_CHECK_MATCH: c_int = 0;
+pub static LIBSSH2_KNOWNHOST_CHECK_MISMATCH: c_int = 1;
+pub static LIBSSH2_KNOWNHOST_CHECK_NOTFOUND: c_int = 2;
+pub static LIBSSH2_KNOWNHOST_CHECK_FAILURE: c_int = 3;
+
+pub static LIBSSH2_KNOWNHOST_TYPE_PLAIN: c_int = 1;
+pub static LIBSSH2_KNOWNHOST_TYPE_SHA1: c_int = 2;
+pub static LIBSSH2_KNOWNHOST_TYPE_CUSTOM: c_int = 3;
+pub static LIBSSH2_KNOWNHOST_KEYENC_RAW: c_int = 1 << 16;
+pub static LIBSSH2_KNOWNHOST_KEYENC_BASE64: c_int = 2 << 16;
+pub static LIBSSH2_KNOWNHOST_KEY_RSA1: c_int = 1 << 18;
+pub static LIBSSH2_KNOWNHOST_KEY_SSHRSA: c_int = 2 << 18;
+pub static LIBSSH2_KNOWNHOST_KEY_SSHDSS: c_int = 3 << 18;
+pub static LIBSSH2_KNOWNHOST_KEY_UNKNOWN: c_int = 7 << 18;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
 pub enum LIBSSH2_LISTENER {}
+pub enum LIBSSH2_KNOWNHOSTS {}
 
 #[repr(C)]
 pub struct libssh2_agent_publickey {
@@ -104,6 +125,15 @@ pub struct libssh2_agent_publickey {
     pub blob: *mut c_uchar,
     pub blob_len: size_t,
     pub comment: *const c_char,
+}
+
+#[repr(C)]
+pub struct libssh2_knownhost {
+    pub magic: c_uint,
+    pub node: *mut c_void,
+    pub name: *mut c_char,
+    pub key: *mut c_char,
+    pub typemask: c_int,
 }
 
 pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void;
@@ -133,6 +163,8 @@ extern {
     pub fn libssh2_init(flag: c_int) -> c_int;
     pub fn libssh2_exit();
     pub fn libssh2_free(sess: *mut LIBSSH2_SESSION, ptr: *mut c_void);
+    pub fn libssh2_hostkey_hash(session: *mut LIBSSH2_SESSION,
+                                hash_type: c_int) -> *const c_char;
 
     // session
     pub fn libssh2_session_init_ex(alloc: Option<LIBSSH2_ALLOC_FUNC>,
@@ -281,4 +313,54 @@ extern {
     pub fn libssh2_userauth_list(sess: *mut LIBSSH2_SESSION,
                                  username: *const c_char,
                                  username_len: c_uint) -> *const c_char;
+
+    // knownhost
+    pub fn libssh2_knownhost_free(hosts: *mut LIBSSH2_KNOWNHOSTS);
+    pub fn libssh2_knownhost_addc(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                  host: *mut c_char,
+                                  salt: *mut c_char,
+                                  key: *mut c_char,
+                                  keylen: size_t,
+                                  comment: *const c_char,
+                                  commentlen: size_t,
+                                  typemask: c_int,
+                                  store: *mut *mut libssh2_knownhost) -> c_int;
+    pub fn libssh2_knownhost_check(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                   host: *const c_char,
+                                   key: *const c_char,
+                                   keylen: size_t,
+                                   typemask: c_int,
+                                   knownhost: *mut *mut libssh2_knownhost)
+                                   -> c_int;
+    pub fn libssh2_knownhost_checkp(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                    host: *const c_char,
+                                    port: c_int,
+                                    key: *const c_char,
+                                    keylen: size_t,
+                                    typemask: c_int,
+                                    knownhost: *mut *mut libssh2_knownhost)
+                                    -> c_int;
+    pub fn libssh2_knownhost_del(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                 entry: *mut libssh2_knownhost) -> c_int;
+    pub fn libssh2_knownhost_get(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                 store: *mut *mut libssh2_knownhost,
+                                 prev: *mut libssh2_knownhost) -> c_int;
+    pub fn libssh2_knownhost_readfile(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                      filename: *const c_char,
+                                      kind: c_int) -> c_int;
+    pub fn libssh2_knownhost_readline(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                      line: *const c_char,
+                                      len: size_t,
+                                      kind: c_int) -> c_int;
+    pub fn libssh2_knownhost_writefile(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                       filename: *const c_char,
+                                       kind: c_int) -> c_int;
+    pub fn libssh2_knownhost_writeline(hosts: *mut LIBSSH2_KNOWNHOSTS,
+                                       known: *mut libssh2_knownhost,
+                                       buffer: *mut c_char,
+                                       buflen: size_t,
+                                       outlen: *mut size_t,
+                                       kind: c_int) -> c_int;
+    pub fn libssh2_knownhost_init(sess: *mut LIBSSH2_SESSION)
+                                  -> *mut LIBSSH2_KNOWNHOSTS;
 }

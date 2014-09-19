@@ -39,6 +39,7 @@ fn smoke_handshake() {
         agent.userauth(user.as_slice(), &identity).unwrap();
     }
     assert!(sess.authenticated());
+    sess.host_key_hash(ssh2::HashMd5).unwrap();
 }
 
 #[test]

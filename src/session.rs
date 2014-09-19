@@ -5,7 +5,7 @@ use std::str;
 use libc::{c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, SessionFlag, HostKeyType};
-use {MethodType, Agent, Channel, Listener};
+use {MethodType, Agent, Channel, Listener, HashType, KnownHosts};
 
 pub struct Session {
     raw: *mut raw::LIBSSH2_SESSION,
@@ -152,6 +152,28 @@ impl Session {
                 _ => ::TypeUnknown,
             };
             Some((data, kind))
+        }
+    }
+
+    /// Returns the computed digest of the remote system's hostkey.
+    ///
+    /// The bytes returned are the raw hash, and are not printable. If the hash
+    /// is not yet available `None` is returned.
+    pub fn host_key_hash(&self, hash: HashType) -> Option<&[u8]> {
+        let len = match hash {
+            ::HashMd5 => 16,
+            ::HashSha1 => 20,
+        };
+        unsafe {
+            let ret = raw::libssh2_hostkey_hash(self.raw, hash as c_int);
+            if ret.is_null() {
+                None
+            } else {
+                Some(mem::transmute(stdraw::Slice {
+                    data: ret as *const u8,
+                    len: len,
+                }))
+            }
         }
     }
 
@@ -375,6 +397,21 @@ impl Session {
         let rc = unsafe { raw::libssh2_keepalive_send(self.raw, &mut ret) };
         try!(self.rc(rc));
         Ok(ret as uint)
+    }
+
+    /// Init a collection of known hosts for this session.
+    ///
+    /// Returns the handle to an internal representation of a known host
+    /// collection.
+    pub fn known_hosts(&self) -> Result<KnownHosts, Error> {
+        unsafe {
+            let ret = raw::libssh2_knownhost_init(self.raw);
+            if ret.is_null() {
+                Err(Error::last_error(self).unwrap())
+            } else {
+                Ok(KnownHosts::from_raw(self, ret))
+            }
+        }
     }
 
     /// Gain access to the underlying raw libssh2 session pointer.

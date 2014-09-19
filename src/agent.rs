@@ -21,6 +21,7 @@ pub struct PublicKey<'a> {
     marker1: marker::NoSync,
     marker2: marker::NoSend,
     marker3: marker::ContravariantLifetime<'a>,
+    marker4: marker::NoCopy,
 }
 
 impl<'a> Agent<'a> {
@@ -103,6 +104,7 @@ impl<'a> PublicKey<'a> {
             marker1: marker::NoSync,
             marker2: marker::NoSend,
             marker3: marker::ContravariantLifetime,
+            marker4: marker::NoCopy,
         }
     }
 

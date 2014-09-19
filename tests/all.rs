@@ -9,6 +9,7 @@ use native::io::net::TcpStream;
 mod agent;
 mod session;
 mod channel;
+mod knownhosts;
 
 pub fn socket() -> TcpStream {
     let stream = TcpStream::connect(SocketAddr {

@@ -61,12 +61,14 @@ use std::sync::{Once, ONCE_INIT};
 pub use agent::{Agent, Identities, PublicKey};
 pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow};
 pub use error::Error;
+pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::Session;
 
 mod agent;
 mod channel;
 mod error;
+mod knownhosts;
 mod listener;
 mod session;
 
@@ -152,3 +154,29 @@ pub enum MethodType {
 pub static FlushExtendedData: uint = -1;
 pub static FlushAll: uint = -2;
 pub static ExtendedDataStderr: uint = 1;
+
+pub enum HashType {
+    HashMd5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
+    HashSha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
+}
+
+pub enum KnownHostFileKind {
+    OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as int,
+}
+
+pub enum CheckResult {
+    /// Hosts and keys match
+    CheckMatch = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
+    /// Host was found, but the keys didn't match!
+    CheckMismatch = raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH as int,
+    /// No host match was found
+    CheckNotFound = raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND as int,
+    /// Something prevented the check to be made
+    CheckFailure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
+}
+
+pub enum KnownHostKeyFormat {
+    KeyRsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
+    KeySshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,
+    KeySshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as int,
+}
