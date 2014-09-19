@@ -342,6 +342,74 @@ impl Session {
         }
     }
 
+    /// Attempt basic password authentication.
+    ///
+    /// Note that many SSH servers which appear to support ordinary password
+    /// authentication actually have it disabled and use Keyboard Interactive
+    /// authentication (routed via PAM or another authentication backed)
+    /// instead.
+    pub fn userauth_password(&self, username: &str, password: &str)
+                             -> Result<(), Error> {
+        self.rc(unsafe {
+            raw::libssh2_userauth_password_ex(self.raw,
+                                              username.as_ptr() as *const _,
+                                              username.len() as c_uint,
+                                              password.as_ptr() as *const _,
+                                              password.len() as c_uint,
+                                              None)
+        })
+    }
+
+    /// Attempt public key authentication using a PEM encoded private key file
+    /// stored on disk.
+    pub fn userauth_pubkey_file(&self, username: &str,
+                                pubkey: Option<&Path>,
+                                privatekey: &Path,
+                                passphrase: Option<&str>) -> Result<(), Error> {
+        let pubkey = pubkey.map(|s| s.to_c_str());
+        let privatekey = privatekey.to_c_str();
+        let passphrase = passphrase.map(|s| s.to_c_str());
+        self.rc(unsafe {
+            raw::libssh2_userauth_publickey_fromfile_ex(self.raw,
+                    username.as_ptr() as *const _,
+                    username.len() as c_uint,
+                    pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
+                    privatekey.as_ptr(),
+                    passphrase.as_ref().map(|s| s.as_ptr())
+                              .unwrap_or(0 as *const _))
+        })
+    }
+
+    /// Umm... I wish this were documented in libssh2?
+    pub fn userauth_hostbased_file(&self, username: &str,
+                                   publickey: &Path,
+                                   privatekey: &Path,
+                                   passphrase: Option<&str>,
+                                   hostname: &str,
+                                   local_username: Option<&str>)
+                                   -> Result<(), Error> {
+        let publickey = publickey.to_c_str();
+        let privatekey = privatekey.to_c_str();
+        let passphrase = passphrase.map(|s| s.to_c_str());
+        let local_username = match local_username {
+            Some(local) => local,
+            None => username,
+        };
+        self.rc(unsafe {
+            raw::libssh2_userauth_hostbased_fromfile_ex(self.raw,
+                    username.as_ptr() as *const _,
+                    username.len() as c_uint,
+                    publickey.as_ptr(),
+                    privatekey.as_ptr(),
+                    passphrase.as_ref().map(|s| s.as_ptr())
+                              .unwrap_or(0 as *const _),
+                    hostname.as_ptr() as *const _,
+                    hostname.len() as c_uint,
+                    local_username.as_ptr() as *const _,
+                    local_username.len() as c_uint)
+        })
+    }
+
     /// Indicates whether or not the named session has been successfully
     /// authenticated.
     pub fn authenticated(&self) -> bool {

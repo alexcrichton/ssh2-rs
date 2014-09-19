@@ -140,6 +140,10 @@ pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void
 pub type LIBSSH2_FREE_FUNC = extern fn(*mut c_void, *mut *mut c_void);
 pub type LIBSSH2_REALLOC_FUNC = extern fn(*mut c_void, size_t, *mut *mut c_void)
                                           -> *mut c_void;
+pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern fn(sess: *mut LIBSSH2_SESSION,
+                                                   newpw: *mut *mut c_char,
+                                                   newpw_len: *mut c_int,
+                                                   abstract: *mut *mut c_void);
 
 #[cfg(unix)]    pub type libssh2_socket_t = c_int;
 #[cfg(windows)] pub type libssh2_socket_t = libc::SOCKET;
@@ -313,6 +317,31 @@ extern {
     pub fn libssh2_userauth_list(sess: *mut LIBSSH2_SESSION,
                                  username: *const c_char,
                                  username_len: c_uint) -> *const c_char;
+    pub fn libssh2_userauth_hostbased_fromfile_ex(sess: *mut LIBSSH2_SESSION,
+                                                  username: *const c_char,
+                                                  username_len: c_uint,
+                                                  publickey: *const c_char,
+                                                  privatekey: *const c_char,
+                                                  passphrase: *const c_char,
+                                                  hostname: *const c_char,
+                                                  hostname_len: c_uint,
+                                                  local_username: *const c_char,
+                                                  local_len: c_uint) -> c_int;
+    pub fn libssh2_userauth_publickey_fromfile_ex(sess: *mut LIBSSH2_SESSION,
+                                                  username: *const c_char,
+                                                  username_len: c_uint,
+                                                  publickey: *const c_char,
+                                                  privatekey: *const c_char,
+                                                  passphrase: *const c_char)
+                                                  -> c_int;
+    pub fn libssh2_userauth_password_ex(session: *mut LIBSSH2_SESSION,
+                                        username: *const c_char,
+                                        username_len: c_uint,
+                                        password: *const c_char,
+                                        password_len: c_uint,
+                                        password_change_cb:
+                                            Option<LIBSSH2_PASSWD_CHANGEREQ_FUNC>)
+                                        -> c_int;
 
     // knownhost
     pub fn libssh2_knownhost_free(hosts: *mut LIBSSH2_KNOWNHOSTS);
