@@ -5,7 +5,7 @@ use std::str;
 use libc::{c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, SessionFlag, HostKeyType};
-use {MethodType, Agent, Channel};
+use {MethodType, Agent, Channel, Listener};
 
 pub struct Session {
     raw: *mut raw::LIBSSH2_SESSION,
@@ -260,6 +260,63 @@ impl Session {
         self.channel_open("session",
                           raw::LIBSSH2_CHANNEL_WINDOW_DEFAULT as uint,
                           raw::LIBSSH2_CHANNEL_PACKET_DEFAULT as uint, None)
+    }
+
+    /// Tunnel a TCP connection through an SSH session.
+    ///
+    /// Tunnel a TCP/IP connection through the SSH transport via the remote host
+    /// to a third party. Communication from the client to the SSH server
+    /// remains encrypted, communication from the server to the 3rd party host
+    /// travels in cleartext.
+    ///
+    /// The optional `src` argument is the host/port to tell the SSH server
+    /// where the connection originated from.
+    pub fn channel_direct_tcpip(&self, host: &str, port: u16,
+                                src: Option<(&str, u16)>)
+                                -> Result<Channel, Error> {
+        let (shost, sport) = src.unwrap_or(("127.0.0.1", 22));
+        let host = host.to_c_str();
+        let shost = shost.to_c_str();
+        let ret = unsafe {
+            raw::libssh2_channel_direct_tcpip_ex(self.raw,
+                                                 host.as_ptr(),
+                                                 port as c_int,
+                                                 shost.as_ptr(),
+                                                 sport as c_int)
+        };
+        if ret.is_null() {
+            Err(Error::last_error(self).unwrap())
+        } else {
+            Ok(unsafe { Channel::from_raw(self, ret) })
+        }
+    }
+
+    /// Instruct the remote SSH server to begin listening for inbound TCP/IP
+    /// connections.
+    ///
+    /// New connections will be queued by the library until accepted by
+    /// `forward_accept`.
+    pub fn channel_forward_listen(&self,
+                                  remote_port: u16,
+                                  host: Option<&str>,
+                                  queue_maxsize: Option<uint>)
+                                  -> Result<(Listener, u16), Error> {
+        let mut bound_port = 0;
+        let ret = unsafe {
+            raw::libssh2_channel_forward_listen_ex(self.raw,
+                                                   host.map(|s| s.as_ptr())
+                                                       .unwrap_or(0 as *const _)
+                                                           as *mut _,
+                                                   remote_port as c_int,
+                                                   &mut bound_port,
+                                                   queue_maxsize.unwrap_or(0)
+                                                        as c_int)
+        };
+        if ret.is_null() {
+            Err(Error::last_error(self).unwrap())
+        } else {
+            Ok((unsafe { Listener::from_raw(self, ret) }, bound_port as u16))
+        }
     }
 
     /// Indicates whether or not the named session has been successfully

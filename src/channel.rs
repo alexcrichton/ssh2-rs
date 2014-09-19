@@ -1,7 +1,7 @@
 use std::io;
 use std::kinds::marker;
 use std::vec;
-use libc::{c_uint, c_int, size_t, c_char, c_void};
+use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
 
@@ -20,6 +20,26 @@ pub struct ExitSignal {
     pub error_message: Option<String>,
     /// Language tag provided by the remote server (if any)
     pub lang_tag: Option<String>,
+}
+
+/// Description of the read window as returned by `Channel::read_window`
+pub struct ReadWindow {
+    /// The number of bytes which the remote end may send without overflowing
+    /// the window limit.
+    pub remaining: uint,
+    /// The number of bytes actually available to be read.
+    pub available: uint,
+    /// The window_size_initial as defined by the channel open request
+    pub window_size_initial: uint,
+}
+
+/// Description of the write window as returned by `Channel::write_window`
+pub struct WriteWindow {
+    /// The number of bytes which may be safely written on the channel without
+    /// blocking.
+    pub remaining: uint,
+    /// The window_size_initial as defined by the channel open request
+    pub window_size_initial: uint,
 }
 
 impl<'a> Channel<'a> {
@@ -83,6 +103,50 @@ impl<'a> Channel<'a> {
                         message as *const _, message_len as c_uint);
             self.sess.rc(rc)
         }
+    }
+
+    /// Request a PTY on an established channel.
+    ///
+    /// Note that this does not make sense for all channel types and may be
+    /// ignored by the server despite returning success.
+    ///
+    /// The dimensions argument is a tuple of (width, height, width_px,
+    /// height_px)
+    pub fn request_pty(&mut self, term: &str,
+                       mode: Option<&str>,
+                       dim: Option<(uint, uint, uint, uint)>)
+                       -> Result<(), Error>{
+        self.sess.rc(unsafe {
+            let (width, height, width_px, height_px) =
+                dim.unwrap_or((80, 24, 0, 0));
+            raw::libssh2_channel_request_pty_ex(self.raw,
+                                                term.as_ptr() as *const _,
+                                                term.len() as c_uint,
+                                                mode.map(|s| s.as_ptr())
+                                                    .unwrap_or(0 as *const _)
+                                                        as *const _,
+                                                mode.map(|s| s.len())
+                                                    .unwrap_or(0) as c_uint,
+                                                width as c_int,
+                                                height as c_int,
+                                                width_px as c_int,
+                                                height_px as c_int)
+        })
+    }
+
+    /// Request a PTY of a specified size
+    pub fn request_pty_size(&mut self, width: uint, height: uint,
+                            width_px: Option<uint>, height_px: Option<uint>)
+                            -> Result<(), Error> {
+        let width_px = width_px.unwrap_or(0);
+        let height_px = height_px.unwrap_or(0);
+        self.sess.rc(unsafe {
+            raw::libssh2_channel_request_pty_size_ex(self.raw,
+                                                     width as c_int,
+                                                     height as c_int,
+                                                     width_px as c_int,
+                                                     height_px as c_int)
+        })
     }
 
     /// Execute a command
@@ -241,6 +305,55 @@ impl<'a> Channel<'a> {
         unsafe {
             self.sess.rc(raw::libssh2_channel_send_eof(self.raw))
         }
+    }
+
+    /// Check the status of the read window.
+    pub fn read_window(&self) -> ReadWindow {
+        unsafe {
+            let mut avail = 0;
+            let mut init = 0;
+            let remaining = raw::libssh2_channel_window_read_ex(self.raw,
+                                                                &mut avail,
+                                                                &mut init);
+            ReadWindow {
+                remaining: remaining as uint,
+                available: avail as uint,
+                window_size_initial: init as uint,
+            }
+        }
+    }
+
+    /// Check the status of the write window.
+    pub fn write_window(&self) -> WriteWindow {
+        unsafe {
+            let mut init = 0;
+            let remaining = raw::libssh2_channel_window_write_ex(self.raw,
+                                                                 &mut init);
+            WriteWindow {
+                remaining: remaining as uint,
+                window_size_initial: init as uint,
+            }
+        }
+    }
+
+    /// Adjust the receive window for a channel by adjustment bytes.
+    ///
+    /// If the amount to be adjusted is less than the minimum adjustment and
+    /// force is false, the adjustment amount will be queued for a later packet.
+    ///
+    /// This function returns the new size of the receive window (as understood
+    /// by remote end) on success.
+    pub fn adjust_receive_window(&mut self, adjust: uint, force: bool)
+                                 -> Result<uint, Error> {
+        let mut ret = 0;
+        let rc = unsafe {
+            raw::libssh2_channel_receive_window_adjust2(self.raw,
+                                                        adjust as c_uint,
+                                                        force as c_uchar,
+                                                        &mut ret)
+        };
+        try!(self.sess.rc(rc));
+        Ok(ret as uint)
     }
 }
 

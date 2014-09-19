@@ -1,3 +1,5 @@
+use std::io::{TcpListener, Listener, Acceptor, TcpStream};
+
 #[test]
 fn smoke() {
     let (_tcp, sess) = ::authed_session();
@@ -36,6 +38,7 @@ fn writing_data() {
 fn eof() {
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
+    channel.adjust_receive_window(10, false).unwrap();
     channel.exec("read foo").unwrap();
     channel.send_eof().unwrap();
     let output = channel.read_to_string().unwrap();
@@ -46,6 +49,7 @@ fn eof() {
 fn shell() {
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
+    channel.request_pty("xterm", None, None).unwrap();
     channel.shell().unwrap();
 }
 
@@ -54,4 +58,51 @@ fn setenv() {
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
     let _ = channel.setenv("FOO", "BAR");
+}
+
+#[test]
+fn direct() {
+    let mut l = TcpListener::bind("127.0.0.1", 0).unwrap();
+    let addr = l.socket_name().unwrap();
+    let mut a = l.listen().unwrap();
+    let (tx, rx) = channel();
+    spawn(proc() {
+        let mut s = a.accept().unwrap();
+        let mut b = [0, 0, 0];
+        s.read(b).unwrap();
+        assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
+        s.write([4, 5, 6]).unwrap();
+        tx.send(());
+    });
+    let (_tcp, sess) = ::authed_session();
+    let mut channel = sess.channel_direct_tcpip("127.0.0.1",
+                                                addr.port, None).unwrap();
+    channel.write([1, 2, 3]).unwrap();
+    let mut r = [0, 0, 0];
+    channel.read(r).unwrap();
+    assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
+    rx.recv();
+}
+
+#[test]
+fn forward() {
+    let (_tcp, sess) = ::authed_session();
+    let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
+                                 .unwrap();
+    let (tx, rx) = channel();
+    spawn(proc() {
+        let mut s = TcpStream::connect("127.0.0.1", port).unwrap();
+        let mut b = [0, 0, 0];
+        s.read(b).unwrap();
+        assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
+        s.write([4, 5, 6]).unwrap();
+        tx.send(());
+    });
+
+    let mut channel = listen.accept().unwrap();
+    channel.write([1, 2, 3]).unwrap();
+    let mut r = [0, 0, 0];
+    channel.read(r).unwrap();
+    assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
+    rx.recv();
 }

@@ -59,13 +59,15 @@ use std::rt;
 use std::sync::{Once, ONCE_INIT};
 
 pub use agent::{Agent, Identities, PublicKey};
-pub use channel::{Channel, ExitSignal};
+pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow};
 pub use error::Error;
+pub use listener::Listener;
 pub use session::Session;
 
 mod agent;
 mod channel;
 mod error;
+mod listener;
 mod session;
 
 /// Initialize the libssh2 library.

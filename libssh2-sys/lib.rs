@@ -95,6 +95,7 @@ pub static LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
+pub enum LIBSSH2_LISTENER {}
 
 #[repr(C)]
 pub struct libssh2_agent_publickey {
@@ -228,6 +229,47 @@ extern {
                                      val: *const c_char,
                                      vallen: c_uint) -> c_int;
     pub fn libssh2_channel_send_eof(chan: *mut LIBSSH2_CHANNEL) -> c_int;
+    pub fn libssh2_channel_request_pty_ex(chan: *mut LIBSSH2_CHANNEL,
+                                          term: *const c_char,
+                                          termlen: c_uint,
+                                          modes: *const c_char,
+                                          modeslen: c_uint,
+                                          width: c_int,
+                                          height: c_int,
+                                          width_px: c_int,
+                                          height_px: c_int) -> c_int;
+    pub fn libssh2_channel_request_pty_size_ex(chan: *mut LIBSSH2_CHANNEL,
+                                               width: c_int,
+                                               height: c_int,
+                                               width_px: c_int,
+                                               height_px: c_int) -> c_int;
+    pub fn libssh2_channel_window_read_ex(chan: *mut LIBSSH2_CHANNEL,
+                                          read_avail: *mut c_uint,
+                                          window_size_initial: *mut c_uint)
+                                          -> c_uint;
+    pub fn libssh2_channel_window_write_ex(chan: *mut LIBSSH2_CHANNEL,
+                                           window_size_initial: *mut c_uint)
+                                           -> c_uint;
+    pub fn libssh2_channel_receive_window_adjust2(chan: *mut LIBSSH2_CHANNEL,
+                                                  adjust: c_uint,
+                                                  force: c_uchar,
+                                                  window: *mut c_uint) -> c_int;
+    pub fn libssh2_channel_direct_tcpip_ex(ses: *mut LIBSSH2_SESSION,
+                                           host: *const c_char,
+                                           port: c_int,
+                                           shost: *const c_char,
+                                           sport: c_int)
+                                           -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_channel_forward_accept(listener: *mut LIBSSH2_LISTENER)
+                                          -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_channel_forward_cancel(listener: *mut LIBSSH2_LISTENER)
+                                          -> c_int;
+    pub fn libssh2_channel_forward_listen_ex(sess: *mut LIBSSH2_SESSION,
+                                             host: *mut c_char,
+                                             port: c_int,
+                                             bound_port: *mut c_int,
+                                             queue_maxsize: c_int)
+                                             -> *mut LIBSSH2_LISTENER;
 
     // userauth
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;
