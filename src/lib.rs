@@ -64,6 +64,7 @@ pub use error::Error;
 pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::Session;
+pub use sftp::{Sftp};
 
 mod agent;
 mod channel;
@@ -71,6 +72,7 @@ mod error;
 mod knownhosts;
 mod listener;
 mod session;
+mod sftp;
 
 /// Initialize the libssh2 library.
 ///

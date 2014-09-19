@@ -10,6 +10,7 @@ mod agent;
 mod session;
 mod channel;
 mod knownhosts;
+mod sftp;
 
 pub fn socket() -> TcpStream {
     let stream = TcpStream::connect(SocketAddr {

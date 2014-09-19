@@ -6,7 +6,7 @@ use std::str;
 use libc::{mod, c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, SessionFlag, HostKeyType};
-use {MethodType, Agent, Channel, Listener, HashType, KnownHosts};
+use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
 
 pub struct Session {
     raw: *mut raw::LIBSSH2_SESSION,
@@ -525,6 +525,23 @@ impl Session {
                 Err(Error::last_error(self).unwrap())
             } else {
                 Ok(Channel::from_raw(self, ret))
+            }
+        }
+    }
+
+    /// Open a channel and initialize the SFTP subsystem.
+    ///
+    /// Although the SFTP subsystem operates over the same type of channel as
+    /// those exported by the Channel API, the protocol itself implements its
+    /// own unique binary packet protocol which must be managed with the
+    /// methods on `Sftp`.
+    pub fn sftp(&self) -> Result<Sftp, Error> {
+        unsafe {
+            let ret = raw::libssh2_sftp_init(self.raw);
+            if ret.is_null() {
+                Err(Error::last_error(self).unwrap())
+            } else {
+                Ok(Sftp::from_raw(self, ret))
             }
         }
     }

@@ -5,7 +5,7 @@ extern crate libc;
 #[phase(plugin)]
 extern crate "link-config" as link_conifg;
 
-use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint};
+use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint, c_ulong};
 
 pub static SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT: c_int = 1;
 pub static SSH_DISCONNECT_PROTOCOL_ERROR: c_int = 2;
@@ -117,6 +117,8 @@ pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
 pub enum LIBSSH2_LISTENER {}
 pub enum LIBSSH2_KNOWNHOSTS {}
+pub enum LIBSSH2_SFTP {}
+pub enum LIBSSH2_SFTP_HANDLE {}
 
 #[repr(C)]
 pub struct libssh2_agent_publickey {
@@ -403,4 +405,9 @@ extern {
                               size: u64,
                               mtime: libc::time_t,
                               atime: libc::time_t) -> *mut LIBSSH2_CHANNEL;
+
+    // sftp
+    pub fn libssh2_sftp_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_SFTP;
+    pub fn libssh2_sftp_shutdown(sftp: *mut LIBSSH2_SFTP) -> c_int;
+    pub fn libssh2_sftp_last_error(sftp: *mut LIBSSH2_SFTP) -> c_ulong;
 }
