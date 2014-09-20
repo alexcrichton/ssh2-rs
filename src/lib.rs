@@ -34,11 +34,11 @@
 //! ```no_run
 //! use ssh2::Session;
 //!
-//! // Almost all APIs require a `Session` to be available
 //! let sess = Session::new().unwrap();
-//! let mut agent = sess.agent().unwrap();
+//! // perform the handshake with a network socket
 //!
 //! // Try to authenticate with the first identity in the agent.
+//! let mut agent = sess.agent().unwrap();
 //! agent.connect().unwrap();
 //! agent.list_identities().unwrap();
 //! let identity = agent.identities().next().unwrap().unwrap();
@@ -46,6 +46,46 @@
 //!
 //! // Make sure we succeeded
 //! assert!(sess.authenticated());
+//! ```
+//!
+//! ## Authenticating with a password
+//!
+//! ```no_run
+//! use ssh2::Session;
+//!
+//! let sess = Session::new().unwrap();
+//! // perform the handshake with a network socket
+//!
+//! sess.userauth_password("username", "password").unwrap();
+//! assert!(sess.authenticated());
+//! ```
+//!
+//! ## Upload a file
+//!
+//! ```no_run
+//! use std::io;
+//! use ssh2::Session;
+//!
+//! let sess = Session::new().unwrap();
+//! // perform a handshake and authenticate the session
+//!
+//! let mut remote_file = sess.scp_send(&Path::new("remote"),
+//!                                     io::UserFile, 10, None).unwrap();
+//! remote_file.write(b"1234567890").unwrap();
+//! ```
+//!
+//! ## Download a file
+//!
+//! ```no_run
+//! use ssh2::Session;
+//!
+//! let sess = Session::new().unwrap();
+//! // perform a handshake and authenticate the session
+//!
+//! let (mut remote_file, stat) = sess.scp_recv(&Path::new("remote")).unwrap();
+//!
+//! println!("remote file size: {}", stat.size);
+//! let contents = remote_file.read_to_end();
 //! ```
 
 #![feature(phase, unsafe_destructor)]

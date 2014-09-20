@@ -6,20 +6,42 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 
 /// A set of known hosts which can be used to verify the identity of a remote
 /// server.
-//
-// # Example
-//
-// ```
-// # use ssh2::Session;
-// # let session: Session = fail!();
-//
-// let known_hosts = session.known_hosts().unwrap();
-// let (to_find, _) = session.host_key();
-// fail!(); // TODO
-// for host in known_hosts.iter() {
-//     let host = host.unwrap(); // ignore I/O errors.
-// }
-// ```
+///
+/// # Example
+///
+/// ```no_run
+/// use std::os;
+/// use ssh2;
+///
+/// fn check_known_host(session: &ssh2::Session, host: &str) {
+///     let mut known_hosts = session.known_hosts().unwrap();
+///
+///     // Initialize the known hosts with a global known hosts file
+///     let file = Path::new(os::getenv("HOME").unwrap()).join(".ssh/known_hosts");
+///     known_hosts.read_file(&file, ssh2::OpenSSH).unwrap();
+///
+///     // Now check to see if the seesion's host key is anywhere in the known
+///     // hosts file
+///     let (key, key_type) = session.host_key().unwrap();
+///     match known_hosts.check(host, key) {
+///         ssh2::CheckMatch => return, // all good!
+///         ssh2::CheckNotFound => {}   // ok, we'll add it
+///         ssh2::CheckMismatch => {
+///             fail!("host mismatch, man in the middle attack?!")
+///         }
+///         ssh2::CheckFailure => fail!("failed to check the known hosts"),
+///     }
+///
+///     println!("adding {} to the known hosts", host);
+///
+///     known_hosts.add(host, key, host, match key_type {
+///         ssh2::TypeRsa => ssh2::KeySshRsa,
+///         ssh2::TypeDss => ssh2::KeySshDss,
+///         ssh2::TypeUnknown => fail!("unknown type of key!"),
+///     }).unwrap();
+///     known_hosts.write_file(&file, ssh2::OpenSSH).unwrap();
+/// }
+/// ```
 pub struct KnownHosts<'a> {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
     sess: &'a Session,
