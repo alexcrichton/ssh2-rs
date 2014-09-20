@@ -5,6 +5,9 @@ use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
 use {raw, Session, Error};
 
+/// A handle to a remote filesystem over SFTP.
+///
+/// Instances are created through the `sftp` method on a `Session`.
 pub struct Sftp<'a> {
     raw: *mut raw::LIBSSH2_SFTP,
     marker1: marker::NoSync,
@@ -12,22 +15,39 @@ pub struct Sftp<'a> {
     marker3: marker::NoSend,
 }
 
+/// A file handle to an SFTP connection.
+///
+/// Files behave similarly to `std::io::File` in that they are readable and
+/// writable and support operations like stat and seek.
+///
+/// Files are created through `open`, `create`, and `open_mode` on an instance
+/// of `Sftp`.
 pub struct File<'a> {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
     sftp: &'a Sftp<'a>,
     marker: marker::NoSync,
 }
 
+/// Metadata information about a remote file.
+///
+/// Fields are not necessarily all provided
 pub struct FileStat {
+    /// File size, in bytes of the file.
     pub size: Option<u64>,
+    /// Owner ID of the file
     pub uid: Option<uint>,
+    /// Owning group of the file
     pub gid: Option<uint>,
+    /// Permissions (mode) of the file
     pub perm: Option<uint>,
+    /// Last access time of the file
     pub atime: Option<uint>,
+    /// Last modification time of the file
     pub mtime: Option<uint>,
 }
 
 bitflags! {
+    #[doc = "Options that can be used to configure how a file is opened"]
     flags OpenFlags: c_ulong {
         #[doc = "Open the file for reading."]
         static Read = raw::LIBSSH2_FXF_READ,
@@ -52,15 +72,26 @@ bitflags! {
 }
 
 bitflags! {
+    #[doc = "Options to `Sftp::rename`"]
     flags RenameFlags: c_long {
+        #[doc = "In a rename operation, overwrite the destination if it \
+                 already exists. If this flag is not present then it is an \
+                 error if the destination already exists"]
         static Overwrite = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
+        #[doc = "Inform the remote that an atomic rename operation is \
+                 desired if available"]
         static Atomic = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
+        #[doc = "Inform the remote end that the native system calls for \
+                 renaming should be used"]
         static Native = raw::LIBSSH2_SFTP_RENAME_NATIVE
     }
 }
 
+/// How to open a file handle with libssh2.
 pub enum OpenType {
+    /// Specify that a file shoud be opened.
     OpenFile = raw::LIBSSH2_SFTP_OPENFILE as int,
+    /// Specify that a directory should be opened.
     OpenDir = raw::LIBSSH2_SFTP_OPENDIR as int,
 }
 
@@ -331,6 +362,7 @@ impl<'a> File<'a> {
         }
     }
 
+    #[allow(missing_doc)] // sure wish I knew what this did...
     pub fn statvfs(&mut self) -> Result<raw::LIBSSH2_SFTP_STATVFS, Error> {
         unsafe {
             let mut ret = mem::zeroed();

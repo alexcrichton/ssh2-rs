@@ -2,6 +2,10 @@ use std::kinds::marker;
 
 use {raw, Session, Error, Channel};
 
+/// A listener represents a forwarding port from the remote server.
+///
+/// New channels can be accepted from a listener which represent connections on
+/// the remote server's port.
 pub struct Listener<'a> {
     raw: *mut raw::LIBSSH2_LISTENER,
     sess: &'a Session,

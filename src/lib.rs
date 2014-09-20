@@ -49,6 +49,7 @@
 //! ```
 
 #![feature(phase, unsafe_destructor)]
+#![deny(warnings, missing_doc)]
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
@@ -136,12 +137,14 @@ pub enum SessionFlag {
     Compress = raw::LIBSSH2_FLAG_COMPRESS as int,
 }
 
+#[allow(missing_doc)]
 pub enum HostKeyType {
     TypeUnknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
     TypeRsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
     TypeDss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as int,
 }
 
+#[allow(missing_doc)]
 pub enum MethodType {
     MethodKex = raw::LIBSSH2_METHOD_KEX as int,
     MethodHostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
@@ -155,19 +158,26 @@ pub enum MethodType {
     MethodLangSc = raw::LIBSSH2_METHOD_LANG_SC as int,
 }
 
+/// When passed to `Channel::flush_stream`, flushes all extended data
+/// substreams.
 pub static FlushExtendedData: uint = -1;
+/// When passed to `Channel::flush_stream`, flushes all substream.
 pub static FlushAll: uint = -2;
+/// Stream ID of the stderr channel for stream-related methods on `Channel`
 pub static ExtendedDataStderr: uint = 1;
 
+#[allow(missing_doc)]
 pub enum HashType {
     HashMd5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
     HashSha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
 }
 
+#[allow(missing_doc)]
 pub enum KnownHostFileKind {
     OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as int,
 }
 
+/// Possible results of a call to `KnownHosts::check`
 pub enum CheckResult {
     /// Hosts and keys match
     CheckMatch = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
@@ -179,6 +189,7 @@ pub enum CheckResult {
     CheckFailure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
 }
 
+#[allow(missing_doc)]
 pub enum KnownHostKeyFormat {
     KeyRsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
     KeySshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,

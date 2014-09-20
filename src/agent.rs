@@ -5,17 +5,22 @@ use std::str;
 
 use {raw, Session, Error};
 
+/// A structure representing a connection to an SSH agent.
+///
+/// Agents can be used to authenticate a session.
 pub struct Agent<'a> {
     raw: *mut raw::LIBSSH2_AGENT,
     sess: &'a Session,
     marker: marker::NoSync,
 }
 
+/// An iterator over the identities found in an SSH agent.
 pub struct Identities<'a> {
     prev: *mut raw::libssh2_agent_publickey,
     agent: &'a Agent<'a>,
 }
 
+/// A public key which is extracted from an SSH agent.
 pub struct PublicKey<'a> {
     raw: *mut raw::libssh2_agent_publickey,
     marker1: marker::NoSync,
@@ -97,6 +102,10 @@ impl<'a> Iterator<Result<PublicKey<'a>, Error>> for Identities<'a> {
 }
 
 impl<'a> PublicKey<'a> {
+    /// Creates a new public key from its raw counterpart.
+    ///
+    /// Unsafe because the validity of `raw` cannot be guaranteed and there are
+    /// no restrictions on the lifetime returned.
     pub unsafe fn from_raw<'a>(raw: *mut raw::libssh2_agent_publickey)
                                -> PublicKey<'a> {
         PublicKey {

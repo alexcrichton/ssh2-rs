@@ -6,6 +6,11 @@ use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
 
+/// A channel represents a portion of an SSH connection on which data can be
+/// read and written.
+///
+/// Channels denote all of SCP uploads and downloads, shell sessions, remote
+/// process executions, and other general-purpose sessions.
 pub struct Channel<'a> {
     raw: *mut raw::LIBSSH2_CHANNEL,
     sess: &'a Session,

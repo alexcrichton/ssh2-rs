@@ -4,17 +4,35 @@ use libc::{c_int, size_t};
 
 use {raw, Session, Error, KnownHostFileKind, CheckResult};
 
+/// A set of known hosts which can be used to verify the identity of a remote
+/// server.
+//
+// # Example
+//
+// ```
+// # use ssh2::Session;
+// # let session: Session = fail!();
+//
+// let known_hosts = session.known_hosts().unwrap();
+// let (to_find, _) = session.host_key();
+// fail!(); // TODO
+// for host in known_hosts.iter() {
+//     let host = host.unwrap(); // ignore I/O errors.
+// }
+// ```
 pub struct KnownHosts<'a> {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
     sess: &'a Session,
     marker: marker::NoSync,
 }
 
+/// Iterator over the hosts in a `KnownHosts` structure.
 pub struct Hosts<'a> {
     prev: *mut raw::libssh2_knownhost,
     hosts: &'a KnownHosts<'a>,
 }
 
+/// Structure representing a known host as part of a `KnownHosts` structure.
 pub struct Host<'a> {
     raw: *mut raw::libssh2_knownhost,
     marker1: marker::NoSync,
@@ -202,6 +220,10 @@ impl<'a> Iterator<Result<Host<'a>, Error>> for Hosts<'a> {
 }
 
 impl<'a> Host<'a> {
+    /// Creates a new host from its raw counterpart.
+    ///
+    /// Unsafe as there are no restrictions on the lifetime of the host returned
+    /// and the validity of `raw` is not known.
     pub unsafe fn from_raw<'a>(raw: *mut raw::libssh2_knownhost)
                                -> Host<'a> {
         Host {
