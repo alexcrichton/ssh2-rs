@@ -95,6 +95,9 @@ impl Error {
 
     /// Get the message corresponding to this error
     pub fn message(&self) -> &str { self.msg }
+
+    /// Return the code for this error
+    pub fn code(&self) -> libc::c_int { self.code }
 }
 
 impl fmt::Show for Error {

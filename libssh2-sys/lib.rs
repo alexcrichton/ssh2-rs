@@ -6,6 +6,7 @@ extern crate libc;
 extern crate "link-config" as link_conifg;
 
 use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint, c_ulong};
+use libc::ssize_t;
 
 pub static SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT: c_int = 1;
 pub static SSH_DISCONNECT_PROTOCOL_ERROR: c_int = 2;
@@ -112,6 +113,34 @@ pub static LIBSSH2_KNOWNHOST_KEY_SSHRSA: c_int = 2 << 18;
 pub static LIBSSH2_KNOWNHOST_KEY_SSHDSS: c_int = 3 << 18;
 pub static LIBSSH2_KNOWNHOST_KEY_UNKNOWN: c_int = 7 << 18;
 
+pub static LIBSSH2_FXF_READ: c_ulong = 0x00000001;
+pub static LIBSSH2_FXF_WRITE: c_ulong = 0x00000002;
+pub static LIBSSH2_FXF_APPEND: c_ulong = 0x00000004;
+pub static LIBSSH2_FXF_CREAT: c_ulong = 0x00000008;
+pub static LIBSSH2_FXF_TRUNC: c_ulong = 0x00000010;
+pub static LIBSSH2_FXF_EXCL: c_ulong = 0x00000020;
+
+pub static LIBSSH2_SFTP_OPENFILE: c_int = 0;
+pub static LIBSSH2_SFTP_OPENDIR: c_int = 1;
+
+pub static LIBSSH2_SFTP_ATTR_SIZE: c_ulong = 0x00000001;
+pub static LIBSSH2_SFTP_ATTR_UIDGID: c_ulong = 0x00000002;
+pub static LIBSSH2_SFTP_ATTR_PERMISSIONS: c_ulong = 0x00000004;
+pub static LIBSSH2_SFTP_ATTR_ACMODTIME: c_ulong = 0x00000008;
+pub static LIBSSH2_SFTP_ATTR_EXTENDED: c_ulong = 0x80000000;
+
+pub static LIBSSH2_SFTP_STAT: c_int = 0;
+pub static LIBSSH2_SFTP_LSTAT: c_int = 1;
+pub static LIBSSH2_SFTP_SETSTAT: c_int = 2;
+
+pub static LIBSSH2_SFTP_SYMLINK: c_int = 0;
+pub static LIBSSH2_SFTP_READLINK: c_int = 1;
+pub static LIBSSH2_SFTP_REALPATH: c_int = 2;
+
+pub static LIBSSH2_SFTP_RENAME_OVERWRITE: c_long = 0x1;
+pub static LIBSSH2_SFTP_RENAME_ATOMIC: c_long = 0x2;
+pub static LIBSSH2_SFTP_RENAME_NATIVE: c_long = 0x4;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
@@ -136,6 +165,32 @@ pub struct libssh2_knownhost {
     pub name: *mut c_char,
     pub key: *mut c_char,
     pub typemask: c_int,
+}
+
+#[repr(C)]
+pub struct LIBSSH2_SFTP_ATTRIBUTES {
+    pub flags: c_ulong,
+    pub filesize: u64,
+    pub uid: c_ulong,
+    pub gid: c_ulong,
+    pub permissions: c_ulong,
+    pub atime: c_ulong,
+    pub mtime: c_ulong,
+}
+
+#[repr(C)]
+pub struct LIBSSH2_SFTP_STATVFS {
+    pub f_bsize: u64,
+    pub f_frsize: u64,
+    pub f_blocks: u64,
+    pub f_bfree: u64,
+    pub f_bavail: u64,
+    pub f_files: u64,
+    pub f_ffree: u64,
+    pub f_favail: u64,
+    pub f_fsid: u64,
+    pub f_flag: u64,
+    pub f_namemax: u64,
 }
 
 pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void;
@@ -410,4 +465,55 @@ extern {
     pub fn libssh2_sftp_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_SFTP;
     pub fn libssh2_sftp_shutdown(sftp: *mut LIBSSH2_SFTP) -> c_int;
     pub fn libssh2_sftp_last_error(sftp: *mut LIBSSH2_SFTP) -> c_ulong;
+    pub fn libssh2_sftp_open_ex(sftp: *mut LIBSSH2_SFTP,
+                                filename: *const c_char,
+                                filename_len: c_uint,
+                                flags: c_ulong,
+                                mode: c_long,
+                                open_type: c_int) -> *mut LIBSSH2_SFTP_HANDLE;
+    pub fn libssh2_sftp_close_handle(handle: *mut LIBSSH2_SFTP_HANDLE) -> c_int;
+    pub fn libssh2_sftp_mkdir_ex(sftp: *mut LIBSSH2_SFTP,
+                                 path: *const c_char,
+                                 path_len: c_uint,
+                                 mode: c_long) -> c_int;
+    pub fn libssh2_sftp_fsync(handle: *mut LIBSSH2_SFTP_HANDLE) -> c_int;
+    pub fn libssh2_sftp_fstat_ex(handle: *mut LIBSSH2_SFTP_HANDLE,
+                                 attrs: *mut LIBSSH2_SFTP_ATTRIBUTES,
+                                 setstat: c_int) -> c_int;
+    pub fn libssh2_sftp_fstatvfs(handle: *mut LIBSSH2_SFTP_HANDLE,
+                                 attrs: *mut LIBSSH2_SFTP_STATVFS) -> c_int;
+    pub fn libssh2_sftp_stat_ex(sftp: *mut LIBSSH2_SFTP,
+                                path: *const c_char,
+                                path_len: c_uint,
+                                stat_type: c_int,
+                                attrs: *mut LIBSSH2_SFTP_ATTRIBUTES) -> c_int;
+    pub fn libssh2_sftp_read(handle: *mut LIBSSH2_SFTP_HANDLE,
+                             buf: *mut c_char,
+                             len: size_t) -> ssize_t;
+    pub fn libssh2_sftp_symlink_ex(sftp: *mut LIBSSH2_SFTP,
+                                   path: *const c_char,
+                                   path_len: c_uint,
+                                   target: *mut c_char,
+                                   target_len: c_uint,
+                                   link_type: c_int) -> c_int;
+    pub fn libssh2_sftp_rename_ex(sftp: *mut LIBSSH2_SFTP,
+                                  src: *const c_char,
+                                  src_len: c_uint,
+                                  dst: *const c_char,
+                                  dst_len: c_uint,
+                                  flags: c_long) -> c_int;
+    pub fn libssh2_sftp_rmdir_ex(sftp: *mut LIBSSH2_SFTP,
+                                 path: *const c_char,
+                                 path_len: c_uint) -> c_int;
+    pub fn libssh2_sftp_write(handle: *mut LIBSSH2_SFTP_HANDLE,
+                              buffer: *const c_char,
+                              len: size_t) -> ssize_t;
+    pub fn libssh2_sftp_tell64(handle: *mut LIBSSH2_SFTP_HANDLE) -> u64;
+    pub fn libssh2_sftp_seek64(handle: *mut LIBSSH2_SFTP_HANDLE, off: u64);
+    pub fn libssh2_sftp_readdir_ex(handle: *mut LIBSSH2_SFTP_HANDLE,
+                                   buffer: *mut c_char,
+                                   buffer_len: size_t,
+                                   longentry: *mut c_char,
+                                   longentry_len: size_t,
+                                   attrs: *mut LIBSSH2_SFTP_ATTRIBUTES) -> c_int;
 }

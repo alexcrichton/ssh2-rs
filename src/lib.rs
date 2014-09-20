@@ -64,7 +64,9 @@ pub use error::Error;
 pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::Session;
-pub use sftp::{Sftp};
+pub use sftp::{Sftp, OpenFlags, Read, Write, Append, Create, Truncate};
+pub use sftp::{Exclusive, OpenType, OpenFile, OpenDir, File, FileStat};
+pub use sftp::{RenameFlags, Atomic, Overwrite, Native};
 
 mod agent;
 mod channel;
