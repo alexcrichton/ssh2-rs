@@ -200,11 +200,11 @@ pub enum MethodType {
 
 /// When passed to `Channel::flush_stream`, flushes all extended data
 /// substreams.
-pub static FlushExtendedData: uint = -1;
+pub static FLUSH_EXTENDED_DATA: uint = -1;
 /// When passed to `Channel::flush_stream`, flushes all substream.
-pub static FlushAll: uint = -2;
+pub static FLUSH_ALL: uint = -2;
 /// Stream ID of the stderr channel for stream-related methods on `Channel`
-pub static ExtendedDataStderr: uint = 1;
+pub static EXTENDED_DATA_STDERR: uint = 1;
 
 #[allow(missing_doc)]
 pub enum HashType {

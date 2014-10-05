@@ -575,14 +575,14 @@ fn mkstat(stat: &libc::stat) -> io::FileStat {
     // FileStat times are in milliseconds
     fn mktime(secs: u64, nsecs: u64) -> u64 { secs * 1000 + nsecs / 1000000 }
 
-    #[cfg(not(target_os = "linux"), not(target_os = "android"))]
+    #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
     fn flags(stat: &libc::stat) -> u64 { stat.st_flags as u64 }
-    #[cfg(target_os = "linux")] #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     fn flags(_stat: &libc::stat) -> u64 { 0 }
 
-    #[cfg(not(target_os = "linux"), not(target_os = "android"))]
+    #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
     fn gen(stat: &libc::stat) -> u64 { stat.st_gen as u64 }
-    #[cfg(target_os = "linux")] #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     fn gen(_stat: &libc::stat) -> u64 { 0 }
 
     io::FileStat {

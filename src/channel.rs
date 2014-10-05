@@ -188,8 +188,8 @@ impl<'a> Channel<'a> {
     /// Groups of substreams may be flushed by passing on of the following
     /// constants
     ///
-    /// * FlushExtendedData - Flush all extended data substreams
-    /// * FlushAll - Flush all substreams
+    /// * FLUSH_EXTENDED_DATA - Flush all extended data substreams
+    /// * FLUSH_ALL - Flush all substreams
     pub fn flush_stream(&mut self, stream_id: uint) -> Result<(), Error> {
         unsafe {
             self.sess.rc(raw::libssh2_channel_flush_ex(self.raw,
@@ -199,7 +199,7 @@ impl<'a> Channel<'a> {
 
     /// Flush the stderr buffers.
     pub fn flush_stderr(&mut self) -> Result<(), Error> {
-        self.flush_stream(::ExtendedDataStderr)
+        self.flush_stream(::EXTENDED_DATA_STDERR)
     }
 
     /// Write data to a channel stream.
@@ -221,7 +221,7 @@ impl<'a> Channel<'a> {
 
     /// Write data to the channel stderr stream.
     pub fn write_stderr(&mut self, data: &[u8]) -> Result<(), Error> {
-        self.write_stream(::ExtendedDataStderr, data)
+        self.write_stream(::EXTENDED_DATA_STDERR, data)
     }
 
     /// Get the remote exit signal.
@@ -302,7 +302,7 @@ impl<'a> Channel<'a> {
 
     /// Read from the stderr stream .
     pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<uint, Error> {
-        self.read_stream(::ExtendedDataStderr, data)
+        self.read_stream(::EXTENDED_DATA_STDERR, data)
     }
 
     /// Set an environment variable in the remote channel's process space.
