@@ -50,24 +50,24 @@ bitflags! {
     #[doc = "Options that can be used to configure how a file is opened"]
     flags OpenFlags: c_ulong {
         #[doc = "Open the file for reading."]
-        static Read = raw::LIBSSH2_FXF_READ,
+        static READ = raw::LIBSSH2_FXF_READ,
         #[doc = "Open the file for writing. If both this and Read are \
                  specified, the file is opened for both reading and writing"]
-        static Write = raw::LIBSSH2_FXF_WRITE,
+        static WRITE = raw::LIBSSH2_FXF_WRITE,
         #[doc = "Force all writes to append data at the end of the file."]
-        static Append = raw::LIBSSH2_FXF_APPEND,
+        static APPEND = raw::LIBSSH2_FXF_APPEND,
         #[doc = "If this flag is specified, then a new file will be created if \
                  one does not already exist (if Truncate is specified, the new \
                  file will be truncated to zero length if it previously \
                  exists) "]
-        static Create = raw::LIBSSH2_FXF_CREAT,
+        static CREATE = raw::LIBSSH2_FXF_CREAT,
         #[doc = "Forces an existing file with the same name to be truncated to \
                  zero length when creating a file by specifying `Create`. \
                  Using this flag implies the `Create` flag."]
-        static Truncate = raw::LIBSSH2_FXF_TRUNC | Create.bits,
+        static TRUNCATE = raw::LIBSSH2_FXF_TRUNC | CREATE.bits,
         #[doc = "Causes the request to fail if the named file already exists. \
                  Using this flag implies the `Create` flag."]
-        static Exclusive = raw::LIBSSH2_FXF_EXCL | Create.bits
+        static EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | CREATE.bits
     }
 }
 
@@ -77,13 +77,13 @@ bitflags! {
         #[doc = "In a rename operation, overwrite the destination if it \
                  already exists. If this flag is not present then it is an \
                  error if the destination already exists"]
-        static Overwrite = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
+        static OVERWRITE = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
         #[doc = "Inform the remote that an atomic rename operation is \
                  desired if available"]
-        static Atomic = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
+        static ATOMIC = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
         #[doc = "Inform the remote end that the native system calls for \
                  renaming should be used"]
-        static Native = raw::LIBSSH2_SFTP_RENAME_NATIVE
+        static NATIVE = raw::LIBSSH2_SFTP_RENAME_NATIVE
     }
 }
 
@@ -132,17 +132,17 @@ impl<'a> Sftp<'a> {
 
     /// Helper to open a file in the `Read` mode.
     pub fn open(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, Read, io::UserFile, OpenFile)
+        self.open_mode(filename, READ, io::USER_FILE, OpenFile)
     }
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, Write | Truncate, io::UserFile, OpenFile)
+        self.open_mode(filename, WRITE | TRUNCATE, io::USER_FILE, OpenFile)
     }
 
     /// Helper to open a directory for reading its contents.
     pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
-        self.open_mode(dirname, Read, io::UserFile, OpenDir)
+        self.open_mode(dirname, READ, io::USER_FILE, OpenDir)
     }
 
     /// Convenience function to read the files in a directory.
@@ -299,7 +299,7 @@ impl<'a> Sftp<'a> {
     /// If no flags are specified then all flags are used.
     pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>)
                   -> Result<(), Error> {
-        let flags = flags.unwrap_or(Atomic | Overwrite | Native);
+        let flags = flags.unwrap_or(ATOMIC | OVERWRITE | NATIVE);
         let src = src.as_vec();
         let dst = dst.as_vec();
         self.rc(unsafe {

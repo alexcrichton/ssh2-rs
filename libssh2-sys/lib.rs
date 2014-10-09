@@ -200,7 +200,7 @@ pub type LIBSSH2_REALLOC_FUNC = extern fn(*mut c_void, size_t, *mut *mut c_void)
 pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern fn(sess: *mut LIBSSH2_SESSION,
                                                    newpw: *mut *mut c_char,
                                                    newpw_len: *mut c_int,
-                                                   abstract: *mut *mut c_void);
+                                                   abstrakt: *mut *mut c_void);
 
 #[cfg(unix)]    pub type libssh2_socket_t = c_int;
 #[cfg(windows)] pub type libssh2_socket_t = libc::SOCKET;

@@ -11,13 +11,13 @@ fn smoke() {
 fn ops() {
     let td = TempDir::new("foo").unwrap();
     File::create(&td.path().join("foo")).unwrap();
-    fs::mkdir(&td.path().join("bar"), io::UserDir).unwrap();
+    fs::mkdir(&td.path().join("bar"), io::USER_DIR).unwrap();
 
     let (_tcp, sess) = ::authed_session();
     let sftp = sess.sftp().unwrap();
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
-    sftp.mkdir(&td.path().join("bar2"), io::UserDir).unwrap();
+    sftp.mkdir(&td.path().join("bar2"), io::USER_DIR).unwrap();
     assert!(td.path().join("bar2").is_dir());
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 

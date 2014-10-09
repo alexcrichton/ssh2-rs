@@ -65,7 +65,7 @@ fn scp_send() {
     let td = TempDir::new("test").unwrap();
     let (_tcp, sess) = ::authed_session();
     let mut ch = sess.scp_send(&td.path().join("foo"),
-                               io::UserFile, 6, None).unwrap();
+                               io::USER_FILE, 6, None).unwrap();
     ch.write(b"foobar").unwrap();
     drop(ch);
     let actual = File::open(&td.path().join("foo")).read_to_end().unwrap();

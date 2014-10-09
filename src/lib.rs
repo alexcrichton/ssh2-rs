@@ -70,7 +70,7 @@
 //! // perform a handshake and authenticate the session
 //!
 //! let mut remote_file = sess.scp_send(&Path::new("remote"),
-//!                                     io::UserFile, 10, None).unwrap();
+//!                                     io::USER_FILE, 10, None).unwrap();
 //! remote_file.write(b"1234567890").unwrap();
 //! ```
 //!
@@ -105,9 +105,9 @@ pub use error::Error;
 pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::Session;
-pub use sftp::{Sftp, OpenFlags, Read, Write, Append, Create, Truncate};
-pub use sftp::{Exclusive, OpenType, OpenFile, OpenDir, File, FileStat};
-pub use sftp::{RenameFlags, Atomic, Overwrite, Native};
+pub use sftp::{Sftp, OpenFlags, READ, WRITE, APPEND, CREATE, TRUNCATE};
+pub use sftp::{EXCLUSIVE, OpenType, OpenFile, OpenDir, File, FileStat};
+pub use sftp::{RenameFlags, ATOMIC, OVERWRITE, NATIVE};
 
 mod agent;
 mod channel;
