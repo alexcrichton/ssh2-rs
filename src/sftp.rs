@@ -50,24 +50,24 @@ bitflags! {
     #[doc = "Options that can be used to configure how a file is opened"]
     flags OpenFlags: c_ulong {
         #[doc = "Open the file for reading."]
-        static READ = raw::LIBSSH2_FXF_READ,
+        const READ = raw::LIBSSH2_FXF_READ,
         #[doc = "Open the file for writing. If both this and Read are \
                  specified, the file is opened for both reading and writing"]
-        static WRITE = raw::LIBSSH2_FXF_WRITE,
+        const WRITE = raw::LIBSSH2_FXF_WRITE,
         #[doc = "Force all writes to append data at the end of the file."]
-        static APPEND = raw::LIBSSH2_FXF_APPEND,
+        const APPEND = raw::LIBSSH2_FXF_APPEND,
         #[doc = "If this flag is specified, then a new file will be created if \
                  one does not already exist (if Truncate is specified, the new \
                  file will be truncated to zero length if it previously \
                  exists) "]
-        static CREATE = raw::LIBSSH2_FXF_CREAT,
+        const CREATE = raw::LIBSSH2_FXF_CREAT,
         #[doc = "Forces an existing file with the same name to be truncated to \
                  zero length when creating a file by specifying `Create`. \
                  Using this flag implies the `Create` flag."]
-        static TRUNCATE = raw::LIBSSH2_FXF_TRUNC | CREATE.bits,
+        const TRUNCATE = raw::LIBSSH2_FXF_TRUNC | CREATE.bits,
         #[doc = "Causes the request to fail if the named file already exists. \
                  Using this flag implies the `Create` flag."]
-        static EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | CREATE.bits
+        const EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | CREATE.bits
     }
 }
 
@@ -77,13 +77,13 @@ bitflags! {
         #[doc = "In a rename operation, overwrite the destination if it \
                  already exists. If this flag is not present then it is an \
                  error if the destination already exists"]
-        static OVERWRITE = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
+        const OVERWRITE = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
         #[doc = "Inform the remote that an atomic rename operation is \
                  desired if available"]
-        static ATOMIC = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
+        const ATOMIC = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
         #[doc = "Inform the remote end that the native system calls for \
                  renaming should be used"]
-        static NATIVE = raw::LIBSSH2_SFTP_RENAME_NATIVE
+        const NATIVE = raw::LIBSSH2_SFTP_RENAME_NATIVE
     }
 }
 
