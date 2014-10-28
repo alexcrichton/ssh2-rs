@@ -1,10 +1,20 @@
 [package]
-  name = "ssh2"
-  version = "0.0.1"
-  authors = ["Alex Crichton <alex@alexcrichton.com>"]
+name = "ssh2"
+version = "0.0.1"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+license = "MIT/APL2"
+keywords = ["ssh", "encoding"]
+repository = "https://github.com/alexcrichton/ssh2-rs"
+homepage = "https://github.com/alexcrichton/ssh2-rs"
+documentation = "http://alexcrichton.com/ssh2-rs"
+description = """
+Bindings to libssh2 for interacting with SSH servers and executing remote
+commands, forwarding local ports, etc.
+"""
 
 [[test]]
-  name = "all"
+name = "all"
 
 [dependencies.libssh2-sys]
-  path = "libssh2-sys"
+path = "libssh2-sys"
+version = "*"
