@@ -24,3 +24,6 @@ env:
   global:
     - secure: GXvFl6Bh7nFfuiB/3Gstuo0MlpZGNlw93gdwXhotSb1h3OG8LpiL+SQuDOTzVrPMZ/m+1OoIeydufvbHau0IbqspXddjDMEC3sQfogtudHC0EVrwuj+rctDXq55/HwhQTA73xdVWoe1gvVfm9D/AQ9zFel2ynsS6zlkltRCguEc=
     - secure: eUslk5LsvpQ/kf0AFYVTtYagmo58Um3G6fE79Pb0lkOLEvvk4lTgRZY/vwfggojWsrnU8H1c3hBbbEYnC9tUja7n7ubuZeKjNUKItaIZqTxmvCUYABgXHSHZnuNstEwUq+FzGTLlquZtb5TRu2GsJyf/Yi1gZyjqJYKYfGKwSUc=
+notifications:
+  email:
+    on_success: never
