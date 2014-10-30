@@ -19,7 +19,7 @@ pub fn socket() -> TcpStream {
     }, None);
     match stream {
         Ok(s) => s,
-        Err(e) => fail!("no socket: [{}]: {}", e.code, e.detail),
+        Err(e) => panic!("no socket: [{}]: {}", e.code, e.detail),
     }
 }
 

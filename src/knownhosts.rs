@@ -27,9 +27,9 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///         ssh2::CheckMatch => return, // all good!
 ///         ssh2::CheckNotFound => {}   // ok, we'll add it
 ///         ssh2::CheckMismatch => {
-///             fail!("host mismatch, man in the middle attack?!")
+///             panic!("host mismatch, man in the middle attack?!")
 ///         }
-///         ssh2::CheckFailure => fail!("failed to check the known hosts"),
+///         ssh2::CheckFailure => panic!("failed to check the known hosts"),
 ///     }
 ///
 ///     println!("adding {} to the known hosts", host);
@@ -37,7 +37,7 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///     known_hosts.add(host, key, host, match key_type {
 ///         ssh2::TypeRsa => ssh2::KeySshRsa,
 ///         ssh2::TypeDss => ssh2::KeySshDss,
-///         ssh2::TypeUnknown => fail!("unknown type of key!"),
+///         ssh2::TypeUnknown => panic!("unknown type of key!"),
 ///     }).unwrap();
 ///     known_hosts.write_file(&file, ssh2::OpenSSH).unwrap();
 /// }

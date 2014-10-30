@@ -164,7 +164,7 @@ impl<'a> Channel<'a> {
     ///
     /// ```no_run
     /// # use ssh2::Session;
-    /// # let session: Session = fail!();
+    /// # let session: Session = panic!();
     /// let mut channel = session.channel_session().unwrap();
     /// channel.exec("ls").unwrap();
     /// println!("{}", channel.read_to_string().unwrap());
