@@ -89,7 +89,7 @@
 //! ```
 
 #![feature(phase, unsafe_destructor)]
-#![deny(warnings, missing_doc)]
+#![deny(warnings, missing_docs)]
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
@@ -142,7 +142,7 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum DisconnectCode {
     HostNotAllowedToConnect =
         raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as int,
@@ -177,14 +177,14 @@ pub enum SessionFlag {
     Compress = raw::LIBSSH2_FLAG_COMPRESS as int,
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum HostKeyType {
     TypeUnknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
     TypeRsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
     TypeDss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as int,
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum MethodType {
     MethodKex = raw::LIBSSH2_METHOD_KEX as int,
     MethodHostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
@@ -206,13 +206,13 @@ pub static FLUSH_ALL: uint = -2;
 /// Stream ID of the stderr channel for stream-related methods on `Channel`
 pub static EXTENDED_DATA_STDERR: uint = 1;
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum HashType {
     HashMd5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
     HashSha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum KnownHostFileKind {
     OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as int,
 }
@@ -229,7 +229,7 @@ pub enum CheckResult {
     CheckFailure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub enum KnownHostKeyFormat {
     KeyRsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
     KeySshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,

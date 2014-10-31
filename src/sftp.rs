@@ -362,7 +362,7 @@ impl<'a> File<'a> {
         }
     }
 
-    #[allow(missing_doc)] // sure wish I knew what this did...
+    #[allow(missing_docs)] // sure wish I knew what this did...
     pub fn statvfs(&mut self) -> Result<raw::LIBSSH2_SFTP_STATVFS, Error> {
         unsafe {
             let mut ret = mem::zeroed();
