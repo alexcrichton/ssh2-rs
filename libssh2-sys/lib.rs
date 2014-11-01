@@ -2,8 +2,9 @@
 #![allow(bad_style)]
 
 extern crate libc;
-#[phase(plugin)]
-extern crate "link-config" as link_conifg;
+
+#[cfg(unix)] extern crate "openssl-sys" as openssl;
+#[cfg(unix)] extern crate "libz-sys" as libz;
 
 use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint, c_ulong};
 use libc::ssize_t;
@@ -204,20 +205,6 @@ pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern fn(sess: *mut LIBSSH2_SESSION,
 
 #[cfg(unix)]    pub type libssh2_socket_t = c_int;
 #[cfg(windows)] pub type libssh2_socket_t = libc::SOCKET;
-
-#[cfg(unix)]
-link_config!("libssh2", ["favor_static"])
-
-#[cfg(unix)]
-#[link(name = "z")]
-extern {}
-
-#[cfg(windows)]
-#[link(name = "ws2_32")]  // needed by ssh2
-#[link(name = "bcrypt")]  // needed by ssh2
-#[link(name = "crypt32")] // needed by ssh2
-#[link(name = "ssh2", kind = "static")]
-extern {}
 
 extern {
     // misc
@@ -516,4 +503,9 @@ extern {
                                    longentry: *mut c_char,
                                    longentry_len: size_t,
                                    attrs: *mut LIBSSH2_SFTP_ATTRIBUTES) -> c_int;
+}
+
+#[test]
+fn smoke() {
+    unsafe { libssh2_init(0) };
 }
