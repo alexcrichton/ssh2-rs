@@ -63,7 +63,7 @@ fn setenv() {
 
 #[test]
 fn direct() {
-    let mut l = TcpListener::bind("127.0.0.1", 0).unwrap();
+    let mut l = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = l.socket_name().unwrap();
     let mut a = l.listen().unwrap();
     let (tx, rx) = channel();
@@ -92,7 +92,7 @@ fn forward() {
                                  .unwrap();
     let (tx, rx) = channel();
     spawn(proc() {
-        let mut s = TcpStream::connect("127.0.0.1", port).unwrap();
+        let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
         let mut b = [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
