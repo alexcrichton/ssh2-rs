@@ -509,3 +509,5 @@ extern {
 fn smoke() {
     unsafe { libssh2_init(0) };
 }
+
+pub fn issue_14344_workaround() {}
