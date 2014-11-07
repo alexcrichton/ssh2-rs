@@ -9,6 +9,9 @@ build = "build.rs"
 name = "libssh2-sys"
 path = "lib.rs"
 
+[dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+
 [target.i686-apple-darwin.dependencies.openssl-sys]
   git = "https://github.com/alexcrichton/openssl-sys"
 [target.x86_64-apple-darwin.dependencies.openssl-sys]
@@ -21,18 +24,6 @@ path = "lib.rs"
   git = "https://github.com/alexcrichton/openssl-sys"
 [target.x86_64-unknown-freebsd.dependencies.openssl-sys]
   git = "https://github.com/alexcrichton/openssl-sys"
-[target.i686-apple-darwin.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
-[target.x86_64-apple-darwin.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
-[target.i686-unknown-linux-gnu.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
-[target.x86_64-unknown-linux-gnu.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
-[target.i686-unknown-freebsd.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
-[target.x86_64-unknown-freebsd.dependencies.libz-sys]
-  git = "https://github.com/alexcrichton/libz-sys"
 
 [build-dependencies.pkg-config]
 git = "https://github.com/alexcrichton/pkg-config-rs"

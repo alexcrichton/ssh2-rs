@@ -3,8 +3,8 @@
 
 extern crate libc;
 
+extern crate "libz-sys" as libz;
 #[cfg(unix)] extern crate "openssl-sys" as openssl;
-#[cfg(unix)] extern crate "libz-sys" as libz;
 
 use libc::{c_int, size_t, c_void, c_char, c_long, c_uchar, c_uint, c_ulong};
 use libc::ssize_t;
