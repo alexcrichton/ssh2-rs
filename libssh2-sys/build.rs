@@ -3,6 +3,7 @@ extern crate "pkg-config" as pkg_config;
 use std::os;
 use std::io::{mod, fs, Command};
 use std::io::process::InheritFd;
+use std::io::fs::PathExtensions;
 
 fn main() {
     match pkg_config::find_library("libssh2") {
@@ -61,9 +62,15 @@ fn main() {
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
     fs::mkdir_recursive(&dst.join("lib/pkgconfig"), io::USER_DIR).unwrap();
-    let filename = if windows {"libssh2.lib"} else {"libssh2.a"};
-    fs::rename(&dst.join("build/src/.libs").join(filename),
-               &dst.join("lib/libssh2.a")).unwrap();
+
+    // Which one does windows generate? Who knows!
+    let p1 = dst.join("build/src/.libs/libssh2.a");
+    let p2 = dst.join("build/src/.libs/libssh2.lib");
+    if p1.exists() {
+        fs::rename(&p1, &dst.join("lib/libssh2.a")).unwrap();
+    } else {
+        fs::rename(&p2, &dst.join("lib/libssh2.a")).unwrap();
+    }
     fs::rename(&dst.join("build/libssh2.pc"),
                &dst.join("lib/pkgconfig/libssh2.pc")).unwrap();
 
