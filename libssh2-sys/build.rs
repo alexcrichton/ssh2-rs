@@ -42,10 +42,18 @@ fn main() {
     fs::mkdir(&dst.join("build"), io::USER_DIR).unwrap();
 
     let root = src.join("libssh2-1.4.4-20140901");
-    run(Command::new(root.join("configure"))
+    // Can't run ./configure directly on msys2 b/c we're handing in
+    // Windows-style paths (those starting with C:\), but it chokes on those.
+    // For that reason we build up a shell script with paths converted to
+    // posix versions hopefully...
+    run(Command::new("sh")
                 .env("CFLAGS", cflags)
-                .args(config_opts.as_slice())
-                .cwd(&dst.join("build")));
+                .cwd(&dst.join("build"))
+                .arg("-c")
+                .arg(format!("{} {}", root.join("configure").display(),
+                             config_opts.connect(" "))
+                            .replace("C:\\", "/c/")
+                            .replace("\\", "/")));
     run(Command::new(make())
                 .arg(format!("-j{}", os::getenv("NUM_JOBS").unwrap()))
                 .cwd(&dst.join("build/src")));
