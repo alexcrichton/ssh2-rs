@@ -25,6 +25,14 @@ fn main() {
         cflags.push_str(" -fPIC");
     }
 
+    match os::getenv("DEP_OPENSSL_ROOT") {
+        Some(s) => {
+            cflags.push_str(format!(" -I{}/include", s).as_slice());
+            cflags.push_str(format!(" -L{}/lib", s).as_slice());
+        }
+        None => {}
+    }
+
     let src = Path::new(os::getenv("CARGO_MANIFEST_DIR").unwrap());
     let dst = Path::new(os::getenv("OUT_DIR").unwrap());
 
