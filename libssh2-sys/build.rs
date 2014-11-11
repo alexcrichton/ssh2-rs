@@ -55,8 +55,12 @@ fn main() {
     // Windows-style paths (those starting with C:\), but it chokes on those.
     // For that reason we build up a shell script with paths converted to
     // posix versions hopefully...
+    //
+    // Also apparently the buildbots choke unless we manually set LD, who knows
+    // why?!
     run(Command::new("sh")
                 .env("CFLAGS", cflags)
+                .env("LD", which("ld").unwrap())
                 .cwd(&dst.join("build"))
                 .arg("-c")
                 .arg(format!("{} {}", root.join("configure").display(),
@@ -115,4 +119,10 @@ fn run(cmd: &mut Command) {
                .unwrap()
                .success());
 
+}
+
+fn which(cmd: &str) -> Option<Path> {
+    let cmd = format!("{}{}", cmd, os::consts::EXE_SUFFIX);
+    let paths = os::split_paths(os::getenv("PATH").unwrap());
+    paths.iter().map(|p| p.join(&cmd)).find(|p| p.exists())
 }
