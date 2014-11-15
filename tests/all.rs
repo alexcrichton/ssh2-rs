@@ -1,8 +1,9 @@
 extern crate ssh2;
 extern crate libc;
 
-use std::os;
 use std::mem;
+use std::num::Int;
+use std::os;
 
 mod agent;
 mod session;
