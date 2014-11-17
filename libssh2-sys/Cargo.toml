@@ -13,17 +13,17 @@ path = "lib.rs"
   git = "https://github.com/alexcrichton/libz-sys"
 
 [target.i686-apple-darwin.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 [target.x86_64-apple-darwin.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 [target.i686-unknown-linux-gnu.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 [target.x86_64-unknown-linux-gnu.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 [target.i686-unknown-freebsd.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 [target.x86_64-unknown-freebsd.dependencies.openssl-sys]
-  git = "https://github.com/alexcrichton/openssl-sys"
+  git = "https://github.com/sfackler/rust-openssl"
 
 [build-dependencies.pkg-config]
 git = "https://github.com/alexcrichton/pkg-config-rs"
