@@ -106,8 +106,14 @@ pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::Session;
 pub use sftp::{Sftp, OpenFlags, READ, WRITE, APPEND, CREATE, TRUNCATE};
-pub use sftp::{EXCLUSIVE, OpenType, OpenFile, OpenDir, File, FileStat};
+pub use sftp::{EXCLUSIVE, OpenType, File, FileStat};
 pub use sftp::{RenameFlags, ATOMIC, OVERWRITE, NATIVE};
+pub use DisconnectCode::{HostNotAllowedToConnect, ProtocolError};
+pub use DisconnectCode::{KeyExchangeFailed, Reserved, MacError, CompressionError};
+pub use DisconnectCode::{ServiceNotAvailable, ProtocolVersionNotSupported};
+pub use DisconnectCode::{HostKeyNotVerifiable, ConnectionLost, ByApplication};
+pub use DisconnectCode::{TooManyConnections, AuthCancelledByUser};
+pub use DisconnectCode::{NoMoreAuthMethodsAvailable, IllegalUserName};
 
 mod agent;
 mod channel;
@@ -162,7 +168,6 @@ pub enum DisconnectCode {
     NoMoreAuthMethodsAvailable =
         raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as int,
     IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as int,
-
 }
 
 /// Flags to be enabled/disabled on a Session
@@ -179,23 +184,23 @@ pub enum SessionFlag {
 
 #[allow(missing_docs)]
 pub enum HostKeyType {
-    TypeUnknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
-    TypeRsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
-    TypeDss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as int,
+    Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
+    Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
+    Dss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as int,
 }
 
 #[allow(missing_docs)]
 pub enum MethodType {
-    MethodKex = raw::LIBSSH2_METHOD_KEX as int,
-    MethodHostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
-    MethodCryptCs = raw::LIBSSH2_METHOD_CRYPT_CS as int,
-    MethodCryptSc = raw::LIBSSH2_METHOD_CRYPT_SC as int,
-    MethodMacCs = raw::LIBSSH2_METHOD_MAC_CS as int,
-    MethodMacSc = raw::LIBSSH2_METHOD_MAC_SC as int,
-    MethodCompCs = raw::LIBSSH2_METHOD_COMP_CS as int,
-    MethodCompSc = raw::LIBSSH2_METHOD_COMP_SC as int,
-    MethodLangCs = raw::LIBSSH2_METHOD_LANG_CS as int,
-    MethodLangSc = raw::LIBSSH2_METHOD_LANG_SC as int,
+    Kex = raw::LIBSSH2_METHOD_KEX as int,
+    HostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
+    CryptCs = raw::LIBSSH2_METHOD_CRYPT_CS as int,
+    CryptSc = raw::LIBSSH2_METHOD_CRYPT_SC as int,
+    MacCs = raw::LIBSSH2_METHOD_MAC_CS as int,
+    MacSc = raw::LIBSSH2_METHOD_MAC_SC as int,
+    CompCs = raw::LIBSSH2_METHOD_COMP_CS as int,
+    CompSc = raw::LIBSSH2_METHOD_COMP_SC as int,
+    LangCs = raw::LIBSSH2_METHOD_LANG_CS as int,
+    LangSc = raw::LIBSSH2_METHOD_LANG_SC as int,
 }
 
 /// When passed to `Channel::flush_stream`, flushes all extended data
@@ -208,8 +213,8 @@ pub static EXTENDED_DATA_STDERR: uint = 1;
 
 #[allow(missing_docs)]
 pub enum HashType {
-    HashMd5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
-    HashSha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
+    Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
+    Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
 }
 
 #[allow(missing_docs)]
@@ -220,18 +225,18 @@ pub enum KnownHostFileKind {
 /// Possible results of a call to `KnownHosts::check`
 pub enum CheckResult {
     /// Hosts and keys match
-    CheckMatch = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
+    Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
     /// Host was found, but the keys didn't match!
-    CheckMismatch = raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH as int,
+    Mismatch = raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH as int,
     /// No host match was found
-    CheckNotFound = raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND as int,
+    NotFound = raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND as int,
     /// Something prevented the check to be made
-    CheckFailure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
+    Failure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
 }
 
 #[allow(missing_docs)]
 pub enum KnownHostKeyFormat {
-    KeyRsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
-    KeySshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,
-    KeySshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as int,
+    Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
+    SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,
+    SshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as int,
 }

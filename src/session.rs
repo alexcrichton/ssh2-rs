@@ -153,9 +153,9 @@ impl Session {
                 len: len as uint,
             });
             let kind = match kind {
-                raw::LIBSSH2_HOSTKEY_TYPE_RSA => ::TypeRsa,
-                raw::LIBSSH2_HOSTKEY_TYPE_DSS => ::TypeDss,
-                _ => ::TypeUnknown,
+                raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
+                raw::LIBSSH2_HOSTKEY_TYPE_DSS => HostKeyType::Dss,
+                _ => HostKeyType::Unknown,
             };
             Some((data, kind))
         }
@@ -167,8 +167,8 @@ impl Session {
     /// is not yet available `None` is returned.
     pub fn host_key_hash(&self, hash: HashType) -> Option<&[u8]> {
         let len = match hash {
-            ::HashMd5 => 16,
-            ::HashSha1 => 20,
+            HashType::Md5 => 16,
+            HashType::Sha1 => 20,
         };
         unsafe {
             let ret = raw::libssh2_hostkey_hash(self.raw, hash as c_int);

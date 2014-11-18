@@ -90,9 +90,9 @@ bitflags! {
 /// How to open a file handle with libssh2.
 pub enum OpenType {
     /// Specify that a file shoud be opened.
-    OpenFile = raw::LIBSSH2_SFTP_OPENFILE as int,
+    File = raw::LIBSSH2_SFTP_OPENFILE as int,
     /// Specify that a directory should be opened.
-    OpenDir = raw::LIBSSH2_SFTP_OPENDIR as int,
+    Dir = raw::LIBSSH2_SFTP_OPENDIR as int,
 }
 
 impl<'a> Sftp<'a> {
@@ -132,17 +132,17 @@ impl<'a> Sftp<'a> {
 
     /// Helper to open a file in the `Read` mode.
     pub fn open(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, READ, io::USER_FILE, OpenFile)
+        self.open_mode(filename, READ, io::USER_FILE, OpenType::File)
     }
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, WRITE | TRUNCATE, io::USER_FILE, OpenFile)
+        self.open_mode(filename, WRITE | TRUNCATE, io::USER_FILE, OpenType::File)
     }
 
     /// Helper to open a directory for reading its contents.
     pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
-        self.open_mode(dirname, READ, io::USER_FILE, OpenDir)
+        self.open_mode(dirname, READ, io::USER_FILE, OpenType::Dir)
     }
 
     /// Convenience function to read the files in a directory.

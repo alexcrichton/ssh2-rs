@@ -1,7 +1,7 @@
 use std::os;
 use std::io::{mod, File, TempDir};
 
-use ssh2::{mod, Session};
+use ssh2::{mod, Session, MethodType, HashType};
 
 #[test]
 fn smoke() {
@@ -12,12 +12,12 @@ fn smoke() {
     assert_eq!(sess.timeout(), 0);
     sess.flag(ssh2::Compress, true).unwrap();
     assert!(sess.host_key().is_none());
-    sess.method_pref(ssh2::MethodKex, "diffie-hellman-group14-sha1").unwrap();
-    assert!(sess.methods(ssh2::MethodKex).is_none());
+    sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1").unwrap();
+    assert!(sess.methods(MethodType::Kex).is_none());
     sess.set_blocking(true);
     sess.set_timeout(0);
-    sess.supported_algs(ssh2::MethodKex).unwrap();
-    sess.supported_algs(ssh2::MethodHostKey).unwrap();
+    sess.supported_algs(MethodType::Kex).unwrap();
+    sess.supported_algs(MethodType::HostKey).unwrap();
     sess.channel_session().err().unwrap();
 }
 
@@ -40,7 +40,7 @@ fn smoke_handshake() {
         agent.userauth(user.as_slice(), &identity).unwrap();
     }
     assert!(sess.authenticated());
-    sess.host_key_hash(ssh2::HashMd5).unwrap();
+    sess.host_key_hash(HashType::Md5).unwrap();
 }
 
 #[test]

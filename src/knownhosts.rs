@@ -11,7 +11,7 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///
 /// ```no_run
 /// use std::os;
-/// use ssh2;
+/// use ssh2::{mod, CheckResult, HostKeyType, KnownHostKeyFormat};
 ///
 /// fn check_known_host(session: &ssh2::Session, host: &str) {
 ///     let mut known_hosts = session.known_hosts().unwrap();
@@ -24,20 +24,20 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///     // hosts file
 ///     let (key, key_type) = session.host_key().unwrap();
 ///     match known_hosts.check(host, key) {
-///         ssh2::CheckMatch => return, // all good!
-///         ssh2::CheckNotFound => {}   // ok, we'll add it
-///         ssh2::CheckMismatch => {
+///         CheckResult::Match => return, // all good!
+///         CheckResult::NotFound => {}   // ok, we'll add it
+///         CheckResult::Mismatch => {
 ///             panic!("host mismatch, man in the middle attack?!")
 ///         }
-///         ssh2::CheckFailure => panic!("failed to check the known hosts"),
+///         CheckResult::Failure => panic!("failed to check the known hosts"),
 ///     }
 ///
 ///     println!("adding {} to the known hosts", host);
 ///
 ///     known_hosts.add(host, key, host, match key_type {
-///         ssh2::TypeRsa => ssh2::KeySshRsa,
-///         ssh2::TypeDss => ssh2::KeySshDss,
-///         ssh2::TypeUnknown => panic!("unknown type of key!"),
+///         HostKeyType::Rsa => KnownHostKeyFormat::SshRsa,
+///         HostKeyType::Dss => KnownHostKeyFormat::SshDss,
+///         HostKeyType::Unknown => panic!("unknown type of key!"),
 ///     }).unwrap();
 ///     known_hosts.write_file(&file, ssh2::OpenSSH).unwrap();
 /// }
@@ -179,10 +179,10 @@ impl<'a> KnownHosts<'a> {
                                                    flags,
                                                    0 as *mut _);
             match rc {
-                raw::LIBSSH2_KNOWNHOST_CHECK_MATCH => ::CheckMatch,
-                raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH => ::CheckMismatch,
-                raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND => ::CheckNotFound,
-                _ => ::CheckFailure,
+                raw::LIBSSH2_KNOWNHOST_CHECK_MATCH => CheckResult::Match,
+                raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH => CheckResult::Mismatch,
+                raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND => CheckResult::NotFound,
+                _ => CheckResult::Failure,
             }
         }
     }
