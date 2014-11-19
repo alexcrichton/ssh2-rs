@@ -69,17 +69,17 @@ fn direct() {
     let (tx, rx) = channel();
     spawn(proc() {
         let mut s = a.accept().unwrap();
-        let mut b = [0, 0, 0];
+        let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
-        s.write([4, 5, 6]).unwrap();
+        s.write(&[4, 5, 6]).unwrap();
         tx.send(());
     });
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_direct_tcpip("127.0.0.1",
                                                 addr.port, None).unwrap();
-    channel.write([1, 2, 3]).unwrap();
-    let mut r = [0, 0, 0];
+    channel.write(&[1, 2, 3]).unwrap();
+    let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
     rx.recv();
@@ -93,16 +93,16 @@ fn forward() {
     let (tx, rx) = channel();
     spawn(proc() {
         let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
-        let mut b = [0, 0, 0];
+        let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
-        s.write([4, 5, 6]).unwrap();
+        s.write(&[4, 5, 6]).unwrap();
         tx.send(());
     });
 
     let mut channel = listen.accept().unwrap();
-    channel.write([1, 2, 3]).unwrap();
-    let mut r = [0, 0, 0];
+    channel.write(&[1, 2, 3]).unwrap();
+    let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
     rx.recv();
