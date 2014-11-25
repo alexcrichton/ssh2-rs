@@ -1,7 +1,6 @@
 use std::cmp;
 use std::io;
 use std::kinds::marker;
-use std::vec;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -249,7 +248,7 @@ impl<'a> Channel<'a> {
         unsafe fn convert(chan: &Channel, ptr: *mut c_char,
                           len: size_t) -> Option<String> {
             if ptr.is_null() { return None }
-            let ret = vec::raw::from_buf(ptr as *const u8, len as uint);
+            let ret = Vec::from_raw_buf(ptr as *const u8, len as uint);
             raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
             String::from_utf8(ret).ok()
         }

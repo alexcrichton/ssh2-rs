@@ -224,7 +224,7 @@ impl Session {
                                                          &mut ptr);
             if rc <= 0 { try!(self.rc(rc)) }
             for i in range(0, rc as int) {
-                ret.push(str::raw::c_str_to_static_slice(*ptr.offset(i)));
+                ret.push(str::from_c_str(*ptr.offset(i)));
             }
             raw::libssh2_free(self.raw, ptr as *mut c_void);
         }
@@ -441,7 +441,7 @@ impl Session {
             if ret.is_null() {
                 Err(Error::last_error(self).unwrap())
             } else {
-                Ok(str::raw::c_str_to_static_slice(ret))
+                Ok(str::from_c_str(ret))
             }
         }
     }

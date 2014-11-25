@@ -22,7 +22,7 @@ impl Error {
             let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg,
                                                      0 as *mut _, 0);
             if rc == 0 { return None }
-            Some(Error::new(rc, str::raw::c_str_to_static_slice(msg as *const _)))
+            Some(Error::new(rc, str::from_c_str(msg as *const _)))
         }
     }
 
