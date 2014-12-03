@@ -90,7 +90,7 @@ fn main() {
         let root = root.join("include");
         let dst = dst.join("include");
         for file in fs::walk_dir(&root).unwrap() {
-            if fs::stat(&file).unwrap().kind != io::TypeFile { continue }
+            if fs::stat(&file).unwrap().kind != io::FileType::RegularFile { continue }
 
             let part = file.path_relative_from(&root).unwrap();
             let dst = dst.join(part);
