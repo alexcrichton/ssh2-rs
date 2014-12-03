@@ -10,7 +10,7 @@ fn smoke() {
     sess.set_banner("foo").unwrap();
     assert!(sess.is_blocking());
     assert_eq!(sess.timeout(), 0);
-    sess.flag(ssh2::Compress, true).unwrap();
+    sess.flag(ssh2::SessionFlag::Compress, true).unwrap();
     assert!(sess.host_key().is_none());
     sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1").unwrap();
     assert!(sess.methods(MethodType::Kex).is_none());

@@ -12,13 +12,14 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 /// ```no_run
 /// use std::os;
 /// use ssh2::{mod, CheckResult, HostKeyType, KnownHostKeyFormat};
+/// use ssh2::KnownHostFileKind;
 ///
 /// fn check_known_host(session: &ssh2::Session, host: &str) {
 ///     let mut known_hosts = session.known_hosts().unwrap();
 ///
 ///     // Initialize the known hosts with a global known hosts file
 ///     let file = Path::new(os::getenv("HOME").unwrap()).join(".ssh/known_hosts");
-///     known_hosts.read_file(&file, ssh2::OpenSSH).unwrap();
+///     known_hosts.read_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 ///
 ///     // Now check to see if the seesion's host key is anywhere in the known
 ///     // hosts file
@@ -39,7 +40,7 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///         HostKeyType::Dss => KnownHostKeyFormat::SshDss,
 ///         HostKeyType::Unknown => panic!("unknown type of key!"),
 ///     }).unwrap();
-///     known_hosts.write_file(&file, ssh2::OpenSSH).unwrap();
+///     known_hosts.write_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 /// }
 /// ```
 pub struct KnownHosts<'a> {

@@ -1,4 +1,4 @@
-use ssh2::{Session, OpenSSH};
+use ssh2::{Session, KnownHostFileKind};
 
 #[test]
 fn smoke() {
@@ -21,7 +21,7 @@ PW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi\
 ";
     let sess = Session::new().unwrap();
     let mut hosts = sess.known_hosts().unwrap();
-    hosts.read_str(encoded, OpenSSH).unwrap();
+    hosts.read_str(encoded, KnownHostFileKind::OpenSSH).unwrap();
 
     assert_eq!(hosts.iter().count(), 1);
     let host = hosts.iter().next().unwrap().unwrap();
@@ -35,6 +35,6 @@ CZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2R\
 PW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi\
 /w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==");
 
-    assert_eq!(hosts.write_string(&host, OpenSSH).unwrap().as_slice(), encoded);
+    assert_eq!(hosts.write_string(&host, KnownHostFileKind::OpenSSH).unwrap().as_slice(), encoded);
     hosts.remove(host).unwrap();
 }
