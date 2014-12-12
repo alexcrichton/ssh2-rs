@@ -149,6 +149,7 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
 }
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum DisconnectCode {
     HostNotAllowedToConnect =
         raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as int,
@@ -171,6 +172,7 @@ pub enum DisconnectCode {
 }
 
 /// Flags to be enabled/disabled on a Session
+#[deriving(Copy)]
 pub enum SessionFlag {
     /// If set, libssh2 will not attempt to block SIGPIPEs but will let them
     /// trigger from the underlying socket layer.
@@ -183,6 +185,7 @@ pub enum SessionFlag {
 }
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum HostKeyType {
     Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
     Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
@@ -190,6 +193,7 @@ pub enum HostKeyType {
 }
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum MethodType {
     Kex = raw::LIBSSH2_METHOD_KEX as int,
     HostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
@@ -212,17 +216,20 @@ pub static FLUSH_ALL: uint = -2;
 pub static EXTENDED_DATA_STDERR: uint = 1;
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum HashType {
     Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
     Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
 }
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum KnownHostFileKind {
     OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as int,
 }
 
 /// Possible results of a call to `KnownHosts::check`
+#[deriving(Copy)]
 pub enum CheckResult {
     /// Hosts and keys match
     Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
@@ -235,6 +242,7 @@ pub enum CheckResult {
 }
 
 #[allow(missing_docs)]
+#[deriving(Copy)]
 pub enum KnownHostKeyFormat {
     Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
     SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,

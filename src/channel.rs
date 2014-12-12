@@ -29,6 +29,7 @@ pub struct ExitSignal {
 }
 
 /// Description of the read window as returned by `Channel::read_window`
+#[deriving(Copy)]
 pub struct ReadWindow {
     /// The number of bytes which the remote end may send without overflowing
     /// the window limit.
@@ -40,6 +41,7 @@ pub struct ReadWindow {
 }
 
 /// Description of the write window as returned by `Channel::write_window`
+#[deriving(Copy)]
 pub struct WriteWindow {
     /// The number of bytes which may be safely written on the channel without
     /// blocking.
