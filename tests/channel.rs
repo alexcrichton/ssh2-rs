@@ -67,7 +67,7 @@ fn direct() {
     let addr = l.socket_name().unwrap();
     let mut a = l.listen().unwrap();
     let (tx, rx) = channel();
-    spawn(proc() {
+    spawn(move|| {
         let mut s = a.accept().unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
@@ -91,7 +91,7 @@ fn forward() {
     let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
                                  .unwrap();
     let (tx, rx) = channel();
-    spawn(proc() {
+    spawn(move|| {
         let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();

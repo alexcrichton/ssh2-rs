@@ -131,7 +131,7 @@ pub fn init() {
     unsafe {
         INIT.doit(|| {
             assert_eq!(raw::libssh2_init(0), 0);
-            rt::at_exit(proc() {
+            rt::at_exit(|| {
                 raw::libssh2_exit();
             });
         })

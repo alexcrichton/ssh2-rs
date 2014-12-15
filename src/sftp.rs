@@ -49,7 +49,6 @@ pub struct FileStat {
 
 bitflags! {
     #[doc = "Options that can be used to configure how a file is opened"]
-    #[deriving(Copy)]
     flags OpenFlags: c_ulong {
         #[doc = "Open the file for reading."]
         const READ = raw::LIBSSH2_FXF_READ,
@@ -75,7 +74,6 @@ bitflags! {
 
 bitflags! {
     #[doc = "Options to `Sftp::rename`"]
-    #[deriving(Copy)]
     flags RenameFlags: c_long {
         #[doc = "In a rename operation, overwrite the destination if it \
                  already exists. If this flag is not present then it is an \
