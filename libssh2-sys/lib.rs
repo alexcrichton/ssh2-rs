@@ -1,5 +1,6 @@
 #![feature(phase)]
 #![allow(bad_style)]
+#![allow(missing_copy_implementations)]
 
 extern crate libc;
 
@@ -169,6 +170,7 @@ pub struct libssh2_knownhost {
 }
 
 #[repr(C)]
+#[deriving(Copy)]
 pub struct LIBSSH2_SFTP_ATTRIBUTES {
     pub flags: c_ulong,
     pub filesize: u64,
@@ -180,6 +182,7 @@ pub struct LIBSSH2_SFTP_ATTRIBUTES {
 }
 
 #[repr(C)]
+#[deriving(Copy)]
 pub struct LIBSSH2_SFTP_STATVFS {
     pub f_bsize: u64,
     pub f_frsize: u64,
