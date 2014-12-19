@@ -43,28 +43,27 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 ///     known_hosts.write_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 /// }
 /// ```
-pub struct KnownHosts<'a> {
+pub struct KnownHosts<'sess> {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-    sess: &'a Session,
+    sess: &'sess Session,
     marker: marker::NoSync,
 }
 
 /// Iterator over the hosts in a `KnownHosts` structure.
-pub struct Hosts<'a> {
+pub struct Hosts<'kh> {
     prev: *mut raw::libssh2_knownhost,
-    hosts: &'a KnownHosts<'a>,
+    hosts: &'kh KnownHosts<'kh>,
 }
 
 /// Structure representing a known host as part of a `KnownHosts` structure.
-pub struct Host<'a> {
+pub struct Host<'kh> {
     raw: *mut raw::libssh2_knownhost,
     marker1: marker::NoSync,
     marker2: marker::NoSend,
-    marker3: marker::ContravariantLifetime<'a>,
-    marker4: marker::NoCopy,
+    marker3: marker::ContravariantLifetime<'kh>,
 }
 
-impl<'a> KnownHosts<'a> {
+impl<'sess> KnownHosts<'sess> {
     /// Wraps a raw pointer in a new KnownHosts structure tied to the lifetime
     /// of the given session.
     ///
@@ -227,8 +226,8 @@ impl<'a> Drop for KnownHosts<'a> {
     }
 }
 
-impl<'a> Iterator<Result<Host<'a>, Error>> for Hosts<'a> {
-    fn next(&mut self) -> Option<Result<Host<'a>, Error>> {
+impl<'kh> Iterator<Result<Host<'kh>, Error>> for Hosts<'kh> {
+    fn next(&mut self) -> Option<Result<Host<'kh>, Error>> {
         unsafe {
             let mut next = 0 as *mut _;
             match raw::libssh2_knownhost_get(self.hosts.raw,
@@ -242,19 +241,18 @@ impl<'a> Iterator<Result<Host<'a>, Error>> for Hosts<'a> {
     }
 }
 
-impl<'a> Host<'a> {
+impl<'kh> Host<'kh> {
     /// Creates a new host from its raw counterpart.
     ///
     /// Unsafe as there are no restrictions on the lifetime of the host returned
     /// and the validity of `raw` is not known.
-    pub unsafe fn from_raw<'a>(raw: *mut raw::libssh2_knownhost)
-                               -> Host<'a> {
+    pub unsafe fn from_raw(raw: *mut raw::libssh2_knownhost)
+                           -> Host<'kh> {
         Host {
             raw: raw,
             marker1: marker::NoSync,
             marker2: marker::NoSend,
             marker3: marker::ContravariantLifetime,
-            marker4: marker::NoCopy,
         }
     }
 

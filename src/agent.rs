@@ -8,28 +8,28 @@ use {raw, Session, Error};
 /// A structure representing a connection to an SSH agent.
 ///
 /// Agents can be used to authenticate a session.
-pub struct Agent<'a> {
+pub struct Agent<'sess> {
     raw: *mut raw::LIBSSH2_AGENT,
-    sess: &'a Session,
+    sess: &'sess Session,
     marker: marker::NoSync,
 }
 
 /// An iterator over the identities found in an SSH agent.
-pub struct Identities<'a> {
+pub struct Identities<'agent> {
     prev: *mut raw::libssh2_agent_publickey,
-    agent: &'a Agent<'a>,
+    agent: &'agent Agent<'agent>,
 }
 
 /// A public key which is extracted from an SSH agent.
-pub struct PublicKey<'a> {
+pub struct PublicKey<'agent> {
     raw: *mut raw::libssh2_agent_publickey,
     marker1: marker::NoSync,
     marker2: marker::NoSend,
-    marker3: marker::ContravariantLifetime<'a>,
+    marker3: marker::ContravariantLifetime<'agent>,
     marker4: marker::NoCopy,
 }
 
-impl<'a> Agent<'a> {
+impl<'sess> Agent<'sess> {
     /// Wraps a raw pointer in a new Agent structure tied to the lifetime of the
     /// given session.
     ///
@@ -86,8 +86,8 @@ impl<'a> Drop for Agent<'a> {
     }
 }
 
-impl<'a> Iterator<Result<PublicKey<'a>, Error>> for Identities<'a> {
-    fn next(&mut self) -> Option<Result<PublicKey<'a>, Error>> {
+impl<'agent> Iterator<Result<PublicKey<'agent>, Error>> for Identities<'agent> {
+    fn next(&mut self) -> Option<Result<PublicKey<'agent>, Error>> {
         unsafe {
             let mut next = 0 as *mut _;
             match raw::libssh2_agent_get_identity(self.agent.raw,
@@ -101,13 +101,13 @@ impl<'a> Iterator<Result<PublicKey<'a>, Error>> for Identities<'a> {
     }
 }
 
-impl<'a> PublicKey<'a> {
+impl<'agent> PublicKey<'agent> {
     /// Creates a new public key from its raw counterpart.
     ///
     /// Unsafe because the validity of `raw` cannot be guaranteed and there are
     /// no restrictions on the lifetime returned.
-    pub unsafe fn from_raw<'a>(raw: *mut raw::libssh2_agent_publickey)
-                               -> PublicKey<'a> {
+    pub unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey)
+                           -> PublicKey<'agent> {
         PublicKey {
             raw: raw,
             marker1: marker::NoSync,
