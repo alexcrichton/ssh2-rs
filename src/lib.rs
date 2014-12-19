@@ -24,7 +24,7 @@
 //!
 //! for identity in agent.identities() {
 //!     let identity = identity.unwrap(); // assume no I/O errors
-//!     println!("{}", identity.comment())
+//!     println!("{}", identity.comment());
 //!     let pubkey = identity.blob();
 //! }
 //! ```
