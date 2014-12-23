@@ -260,7 +260,7 @@ impl<'kh> Host<'kh> {
     pub fn name(&self) -> Option<&str> {
         unsafe {
             ::opt_bytes(self, (*self.raw).name as *const _)
-                       .and_then(str::from_utf8)
+                       .and_then(|s| str::from_utf8(s).ok())
         }
     }
 

@@ -47,7 +47,7 @@ impl Session {
     ///
     /// May return `None` on invalid utf-8 or if an error has ocurred.
     pub fn banner(&self) -> Option<&str> {
-        self.banner_bytes().and_then(str::from_utf8)
+        self.banner_bytes().and_then(|s| str::from_utf8(s).ok())
     }
 
     /// See `banner`.
@@ -209,7 +209,7 @@ impl Session {
         unsafe {
             let ptr = raw::libssh2_session_methods(self.raw,
                                                    method_type as c_int);
-            ::opt_bytes(self, ptr).and_then(str::from_utf8)
+            ::opt_bytes(self, ptr).and_then(|s| str::from_utf8(s).ok())
         }
     }
 
