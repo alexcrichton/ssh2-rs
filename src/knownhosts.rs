@@ -1,3 +1,4 @@
+use std::c_str::ToCStr;
 use std::kinds::marker;
 use std::str;
 use libc::{c_int, size_t};

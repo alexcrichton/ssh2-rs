@@ -1,7 +1,7 @@
 use std::os;
-use std::io::{mod, File, TempDir};
+use std::io::{self, File, TempDir};
 
-use ssh2::{mod, Session, MethodType, HashType};
+use ssh2::{self, Session, MethodType, HashType};
 
 #[test]
 fn smoke() {

@@ -1,6 +1,6 @@
+use std::c_str::ToCStr;
 use std::kinds::marker;
-use std::mem;
-use std::raw as stdraw;
+use std::slice;
 use std::str;
 
 use {raw, Session, Error};
@@ -120,10 +120,8 @@ impl<'agent> PublicKey<'agent> {
     /// Return the data of this public key.
     pub fn blob(&self) -> &[u8] {
         unsafe {
-            mem::transmute(stdraw::Slice {
-                data: (*self.raw).blob as *const u8,
-                len: (*self.raw).blob_len as uint,
-            })
+            slice::from_raw_mut_buf(&(*self.raw).blob,
+                                    (*self.raw).blob_len as uint)
         }
     }
 

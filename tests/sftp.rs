@@ -1,4 +1,4 @@
-use std::io::{mod, fs, File, TempDir};
+use std::io::{self, fs, File, TempDir};
 use std::io::fs::PathExtensions;
 
 #[test]

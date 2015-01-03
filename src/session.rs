@@ -1,9 +1,10 @@
+use std::c_str::ToCStr;
 use std::io;
 use std::kinds::marker;
 use std::mem;
-use std::raw as stdraw;
+use std::slice;
 use std::str;
-use libc::{mod, c_uint, c_int, c_void, c_long};
+use libc::{self, c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, SessionFlag, HostKeyType};
 use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
@@ -148,10 +149,8 @@ impl Session {
         unsafe {
             let ret = raw::libssh2_session_hostkey(self.raw, &mut len, &mut kind);
             if ret.is_null() { return None }
-            let data: &[u8] = mem::transmute(stdraw::Slice {
-                data: ret as *const u8,
-                len: len as uint,
-            });
+            let ret = ret as *const u8;
+            let data = mem::transmute(slice::from_raw_buf(&ret, len as uint));
             let kind = match kind {
                 raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
                 raw::LIBSSH2_HOSTKEY_TYPE_DSS => HostKeyType::Dss,
@@ -175,10 +174,8 @@ impl Session {
             if ret.is_null() {
                 None
             } else {
-                Some(mem::transmute(stdraw::Slice {
-                    data: ret as *const u8,
-                    len: len,
-                }))
+                let ret = ret as *const u8;
+                Some(mem::transmute(slice::from_raw_buf(&ret, len)))
             }
         }
     }
