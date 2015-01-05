@@ -88,7 +88,7 @@
 //! let contents = remote_file.read_to_end();
 //! ```
 
-#![feature(phase, unsafe_destructor)]
+#![feature(phase, unsafe_destructor, associated_types)]
 #![deny(warnings, missing_docs)]
 
 extern crate "libssh2-sys" as raw;

@@ -227,7 +227,8 @@ impl<'a> Drop for KnownHosts<'a> {
     }
 }
 
-impl<'kh> Iterator<Result<Host<'kh>, Error>> for Hosts<'kh> {
+impl<'kh> Iterator for Hosts<'kh> {
+    type Item = Result<Host<'kh>, Error>;
     fn next(&mut self) -> Option<Result<Host<'kh>, Error>> {
         unsafe {
             let mut next = 0 as *mut _;

@@ -86,7 +86,8 @@ impl<'a> Drop for Agent<'a> {
     }
 }
 
-impl<'agent> Iterator<Result<PublicKey<'agent>, Error>> for Identities<'agent> {
+impl<'agent> Iterator for Identities<'agent> {
+    type Item = Result<PublicKey<'agent>, Error>;
     fn next(&mut self) -> Option<Result<PublicKey<'agent>, Error>> {
         unsafe {
             let mut next = 0 as *mut _;
