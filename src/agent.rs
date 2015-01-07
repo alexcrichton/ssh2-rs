@@ -1,4 +1,4 @@
-use std::c_str::ToCStr;
+use std::ffi::CString;
 use std::kinds::marker;
 use std::slice;
 use std::str;
@@ -69,7 +69,7 @@ impl<'sess> Agent<'sess> {
     /// Attempt public key authentication with the help of ssh-agent.
     pub fn userauth(&self, username: &str, identity: &PublicKey)
                     -> Result<(), Error>{
-        let username = username.to_c_str();
+        let username = CString::from_slice(username.as_bytes());
         unsafe {
             self.sess.rc(raw::libssh2_agent_userauth(self.raw,
                                                      username.as_ptr(),

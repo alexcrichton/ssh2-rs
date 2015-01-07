@@ -17,12 +17,14 @@ impl Error {
     ///
     /// Returns `None` if there was no last error.
     pub fn last_error(sess: &Session) -> Option<Error> {
+        static STATIC: () = ();
         unsafe {
             let mut msg = 0 as *mut _;
             let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg,
                                                      0 as *mut _, 0);
             if rc == 0 { return None }
-            Some(Error::new(rc, str::from_c_str(msg as *const _)))
+            let s = ::opt_bytes(&STATIC, msg as *const _).unwrap();;
+            Some(Error::new(rc, str::from_utf8(s).unwrap()))
         }
     }
 

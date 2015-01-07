@@ -88,13 +88,13 @@
 //! let contents = remote_file.read_to_end();
 //! ```
 
-#![feature(phase, unsafe_destructor, associated_types)]
+#![feature(unsafe_destructor)]
 #![deny(warnings, missing_docs)]
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
 
-use std::c_str::CString;
+use std::ffi;
 use std::mem;
 use std::sync::{Once, ONCE_INIT};
 
@@ -139,8 +139,8 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
     if c.is_null() {
         None
     } else {
-        let s = CString::new(c, false);
-        Some(mem::transmute(s.as_bytes_no_nul()))
+        let s = ffi::c_str_to_bytes(&c);
+        Some(mem::transmute(s))
     }
 }
 
