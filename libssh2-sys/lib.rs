@@ -1,4 +1,3 @@
-#![feature(phase)]
 #![allow(bad_style)]
 #![allow(missing_copy_implementations)]
 

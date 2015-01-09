@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::kinds::marker;
+use std::marker;
 use std::slice;
 use std::str;
 
@@ -122,7 +122,7 @@ impl<'agent> PublicKey<'agent> {
     pub fn blob(&self) -> &[u8] {
         unsafe {
             slice::from_raw_mut_buf(&(*self.raw).blob,
-                                    (*self.raw).blob_len as uint)
+                                    (*self.raw).blob_len as usize)
         }
     }
 

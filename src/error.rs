@@ -1,15 +1,15 @@
 use std::fmt;
-use std::kinds::marker;
 use std::str;
 use libc;
 
 use {raw, Session};
 
 /// Representation of an error that can occur within libssh2
+#[derive(Show)]
+#[allow(missing_copy_implementations)]
 pub struct Error {
     code: libc::c_int,
     msg: &'static str,
-    marker: marker::NoCopy,
 }
 
 impl Error {
@@ -33,7 +33,6 @@ impl Error {
         Error {
             code: code,
             msg: msg,
-            marker: marker::NoCopy,
         }
     }
 
@@ -102,7 +101,7 @@ impl Error {
     pub fn code(&self) -> libc::c_int { self.code }
 }
 
-impl fmt::Show for Error {
+impl fmt::String for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}] {}", self.code, self.msg)
     }

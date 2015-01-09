@@ -1,4 +1,4 @@
-use std::kinds::marker;
+use std::marker;
 
 use {raw, Session, Error, Channel};
 

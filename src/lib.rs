@@ -89,7 +89,9 @@
 //! ```
 
 #![feature(unsafe_destructor)]
-#![deny(warnings, missing_docs)]
+#![deny(missing_docs)]
+#![cfg_attr(test, deny(warnings))]
+#![allow(unstable)]
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
@@ -148,23 +150,23 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
 #[derive(Copy)]
 pub enum DisconnectCode {
     HostNotAllowedToConnect =
-        raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as int,
-    ProtocolError = raw::SSH_DISCONNECT_PROTOCOL_ERROR as int,
-    KeyExchangeFailed = raw::SSH_DISCONNECT_KEY_EXCHANGE_FAILED as int,
-    Reserved = raw::SSH_DISCONNECT_RESERVED as int,
-    MacError = raw::SSH_DISCONNECT_MAC_ERROR as int,
-    CompressionError = raw::SSH_DISCONNECT_COMPRESSION_ERROR as int,
-    ServiceNotAvailable = raw::SSH_DISCONNECT_SERVICE_NOT_AVAILABLE as int,
+        raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as isize,
+    ProtocolError = raw::SSH_DISCONNECT_PROTOCOL_ERROR as isize,
+    KeyExchangeFailed = raw::SSH_DISCONNECT_KEY_EXCHANGE_FAILED as isize,
+    Reserved = raw::SSH_DISCONNECT_RESERVED as isize,
+    MacError = raw::SSH_DISCONNECT_MAC_ERROR as isize,
+    CompressionError = raw::SSH_DISCONNECT_COMPRESSION_ERROR as isize,
+    ServiceNotAvailable = raw::SSH_DISCONNECT_SERVICE_NOT_AVAILABLE as isize,
     ProtocolVersionNotSupported =
-        raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as int,
-    HostKeyNotVerifiable = raw::SSH_DISCONNECT_HOST_KEY_NOT_VERIFIABLE as int,
-    ConnectionLost = raw::SSH_DISCONNECT_CONNECTION_LOST as int,
-    ByApplication = raw::SSH_DISCONNECT_BY_APPLICATION as int,
-    TooManyConnections = raw::SSH_DISCONNECT_TOO_MANY_CONNECTIONS as int,
-    AuthCancelledByUser = raw::SSH_DISCONNECT_AUTH_CANCELLED_BY_USER as int,
+        raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as isize,
+    HostKeyNotVerifiable = raw::SSH_DISCONNECT_HOST_KEY_NOT_VERIFIABLE as isize,
+    ConnectionLost = raw::SSH_DISCONNECT_CONNECTION_LOST as isize,
+    ByApplication = raw::SSH_DISCONNECT_BY_APPLICATION as isize,
+    TooManyConnections = raw::SSH_DISCONNECT_TOO_MANY_CONNECTIONS as isize,
+    AuthCancelledByUser = raw::SSH_DISCONNECT_AUTH_CANCELLED_BY_USER as isize,
     NoMoreAuthMethodsAvailable =
-        raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as int,
-    IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as int,
+        raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as isize,
+    IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as isize,
 }
 
 /// Flags to be enabled/disabled on a Session
@@ -172,75 +174,75 @@ pub enum DisconnectCode {
 pub enum SessionFlag {
     /// If set, libssh2 will not attempt to block SIGPIPEs but will let them
     /// trigger from the underlying socket layer.
-    SigPipe = raw::LIBSSH2_FLAG_SIGPIPE as int,
+    SigPipe = raw::LIBSSH2_FLAG_SIGPIPE as isize,
 
     /// If set - before the connection negotiation is performed - libssh2 will
     /// try to negotiate compression enabling for this connection. By default
     /// libssh2 will not attempt to use compression.
-    Compress = raw::LIBSSH2_FLAG_COMPRESS as int,
+    Compress = raw::LIBSSH2_FLAG_COMPRESS as isize,
 }
 
 #[allow(missing_docs)]
 #[derive(Copy)]
 pub enum HostKeyType {
-    Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as int,
-    Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as int,
-    Dss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as int,
+    Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as isize,
+    Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as isize,
+    Dss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as isize,
 }
 
 #[allow(missing_docs)]
 #[derive(Copy)]
 pub enum MethodType {
-    Kex = raw::LIBSSH2_METHOD_KEX as int,
-    HostKey = raw::LIBSSH2_METHOD_HOSTKEY as int,
-    CryptCs = raw::LIBSSH2_METHOD_CRYPT_CS as int,
-    CryptSc = raw::LIBSSH2_METHOD_CRYPT_SC as int,
-    MacCs = raw::LIBSSH2_METHOD_MAC_CS as int,
-    MacSc = raw::LIBSSH2_METHOD_MAC_SC as int,
-    CompCs = raw::LIBSSH2_METHOD_COMP_CS as int,
-    CompSc = raw::LIBSSH2_METHOD_COMP_SC as int,
-    LangCs = raw::LIBSSH2_METHOD_LANG_CS as int,
-    LangSc = raw::LIBSSH2_METHOD_LANG_SC as int,
+    Kex = raw::LIBSSH2_METHOD_KEX as isize,
+    HostKey = raw::LIBSSH2_METHOD_HOSTKEY as isize,
+    CryptCs = raw::LIBSSH2_METHOD_CRYPT_CS as isize,
+    CryptSc = raw::LIBSSH2_METHOD_CRYPT_SC as isize,
+    MacCs = raw::LIBSSH2_METHOD_MAC_CS as isize,
+    MacSc = raw::LIBSSH2_METHOD_MAC_SC as isize,
+    CompCs = raw::LIBSSH2_METHOD_COMP_CS as isize,
+    CompSc = raw::LIBSSH2_METHOD_COMP_SC as isize,
+    LangCs = raw::LIBSSH2_METHOD_LANG_CS as isize,
+    LangSc = raw::LIBSSH2_METHOD_LANG_SC as isize,
 }
 
 /// When passed to `Channel::flush_stream`, flushes all extended data
 /// substreams.
-pub static FLUSH_EXTENDED_DATA: uint = -1;
+pub static FLUSH_EXTENDED_DATA: i32 = -1;
 /// When passed to `Channel::flush_stream`, flushes all substream.
-pub static FLUSH_ALL: uint = -2;
+pub static FLUSH_ALL: i32 = -2;
 /// Stream ID of the stderr channel for stream-related methods on `Channel`
-pub static EXTENDED_DATA_STDERR: uint = 1;
+pub static EXTENDED_DATA_STDERR: i32 = 1;
 
 #[allow(missing_docs)]
 #[derive(Copy)]
 pub enum HashType {
-    Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as int,
-    Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as int,
+    Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as isize,
+    Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as isize,
 }
 
 #[allow(missing_docs)]
 #[derive(Copy)]
 pub enum KnownHostFileKind {
-    OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as int,
+    OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as isize,
 }
 
 /// Possible results of a call to `KnownHosts::check`
 #[derive(Copy)]
 pub enum CheckResult {
     /// Hosts and keys match
-    Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as int,
+    Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as isize,
     /// Host was found, but the keys didn't match!
-    Mismatch = raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH as int,
+    Mismatch = raw::LIBSSH2_KNOWNHOST_CHECK_MISMATCH as isize,
     /// No host match was found
-    NotFound = raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND as int,
+    NotFound = raw::LIBSSH2_KNOWNHOST_CHECK_NOTFOUND as isize,
     /// Something prevented the check to be made
-    Failure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as int,
+    Failure = raw::LIBSSH2_KNOWNHOST_CHECK_FAILURE as isize,
 }
 
 #[allow(missing_docs)]
 #[derive(Copy)]
 pub enum KnownHostKeyFormat {
-    Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as int,
-    SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as int,
-    SshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as int,
+    Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as isize,
+    SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as isize,
+    SshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as isize,
 }

@@ -1,6 +1,6 @@
 use std::cmp;
 use std::io;
-use std::kinds::marker;
+use std::marker;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -33,11 +33,11 @@ pub struct ExitSignal {
 pub struct ReadWindow {
     /// The number of bytes which the remote end may send without overflowing
     /// the window limit.
-    pub remaining: uint,
+    pub remaining: u32,
     /// The number of bytes actually available to be read.
-    pub available: uint,
+    pub available: u32,
     /// The window_size_initial as defined by the channel open request
-    pub window_size_initial: uint,
+    pub window_size_initial: u32,
 }
 
 /// Description of the write window as returned by `Channel::write_window`
@@ -45,9 +45,9 @@ pub struct ReadWindow {
 pub struct WriteWindow {
     /// The number of bytes which may be safely written on the channel without
     /// blocking.
-    pub remaining: uint,
+    pub remaining: u32,
     /// The window_size_initial as defined by the channel open request
-    pub window_size_initial: uint,
+    pub window_size_initial: u32,
 }
 
 impl<'a> Channel<'a> {
@@ -124,7 +124,7 @@ impl<'a> Channel<'a> {
     /// height_px)
     pub fn request_pty(&mut self, term: &str,
                        mode: Option<&str>,
-                       dim: Option<(uint, uint, uint, uint)>)
+                       dim: Option<(u32, u32, u32, u32)>)
                        -> Result<(), Error>{
         self.sess.rc(unsafe {
             let (width, height, width_px, height_px) =
@@ -145,8 +145,8 @@ impl<'a> Channel<'a> {
     }
 
     /// Request a PTY of a specified size
-    pub fn request_pty_size(&mut self, width: uint, height: uint,
-                            width_px: Option<uint>, height_px: Option<uint>)
+    pub fn request_pty_size(&mut self, width: u32, height: u32,
+                            width_px: Option<u32>, height_px: Option<u32>)
                             -> Result<(), Error> {
         let width_px = width_px.unwrap_or(0);
         let height_px = height_px.unwrap_or(0);
@@ -191,7 +191,7 @@ impl<'a> Channel<'a> {
     ///
     /// * FLUSH_EXTENDED_DATA - Flush all extended data substreams
     /// * FLUSH_ALL - Flush all substreams
-    pub fn flush_stream(&mut self, stream_id: uint) -> Result<(), Error> {
+    pub fn flush_stream(&mut self, stream_id: i32) -> Result<(), Error> {
         unsafe {
             self.sess.rc(raw::libssh2_channel_flush_ex(self.raw,
                                                        stream_id as c_int))
@@ -209,7 +209,7 @@ impl<'a> Channel<'a> {
     /// and may have up to 2^32 extended data streams as identified by the
     /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
     /// to be the stderr substream.
-    pub fn write_stream(&mut self, stream_id: uint, data: &[u8])
+    pub fn write_stream(&mut self, stream_id: i32, data: &[u8])
                         -> Result<(), Error> {
         unsafe {
             let rc = raw::libssh2_channel_write_ex(self.raw,
@@ -250,7 +250,7 @@ impl<'a> Channel<'a> {
         unsafe fn convert(chan: &Channel, ptr: *mut c_char,
                           len: size_t) -> Option<String> {
             if ptr.is_null() { return None }
-            let ret = Vec::from_raw_buf(ptr as *const u8, len as uint);
+            let ret = Vec::from_raw_buf(ptr as *const u8, len as usize);
             raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
             String::from_utf8(ret).ok()
         }
@@ -261,11 +261,11 @@ impl<'a> Channel<'a> {
     ///
     /// Note that the exit status may not be available if the remote end has not
     /// yet set its status to closed.
-    pub fn exit_status(&self) -> Result<int, Error> {
+    pub fn exit_status(&self) -> Result<i32, Error> {
         let ret = unsafe { raw::libssh2_channel_get_exit_status(self.raw) };
         match Error::last_error(self.sess) {
             Some(err) => Err(err),
-            None => Ok(ret as int)
+            None => Ok(ret as i32)
         }
     }
 
@@ -275,14 +275,14 @@ impl<'a> Channel<'a> {
     /// and may have up to 2^32 extended data streams as identified by the
     /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
     /// to be the stderr substream.
-    pub fn read_stream(&mut self, stream_id: uint, data: &mut [u8])
-                       -> Result<uint, Error> {
+    pub fn read_stream(&mut self, stream_id: i32, data: &mut [u8])
+                       -> Result<usize, Error> {
         if self.eof() { return Err(Error::eof()) }
 
         let data = match self.read_limit {
             Some(amt) => {
                 let len = data.len();
-                data.slice_to_mut(cmp::min(amt as uint, len))
+                data.slice_to_mut(cmp::min(amt as usize, len))
             }
             None => data,
         };
@@ -297,12 +297,12 @@ impl<'a> Channel<'a> {
                 Some(ref mut amt) => *amt -= rc as u64,
                 None => {}
             }
-            Ok(rc as uint)
+            Ok(rc as usize)
         }
     }
 
     /// Read from the stderr stream .
-    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<uint, Error> {
+    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<usize, Error> {
         self.read_stream(::EXTENDED_DATA_STDERR, data)
     }
 
@@ -339,9 +339,9 @@ impl<'a> Channel<'a> {
                                                                 &mut avail,
                                                                 &mut init);
             ReadWindow {
-                remaining: remaining as uint,
-                available: avail as uint,
-                window_size_initial: init as uint,
+                remaining: remaining as u32,
+                available: avail as u32,
+                window_size_initial: init as u32,
             }
         }
     }
@@ -353,8 +353,8 @@ impl<'a> Channel<'a> {
             let remaining = raw::libssh2_channel_window_write_ex(self.raw,
                                                                  &mut init);
             WriteWindow {
-                remaining: remaining as uint,
-                window_size_initial: init as uint,
+                remaining: remaining as u32,
+                window_size_initial: init as u32,
             }
         }
     }
@@ -366,8 +366,8 @@ impl<'a> Channel<'a> {
     ///
     /// This function returns the new size of the receive window (as understood
     /// by remote end) on success.
-    pub fn adjust_receive_window(&mut self, adjust: uint, force: bool)
-                                 -> Result<uint, Error> {
+    pub fn adjust_receive_window(&mut self, adjust: u32, force: bool)
+                                 -> Result<u32, Error> {
         let mut ret = 0;
         let rc = unsafe {
             raw::libssh2_channel_receive_window_adjust2(self.raw,
@@ -376,7 +376,7 @@ impl<'a> Channel<'a> {
                                                         &mut ret)
         };
         try!(self.sess.rc(rc));
-        Ok(ret as uint)
+        Ok(ret as u32)
     }
 
     /// Artificially limit the number of bytes that will be read from this
@@ -409,7 +409,7 @@ impl<'a> Writer for Channel<'a> {
 }
 
 impl<'a> Reader for Channel<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<uint> {
+    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
         self.read_stream(0, buf).map_err(|e| {
             if self.eof() {
                 io::standard_error(io::EndOfFile)

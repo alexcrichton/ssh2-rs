@@ -1,4 +1,4 @@
-use std::kinds::marker;
+use std::marker;
 use std::mem;
 use std::io;
 use libc::{c_int, c_ulong, c_long, c_uint, size_t};
@@ -36,15 +36,15 @@ pub struct FileStat {
     /// File size, in bytes of the file.
     pub size: Option<u64>,
     /// Owner ID of the file
-    pub uid: Option<uint>,
+    pub uid: Option<u32>,
     /// Owning group of the file
-    pub gid: Option<uint>,
+    pub gid: Option<u32>,
     /// Permissions (mode) of the file
-    pub perm: Option<uint>,
+    pub perm: Option<u32>,
     /// Last access time of the file
-    pub atime: Option<uint>,
+    pub atime: Option<u64>,
     /// Last modification time of the file
-    pub mtime: Option<uint>,
+    pub mtime: Option<u64>,
 }
 
 bitflags! {
@@ -92,9 +92,9 @@ bitflags! {
 #[derive(Copy)]
 pub enum OpenType {
     /// Specify that a file shoud be opened.
-    File = raw::LIBSSH2_SFTP_OPENFILE as int,
+    File = raw::LIBSSH2_SFTP_OPENFILE as isize,
     /// Specify that a directory should be opened.
-    Dir = raw::LIBSSH2_SFTP_OPENDIR as int,
+    Dir = raw::LIBSSH2_SFTP_OPENDIR as isize,
 }
 
 impl<'a> Sftp<'a> {
@@ -282,7 +282,7 @@ impl<'a> Sftp<'a> {
         if rc < 0 {
             Err(self.last_error())
         } else {
-            unsafe { ret.set_len(rc as uint) }
+            unsafe { ret.set_len(rc as usize) }
             Ok(Path::new(ret))
         }
     }
@@ -407,7 +407,7 @@ impl<'a> File<'a> {
         } else if rc == 0 {
             return Err(Error::new(raw::LIBSSH2_ERROR_FILE, "no more files"))
         } else {
-            unsafe { buf.set_len(rc as uint); }
+            unsafe { buf.set_len(rc as usize); }
         }
         Ok((Path::new(buf), FileStat::from_raw(&stat)))
     }
@@ -422,7 +422,7 @@ impl<'a> File<'a> {
 }
 
 impl<'a> Reader for File<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<uint> {
+    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
         unsafe {
             let rc = raw::libssh2_sftp_read(self.raw,
                                             buf.as_mut_ptr() as *mut _,
@@ -434,7 +434,7 @@ impl<'a> Reader for File<'a> {
                     desc: "read error",
                     detail: Some(self.sftp.last_error().to_string()),
                 }),
-                n => Ok(n as uint)
+                n => Ok(n as usize)
             }
         }
     }
@@ -455,7 +455,7 @@ impl<'a> Writer for File<'a> {
                     detail: Some(self.sftp.last_error().to_string()),
                 })
             }
-            buf = buf.slice_from(rc as uint);
+            buf = buf.slice_from(rc as usize);
         }
         Ok(())
     }
@@ -519,15 +519,15 @@ impl FileStat {
         FileStat {
             size: val(raw, &raw.filesize, raw::LIBSSH2_SFTP_ATTR_SIZE),
             uid: val(raw, &raw.uid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
-                    .map(|s| s as uint),
+                    .map(|s| s as u32),
             gid: val(raw, &raw.gid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
-                    .map(|s| s as uint),
+                    .map(|s| s as u32),
             perm: val(raw, &raw.permissions, raw::LIBSSH2_SFTP_ATTR_PERMISSIONS)
-                     .map(|s| s as uint),
+                     .map(|s| s as u32),
             mtime: val(raw, &raw.mtime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME)
-                      .map(|s| s as uint),
+                      .map(|s| s as u64),
             atime: val(raw, &raw.atime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME)
-                      .map(|s| s as uint),
+                      .map(|s| s as u64),
         }
     }
 

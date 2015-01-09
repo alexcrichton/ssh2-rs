@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::kinds::marker;
+use std::marker;
 use std::str;
 use libc::{c_int, size_t};
 
@@ -81,14 +81,14 @@ impl<'sess> KnownHosts<'sess> {
     /// Reads a collection of known hosts from a specified file and adds them to
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind)
-                     -> Result<uint, Error> {
+                     -> Result<u32, Error> {
         let file = CString::from_slice(file.as_vec());
         let n = unsafe {
             raw::libssh2_knownhost_readfile(self.raw, file.as_ptr(),
                                             kind as c_int)
         };
         if n < 0 { try!(self.sess.rc(n)) }
-        Ok(n as uint)
+        Ok(n as u32)
     }
 
     /// Read a line as if it were from a known hosts file.
@@ -130,10 +130,10 @@ impl<'sess> KnownHosts<'sess> {
                                                           &mut outlen,
                                                           kind as c_int);
                 if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
-                    v.reserve(outlen as uint);
+                    v.reserve(outlen as usize);
                 } else {
                     try!(self.sess.rc(rc));
-                    v.set_len(outlen as uint);
+                    v.set_len(outlen as usize);
                     break
                 }
             }
@@ -164,10 +164,10 @@ impl<'sess> KnownHosts<'sess> {
 
     /// Same as `check`, but takes a port as well.
     pub fn check_port(&self, host: &str, port: u16, key: &[u8]) -> CheckResult {
-        self.check_port_(host, port as int, key)
+        self.check_port_(host, port as i32, key)
     }
 
-    fn check_port_(&self, host: &str, port: int, key: &[u8]) -> CheckResult {
+    fn check_port_(&self, host: &str, port: i32, key: &[u8]) -> CheckResult {
         let host = CString::from_slice(host.as_bytes());
         let flags = raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN |
                     raw::LIBSSH2_KNOWNHOST_KEYENC_RAW;

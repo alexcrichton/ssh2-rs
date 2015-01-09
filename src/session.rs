@@ -1,6 +1,6 @@
 use std::ffi::CString;
 use std::io;
-use std::kinds::marker;
+use std::marker;
 use std::mem;
 use std::slice;
 use std::str;
@@ -123,8 +123,8 @@ impl Session {
     /// wait until they time out.
     ///
     /// A timeout of 0 signifies no timeout.
-    pub fn timeout(&self) -> uint {
-        unsafe { raw::libssh2_session_get_timeout(self.raw) as uint }
+    pub fn timeout(&self) -> u32 {
+        unsafe { raw::libssh2_session_get_timeout(self.raw) as u32 }
     }
 
     /// Set timeout for blocking functions.
@@ -135,7 +135,7 @@ impl Session {
     ///
     /// By default or if you set the timeout to zero, libssh2 has no timeout
     /// for blocking functions.
-    pub fn set_timeout(&self, timeout_ms: uint) {
+    pub fn set_timeout(&self, timeout_ms: u32) {
         let timeout_ms = timeout_ms as c_long;
         unsafe { raw::libssh2_session_set_timeout(self.raw, timeout_ms) }
     }
@@ -150,7 +150,7 @@ impl Session {
             let ret = raw::libssh2_session_hostkey(self.raw, &mut len, &mut kind);
             if ret.is_null() { return None }
             let ret = ret as *const u8;
-            let data = mem::transmute(slice::from_raw_buf(&ret, len as uint));
+            let data = mem::transmute(slice::from_raw_buf(&ret, len as usize));
             let kind = match kind {
                 raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
                 raw::LIBSSH2_HOSTKEY_TYPE_DSS => HostKeyType::Dss,
@@ -221,7 +221,7 @@ impl Session {
             let rc = raw::libssh2_session_supported_algs(self.raw, method_type,
                                                          &mut ptr);
             if rc <= 0 { try!(self.rc(rc)) }
-            for i in range(0, rc as int) {
+            for i in range(0, rc as isize) {
                 let s = ::opt_bytes(&STATIC, *ptr.offset(i)).unwrap();;
                 let s = str::from_utf8(s).unwrap();
                 ret.push(s);
@@ -263,7 +263,7 @@ impl Session {
     /// `channel_open_session`, `channel_direct_tcpip`, or
     /// `channel_forward_listen`.
     pub fn channel_open(&self, channel_type: &str,
-                        window_size: uint, packet_size: uint,
+                        window_size: u32, packet_size: u32,
                         message: Option<&str>) -> Result<Channel, Error> {
         let ret = unsafe {
             let message_len = message.map(|s| s.len()).unwrap_or(0);
@@ -287,8 +287,8 @@ impl Session {
     /// Establish a new session-based channel.
     pub fn channel_session(&self) -> Result<Channel, Error> {
         self.channel_open("session",
-                          raw::LIBSSH2_CHANNEL_WINDOW_DEFAULT as uint,
-                          raw::LIBSSH2_CHANNEL_PACKET_DEFAULT as uint, None)
+                          raw::LIBSSH2_CHANNEL_WINDOW_DEFAULT as u32,
+                          raw::LIBSSH2_CHANNEL_PACKET_DEFAULT as u32, None)
     }
 
     /// Tunnel a TCP connection through an SSH session.
@@ -328,7 +328,7 @@ impl Session {
     pub fn channel_forward_listen(&self,
                                   remote_port: u16,
                                   host: Option<&str>,
-                                  queue_maxsize: Option<uint>)
+                                  queue_maxsize: Option<u32>)
                                   -> Result<(Listener, u16), Error> {
         let mut bound_port = 0;
         let ret = unsafe {
@@ -454,7 +454,7 @@ impl Session {
     /// The interval argument is number of seconds that can pass without any
     /// I/O, use 0 (the default) to disable keepalives. To avoid some busy-loop
     /// corner-cases, if you specify an interval of 1 it will be treated as 2.
-    pub fn keepalive_set(&self, want_reply: bool, interval: uint)
+    pub fn keepalive_set(&self, want_reply: bool, interval: u32)
                          -> Result<(), Error> {
         unsafe {
             self.rc(raw::libssh2_keepalive_config(self.raw, want_reply as c_int,
@@ -466,11 +466,11 @@ impl Session {
     ///
     /// Returns how many seconds you can sleep after this call before you need
     /// to call it again.
-    pub fn keepalive_send(&self) -> Result<uint, Error> {
+    pub fn keepalive_send(&self) -> Result<u32, Error> {
         let mut ret = 0;
         let rc = unsafe { raw::libssh2_keepalive_send(self.raw, &mut ret) };
         try!(self.rc(rc));
-        Ok(ret as uint)
+        Ok(ret as u32)
     }
 
     /// Init a collection of known hosts for this session.
