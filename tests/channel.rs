@@ -67,7 +67,7 @@ fn direct() {
     let mut l = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = l.socket_name().unwrap();
     let mut a = l.listen().unwrap();
-    let t = Thread::spawn(move|| {
+    let t = Thread::scoped(move|| {
         let mut s = a.accept().unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
@@ -89,7 +89,7 @@ fn forward() {
     let (_tcp, sess) = ::authed_session();
     let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
                                  .unwrap();
-    let t = Thread::spawn(move|| {
+    let t = Thread::scoped(move|| {
         let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
