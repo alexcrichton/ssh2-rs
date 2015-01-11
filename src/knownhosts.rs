@@ -11,8 +11,9 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 /// # Example
 ///
 /// ```no_run
+/// # #![allow(unstable)]
 /// use std::os;
-/// use ssh2::{mod, CheckResult, HostKeyType, KnownHostKeyFormat};
+/// use ssh2::{self, CheckResult, HostKeyType, KnownHostKeyFormat};
 /// use ssh2::KnownHostFileKind;
 ///
 /// fn check_known_host(session: &ssh2::Session, host: &str) {

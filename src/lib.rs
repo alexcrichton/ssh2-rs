@@ -63,6 +63,7 @@
 //! ## Upload a file
 //!
 //! ```no_run
+//! # #![allow(unstable)]
 //! use std::io;
 //! use ssh2::Session;
 //!
@@ -77,6 +78,7 @@
 //! ## Download a file
 //!
 //! ```no_run
+//! # #![allow(unstable)]
 //! use ssh2::Session;
 //!
 //! let sess = Session::new().unwrap();
