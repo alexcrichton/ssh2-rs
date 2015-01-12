@@ -1,4 +1,5 @@
 language: rust
+sudo: false
 before_script:
   - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
   - eval `ssh-agent -s`
@@ -14,12 +15,9 @@ after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   echo '<meta http-equiv=refresh content=0;url=ssh2/index.html>' > target/doc/index.html &&
-  sudo pip install ghp-import &&
-  ghp-import -n target/doc &&
-  git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages &&
-  rm target/doc/index.html &&
-  mv target/doc . &&
-  (curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh)
+  pip install ghp-import --user $USER &&
+  $HOME/.local/bin/ghp-import -n target/doc &&
+  git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 env:
   global:
     - secure: GXvFl6Bh7nFfuiB/3Gstuo0MlpZGNlw93gdwXhotSb1h3OG8LpiL+SQuDOTzVrPMZ/m+1OoIeydufvbHau0IbqspXddjDMEC3sQfogtudHC0EVrwuj+rctDXq55/HwhQTA73xdVWoe1gvVfm9D/AQ9zFel2ynsS6zlkltRCguEc=
