@@ -11,7 +11,6 @@ use {raw, Session, Error};
 pub struct Agent<'sess> {
     raw: *mut raw::LIBSSH2_AGENT,
     sess: &'sess Session,
-    marker: marker::NoSync,
 }
 
 /// An iterator over the identities found in an SSH agent.
@@ -23,10 +22,7 @@ pub struct Identities<'agent> {
 /// A public key which is extracted from an SSH agent.
 pub struct PublicKey<'agent> {
     raw: *mut raw::libssh2_agent_publickey,
-    marker1: marker::NoSync,
-    marker2: marker::NoSend,
-    marker3: marker::ContravariantLifetime<'agent>,
-    marker4: marker::NoCopy,
+    marker: marker::ContravariantLifetime<'agent>,
 }
 
 impl<'sess> Agent<'sess> {
@@ -39,7 +35,6 @@ impl<'sess> Agent<'sess> {
         Agent {
             raw: raw,
             sess: sess,
-            marker: marker::NoSync,
         }
     }
 
@@ -111,10 +106,7 @@ impl<'agent> PublicKey<'agent> {
                            -> PublicKey<'agent> {
         PublicKey {
             raw: raw,
-            marker1: marker::NoSync,
-            marker2: marker::NoSend,
-            marker3: marker::ContravariantLifetime,
-            marker4: marker::NoCopy,
+            marker: marker::ContravariantLifetime,
         }
     }
 

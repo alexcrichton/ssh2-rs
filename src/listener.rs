@@ -1,18 +1,15 @@
-use std::marker;
-
 use {raw, Session, Error, Channel};
 
 /// A listener represents a forwarding port from the remote server.
 ///
 /// New channels can be accepted from a listener which represent connections on
 /// the remote server's port.
-pub struct Listener<'a> {
+pub struct Listener<'sess> {
     raw: *mut raw::LIBSSH2_LISTENER,
-    sess: &'a Session,
-    marker: marker::NoSync,
+    sess: &'sess Session,
 }
 
-impl<'a> Listener<'a> {
+impl<'sess> Listener<'sess> {
     /// Wraps a raw pointer in a new Listener structure tied to the lifetime of the
     /// given session.
     ///
@@ -22,12 +19,11 @@ impl<'a> Listener<'a> {
         Listener {
             raw: raw,
             sess: sess,
-            marker: marker::NoSync,
         }
     }
 
     /// Accept a queued connection from this listener.
-    pub fn accept(&mut self) -> Result<Channel<'a>, Error> {
+    pub fn accept(&mut self) -> Result<Channel<'sess>, Error> {
         unsafe {
             let ret = raw::libssh2_channel_forward_accept(self.raw);
             if ret.is_null() {
@@ -40,7 +36,7 @@ impl<'a> Listener<'a> {
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for Listener<'a> {
+impl<'sess> Drop for Listener<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_channel_forward_cancel(self.raw), 0) }
     }

@@ -1,6 +1,5 @@
 use std::ffi::CString;
 use std::io;
-use std::marker;
 use std::mem;
 use std::slice;
 use std::str;
@@ -16,8 +15,9 @@ use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
 /// (via the `handshake` method).
 pub struct Session {
     raw: *mut raw::LIBSSH2_SESSION,
-    marker: marker::NoSync,
 }
+
+unsafe impl Send for Session {}
 
 impl Session {
     /// Initializes an SSH session object.
@@ -36,7 +36,6 @@ impl Session {
     pub unsafe fn from_raw(raw: *mut raw::LIBSSH2_SESSION) -> Session {
         Session {
             raw: raw,
-            marker: marker::NoSync,
         }
     }
 

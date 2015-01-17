@@ -1,6 +1,5 @@
 use std::cmp;
 use std::io;
-use std::marker;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -10,10 +9,9 @@ use {raw, Session, Error};
 ///
 /// Channels denote all of SCP uploads and downloads, shell sessions, remote
 /// process executions, and other general-purpose sessions.
-pub struct Channel<'a> {
+pub struct Channel<'sess> {
     raw: *mut raw::LIBSSH2_CHANNEL,
-    sess: &'a Session,
-    marker: marker::NoSync,
+    sess: &'sess Session,
     read_limit: Option<u64>,
 }
 
@@ -50,7 +48,7 @@ pub struct WriteWindow {
     pub window_size_initial: u32,
 }
 
-impl<'a> Channel<'a> {
+impl<'sess> Channel<'sess> {
     /// Wraps a raw pointer in a new Channel structure tied to the lifetime of the
     /// given session.
     ///
@@ -60,7 +58,6 @@ impl<'a> Channel<'a> {
         Channel {
             raw: raw,
             sess: sess,
-            marker: marker::NoSync,
             read_limit: None,
         }
     }
@@ -387,7 +384,7 @@ impl<'a> Channel<'a> {
     }
 }
 
-impl<'a> Writer for Channel<'a> {
+impl<'sess> Writer for Channel<'sess> {
     fn write(&mut self, buf: &[u8]) -> io::IoResult<()> {
         self.write_stream(0, buf).map_err(|e| {
             io::IoError {
@@ -409,7 +406,7 @@ impl<'a> Writer for Channel<'a> {
     }
 }
 
-impl<'a> Reader for Channel<'a> {
+impl<'sess> Reader for Channel<'sess> {
     fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
         self.read_stream(0, buf).map_err(|e| {
             if self.eof() {
@@ -426,7 +423,7 @@ impl<'a> Reader for Channel<'a> {
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for Channel<'a> {
+impl<'sess> Drop for Channel<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_channel_free(self.raw), 0) }
     }

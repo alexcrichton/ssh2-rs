@@ -48,7 +48,6 @@ use {raw, Session, Error, KnownHostFileKind, CheckResult};
 pub struct KnownHosts<'sess> {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
     sess: &'sess Session,
-    marker: marker::NoSync,
 }
 
 /// Iterator over the hosts in a `KnownHosts` structure.
@@ -60,9 +59,7 @@ pub struct Hosts<'kh> {
 /// Structure representing a known host as part of a `KnownHosts` structure.
 pub struct Host<'kh> {
     raw: *mut raw::libssh2_knownhost,
-    marker1: marker::NoSync,
-    marker2: marker::NoSend,
-    marker3: marker::ContravariantLifetime<'kh>,
+    marker: marker::ContravariantLifetime<'kh>,
 }
 
 impl<'sess> KnownHosts<'sess> {
@@ -75,7 +72,6 @@ impl<'sess> KnownHosts<'sess> {
         KnownHosts {
             raw: raw,
             sess: sess,
-            marker: marker::NoSync,
         }
     }
 
@@ -222,7 +218,7 @@ impl<'sess> KnownHosts<'sess> {
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for KnownHosts<'a> {
+impl<'sess> Drop for KnownHosts<'sess> {
     fn drop(&mut self) {
         unsafe { raw::libssh2_knownhost_free(self.raw) }
     }
@@ -253,9 +249,7 @@ impl<'kh> Host<'kh> {
                            -> Host<'kh> {
         Host {
             raw: raw,
-            marker1: marker::NoSync,
-            marker2: marker::NoSend,
-            marker3: marker::ContravariantLifetime,
+            marker: marker::ContravariantLifetime,
         }
     }
 

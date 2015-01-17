@@ -8,11 +8,9 @@ use {raw, Session, Error};
 /// A handle to a remote filesystem over SFTP.
 ///
 /// Instances are created through the `sftp` method on a `Session`.
-pub struct Sftp<'a> {
+pub struct Sftp<'sess> {
     raw: *mut raw::LIBSSH2_SFTP,
-    marker1: marker::NoSync,
-    marker2: marker::ContravariantLifetime<'a>,
-    marker3: marker::NoSend,
+    marker: marker::ContravariantLifetime<'sess>,
 }
 
 /// A file handle to an SFTP connection.
@@ -22,10 +20,9 @@ pub struct Sftp<'a> {
 ///
 /// Files are created through `open`, `create`, and `open_mode` on an instance
 /// of `Sftp`.
-pub struct File<'a> {
+pub struct File<'sftp> {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
-    sftp: &'a Sftp<'a>,
-    marker: marker::NoSync,
+    sftp: &'sftp Sftp<'sftp>,
 }
 
 /// Metadata information about a remote file.
@@ -97,7 +94,7 @@ pub enum OpenType {
     Dir = raw::LIBSSH2_SFTP_OPENDIR as isize,
 }
 
-impl<'a> Sftp<'a> {
+impl<'sess> Sftp<'sess> {
     /// Wraps a raw pointer in a new Sftp structure tied to the lifetime of the
     /// given session.
     ///
@@ -106,9 +103,7 @@ impl<'a> Sftp<'a> {
                            raw: *mut raw::LIBSSH2_SFTP) -> Sftp {
         Sftp {
             raw: raw,
-            marker1: marker::NoSync,
-            marker2: marker::ContravariantLifetime,
-            marker3: marker::NoSend,
+            marker: marker::ContravariantLifetime,
         }
     }
 
@@ -327,23 +322,22 @@ impl<'a> Sftp<'a> {
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for Sftp<'a> {
+impl<'sess> Drop for Sftp<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_sftp_shutdown(self.raw), 0) }
     }
 }
 
-impl<'a> File<'a> {
+impl<'sftp> File<'sftp> {
     /// Wraps a raw pointer in a new File structure tied to the lifetime of the
     /// given session.
     ///
     /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(sftp: &'a Sftp<'a>,
-                           raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'a> {
+    pub unsafe fn from_raw(sftp: &'sftp Sftp<'sftp>,
+                           raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
         File {
             raw: raw,
             sftp: sftp,
-            marker: marker::NoSync,
         }
     }
 
@@ -421,7 +415,7 @@ impl<'a> File<'a> {
     }
 }
 
-impl<'a> Reader for File<'a> {
+impl<'sftp> Reader for File<'sftp> {
     fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
         unsafe {
             let rc = raw::libssh2_sftp_read(self.raw,
@@ -440,7 +434,7 @@ impl<'a> Reader for File<'a> {
     }
 }
 
-impl<'a> Writer for File<'a> {
+impl<'sftp> Writer for File<'sftp> {
     fn write(&mut self, mut buf: &[u8]) -> io::IoResult<()> {
         while buf.len() > 0 {
             let rc = unsafe {
@@ -461,7 +455,7 @@ impl<'a> Writer for File<'a> {
     }
 }
 
-impl<'a> Seek for File<'a> {
+impl<'sftp> Seek for File<'sftp> {
     fn tell(&self) -> io::IoResult<u64> {
         Ok(unsafe { raw::libssh2_sftp_tell64(self.raw) })
     }
@@ -502,7 +496,7 @@ impl<'a> Seek for File<'a> {
 }
 
 #[unsafe_destructor]
-impl<'a> Drop for File<'a> {
+impl<'sftp> Drop for File<'sftp> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_sftp_close_handle(self.raw), 0) }
     }
