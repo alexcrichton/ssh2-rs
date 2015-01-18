@@ -1,6 +1,6 @@
 [package]
 name = "ssh2"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT/Apache-2.0"
 keywords = ["ssh"]
@@ -15,6 +15,9 @@ commands, forwarding local ports, etc.
 
 [[test]]
 name = "all"
+
+[dependencies]
+bitflags = "0.1"
 
 [dependencies.libssh2-sys]
 path = "libssh2-sys"

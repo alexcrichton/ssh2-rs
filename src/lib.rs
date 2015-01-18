@@ -97,6 +97,7 @@
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
+#[macro_use] extern crate bitflags;
 
 use std::ffi;
 use std::mem;
