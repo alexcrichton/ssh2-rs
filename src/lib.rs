@@ -11,7 +11,7 @@
 //!
 //! ## Inspecting ssh-agent
 //!
-//! ```
+//! ```no_run
 //! use ssh2::Session;
 //!
 //! // Almost all APIs require a `Session` to be available
@@ -32,17 +32,16 @@
 //! ## Authenticating with ssh-agent
 //!
 //! ```no_run
+//! use std::io::TcpStream;
 //! use ssh2::Session;
 //!
-//! let sess = Session::new().unwrap();
-//! // perform the handshake with a network socket
+//! // Connect to the local SSH server
+//! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
+//! let mut sess = Session::new().unwrap();
+//! sess.handshake(&tcp).unwrap();
 //!
 //! // Try to authenticate with the first identity in the agent.
-//! let mut agent = sess.agent().unwrap();
-//! agent.connect().unwrap();
-//! agent.list_identities().unwrap();
-//! let identity = agent.identities().next().unwrap().unwrap();
-//! agent.userauth("foo", &identity).unwrap();
+//! sess.userauth_agent("username").unwrap();
 //!
 //! // Make sure we succeeded
 //! assert!(sess.authenticated());
@@ -51,24 +50,47 @@
 //! ## Authenticating with a password
 //!
 //! ```no_run
+//! use std::io::TcpStream;
 //! use ssh2::Session;
 //!
-//! let sess = Session::new().unwrap();
-//! // perform the handshake with a network socket
+//! // Connect to the local SSH server
+//! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
+//! let mut sess = Session::new().unwrap();
+//! sess.handshake(&tcp).unwrap();
 //!
 //! sess.userauth_password("username", "password").unwrap();
 //! assert!(sess.authenticated());
 //! ```
 //!
+//! ## Run a command
+//!
+//! ```no_run
+//! use std::io::{self, TcpStream};
+//! use ssh2::Session;
+//!
+//! // Connect to the local SSH server
+//! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
+//! let mut sess = Session::new().unwrap();
+//! sess.handshake(&tcp).unwrap();
+//! sess.userauth_agent("username").unwrap();
+//!
+//! let mut channel = sess.channel_session().unwrap();
+//! channel.exec("ls").unwrap();
+//! println!("{}", channel.read_to_string().unwrap());
+//! println!("{}", channel.exit_status().unwrap());
+//! ```
+//!
 //! ## Upload a file
 //!
 //! ```no_run
-//! # #![allow(unstable)]
-//! use std::io;
+//! use std::io::{self, TcpStream};
 //! use ssh2::Session;
 //!
-//! let sess = Session::new().unwrap();
-//! // perform a handshake and authenticate the session
+//! // Connect to the local SSH server
+//! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
+//! let mut sess = Session::new().unwrap();
+//! sess.handshake(&tcp).unwrap();
+//! sess.userauth_agent("username").unwrap();
 //!
 //! let mut remote_file = sess.scp_send(&Path::new("remote"),
 //!                                     io::USER_FILE, 10, None).unwrap();
@@ -78,20 +100,22 @@
 //! ## Download a file
 //!
 //! ```no_run
-//! # #![allow(unstable)]
+//! use std::io::TcpStream;
 //! use ssh2::Session;
 //!
-//! let sess = Session::new().unwrap();
-//! // perform a handshake and authenticate the session
+//! // Connect to the local SSH server
+//! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
+//! let mut sess = Session::new().unwrap();
+//! sess.handshake(&tcp).unwrap();
+//! sess.userauth_agent("username").unwrap();
 //!
 //! let (mut remote_file, stat) = sess.scp_recv(&Path::new("remote")).unwrap();
-//!
 //! println!("remote file size: {}", stat.size);
 //! let contents = remote_file.read_to_end();
 //! ```
 
 #![feature(unsafe_destructor)]
-#![deny(missing_docs)]
+#![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 #![allow(unstable)]
 
@@ -126,6 +150,7 @@ mod knownhosts;
 mod listener;
 mod session;
 mod sftp;
+mod util;
 
 /// Initialize the libssh2 library.
 ///
@@ -170,19 +195,6 @@ pub enum DisconnectCode {
     NoMoreAuthMethodsAvailable =
         raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as isize,
     IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as isize,
-}
-
-/// Flags to be enabled/disabled on a Session
-#[derive(Copy)]
-pub enum SessionFlag {
-    /// If set, libssh2 will not attempt to block SIGPIPEs but will let them
-    /// trigger from the underlying socket layer.
-    SigPipe = raw::LIBSSH2_FLAG_SIGPIPE as isize,
-
-    /// If set - before the connection negotiation is performed - libssh2 will
-    /// try to negotiate compression enabling for this connection. By default
-    /// libssh2 will not attempt to use compression.
-    Compress = raw::LIBSSH2_FLAG_COMPRESS as isize,
 }
 
 #[allow(missing_docs)]

@@ -4,6 +4,7 @@ use std::io;
 use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
 use {raw, Session, Error};
+use util::SessionBinding;
 
 /// A handle to a remote filesystem over SFTP.
 ///
@@ -95,18 +96,6 @@ pub enum OpenType {
 }
 
 impl<'sess> Sftp<'sess> {
-    /// Wraps a raw pointer in a new Sftp structure tied to the lifetime of the
-    /// given session.
-    ///
-    /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(_sess: &Session,
-                           raw: *mut raw::LIBSSH2_SFTP) -> Sftp {
-        Sftp {
-            raw: raw,
-            marker: marker::ContravariantLifetime,
-        }
-    }
-
     /// Open a handle to a file.
     pub fn open_mode(&self, filename: &Path, flags: OpenFlags,
                      mode: io::FilePermission,
@@ -321,6 +310,20 @@ impl<'sess> Sftp<'sess> {
     }
 }
 
+impl<'sess> SessionBinding<'sess> for Sftp<'sess> {
+    type Raw = raw::LIBSSH2_SFTP;
+
+    unsafe fn from_raw(_sess: &'sess Session,
+                       raw: *mut raw::LIBSSH2_SFTP) -> Sftp<'sess> {
+        Sftp {
+            raw: raw,
+            marker: marker::ContravariantLifetime,
+        }
+    }
+    fn raw(&self) -> *mut raw::LIBSSH2_SFTP { self.raw }
+}
+
+
 #[unsafe_destructor]
 impl<'sess> Drop for Sftp<'sess> {
     fn drop(&mut self) {
@@ -333,8 +336,8 @@ impl<'sftp> File<'sftp> {
     /// given session.
     ///
     /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(sftp: &'sftp Sftp<'sftp>,
-                           raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
+    unsafe fn from_raw(sftp: &'sftp Sftp<'sftp>,
+                       raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
         File {
             raw: raw,
             sftp: sftp,

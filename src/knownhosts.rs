@@ -4,6 +4,7 @@ use std::str;
 use libc::{c_int, size_t};
 
 use {raw, Session, Error, KnownHostFileKind, CheckResult};
+use util::{Binding, SessionBinding};
 
 /// A set of known hosts which can be used to verify the identity of a remote
 /// server.
@@ -63,18 +64,6 @@ pub struct Host<'kh> {
 }
 
 impl<'sess> KnownHosts<'sess> {
-    /// Wraps a raw pointer in a new KnownHosts structure tied to the lifetime
-    /// of the given session.
-    ///
-    /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(sess: &Session,
-                           raw: *mut raw::LIBSSH2_KNOWNHOSTS) -> KnownHosts {
-        KnownHosts {
-            raw: raw,
-            sess: sess,
-        }
-    }
-
     /// Reads a collection of known hosts from a specified file and adds them to
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind)
@@ -217,6 +206,20 @@ impl<'sess> KnownHosts<'sess> {
     }
 }
 
+impl<'sess> SessionBinding<'sess> for KnownHosts<'sess> {
+    type Raw = raw::LIBSSH2_KNOWNHOSTS;
+
+    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_KNOWNHOSTS)
+                       -> KnownHosts<'sess> {
+        KnownHosts {
+            raw: raw,
+            sess: sess,
+        }
+    }
+    fn raw(&self) -> *mut raw::LIBSSH2_KNOWNHOSTS { self.raw }
+}
+
+
 #[unsafe_destructor]
 impl<'sess> Drop for KnownHosts<'sess> {
     fn drop(&mut self) {
@@ -232,7 +235,7 @@ impl<'kh> Iterator for Hosts<'kh> {
             match raw::libssh2_knownhost_get(self.hosts.raw,
                                              &mut next,
                                              self.prev) {
-                0 => { self.prev = next; Some(Ok(Host::from_raw(next))) }
+                0 => { self.prev = next; Some(Ok(Binding::from_raw(next))) }
                 1 => None,
                 rc => Some(Err(self.hosts.sess.rc(rc).err().unwrap())),
             }
@@ -241,18 +244,6 @@ impl<'kh> Iterator for Hosts<'kh> {
 }
 
 impl<'kh> Host<'kh> {
-    /// Creates a new host from its raw counterpart.
-    ///
-    /// Unsafe as there are no restrictions on the lifetime of the host returned
-    /// and the validity of `raw` is not known.
-    pub unsafe fn from_raw(raw: *mut raw::libssh2_knownhost)
-                           -> Host<'kh> {
-        Host {
-            raw: raw,
-            marker: marker::ContravariantLifetime,
-        }
-    }
-
     /// This is `None` if no plain text host name exists.
     pub fn name(&self) -> Option<&str> {
         unsafe {
@@ -268,7 +259,16 @@ impl<'kh> Host<'kh> {
         };
         str::from_utf8(bytes).unwrap()
     }
+}
 
-    /// Gain access to the underlying raw pointer
-    pub fn raw(&self) -> *mut raw::libssh2_knownhost { self.raw }
+impl<'kh> Binding for Host<'kh> {
+    type Raw = *mut raw::libssh2_knownhost;
+
+    unsafe fn from_raw(raw: *mut raw::libssh2_knownhost) -> Host<'kh> {
+        Host {
+            raw: raw,
+            marker: marker::ContravariantLifetime,
+        }
+    }
+    fn raw(&self) -> *mut raw::libssh2_knownhost { self.raw }
 }

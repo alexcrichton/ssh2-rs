@@ -1,8 +1,10 @@
+use std::error::Error as StdError;
 use std::fmt;
 use std::str;
 use libc;
 
 use {raw, Session};
+use util::Binding;
 
 /// Representation of an error that can occur within libssh2
 #[derive(Show)]
@@ -23,7 +25,7 @@ impl Error {
             let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg,
                                                      0 as *mut _, 0);
             if rc == 0 { return None }
-            let s = ::opt_bytes(&STATIC, msg as *const _).unwrap();;
+            let s = ::opt_bytes(&STATIC, msg as *const _).unwrap();
             Some(Error::new(rc, str::from_utf8(s).unwrap()))
         }
     }
@@ -105,4 +107,8 @@ impl fmt::String for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}] {}", self.code, self.msg)
     }
+}
+
+impl StdError for Error {
+    fn description(&self) -> &str { self.message() }
 }

@@ -3,12 +3,16 @@ use std::io;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
+use util::{Binding, SessionBinding};
 
 /// A channel represents a portion of an SSH connection on which data can be
 /// read and written.
 ///
 /// Channels denote all of SCP uploads and downloads, shell sessions, remote
-/// process executions, and other general-purpose sessions.
+/// process executions, and other general-purpose sessions. Each channel
+/// implements the `Reader` and `Writer` traits to send and receive data.
+/// Whether or not I/O operations are blocking is mandated by the `blocking`
+/// flag on a channel's corresponding `Session`.
 pub struct Channel<'sess> {
     raw: *mut raw::LIBSSH2_CHANNEL,
     sess: &'sess Session,
@@ -49,66 +53,17 @@ pub struct WriteWindow {
 }
 
 impl<'sess> Channel<'sess> {
-    /// Wraps a raw pointer in a new Channel structure tied to the lifetime of the
-    /// given session.
+    /// Set an environment variable in the remote channel's process space.
     ///
-    /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(sess: &Session,
-                           raw: *mut raw::LIBSSH2_CHANNEL) -> Channel {
-        Channel {
-            raw: raw,
-            sess: sess,
-            read_limit: None,
-        }
-    }
-
-    /// Close an active data channel.
-    ///
-    /// In practice this means sending an SSH_MSG_CLOSE packet to the remote
-    /// host which serves as instruction that no further data will be sent to
-    /// it. The remote host may still send data back until it sends its own
-    /// close message in response.
-    ///
-    /// To wait for the remote end to close its connection as well, follow this
-    /// command with `wait_closed`
-    pub fn close(&mut self) -> Result<(), Error> {
+    /// Note that this does not make sense for all channel types and may be
+    /// ignored by the server despite returning success.
+    pub fn setenv(&mut self, var: &str, val: &str) -> Result<(), Error> {
         unsafe {
-            self.sess.rc(raw::libssh2_channel_close(self.raw))
-        }
-    }
-
-    /// Enter a temporary blocking state until the remote host closes the named
-    /// channel.
-    ///
-    /// Typically sent after `close` in order to examine the exit status.
-    pub fn wait_close(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_channel_wait_closed(self.raw)) }
-    }
-
-    /// Wait for the remote end to acknowledge an EOF request.
-    pub fn wait_eof(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
-    }
-
-    /// Check if the remote host has sent an EOF status for the selected stream.
-    pub fn eof(&self) -> bool {
-        self.read_limit == Some(0) ||
-            unsafe { raw::libssh2_channel_eof(self.raw) != 0 }
-    }
-
-    /// Initiate a request on a session type channel.
-    ///
-    /// The SSH2 protocol currently defines shell, exec, and subsystem as
-    /// standard process services.
-    pub fn process_startup(&mut self, request: &str, message: Option<&str>)
-                           -> Result<(), Error> {
-        let message_len = message.map(|s| s.len()).unwrap_or(0);
-        let message = message.map(|s| s.as_ptr()).unwrap_or(0 as *const _);
-        unsafe {
-            let rc = raw::libssh2_channel_process_startup(self.raw,
-                        request.as_ptr() as *const _, request.len() as c_uint,
-                        message as *const _, message_len as c_uint);
-            self.sess.rc(rc)
+            self.sess.rc(raw::libssh2_channel_setenv_ex(self.raw,
+                                                        var.as_ptr() as *const _,
+                                                        var.len() as c_uint,
+                                                        val.as_ptr() as *const _,
+                                                        val.len() as c_uint))
         }
     }
 
@@ -158,10 +113,12 @@ impl<'sess> Channel<'sess> {
 
     /// Execute a command
     ///
+    /// An execution is one of the standard process services defined by the SSH2
+    /// protocol.
+    ///
     /// # Example
     ///
     /// ```no_run
-    /// # #![allow(unstable)]
     /// # use ssh2::Session;
     /// # let session: Session = panic!();
     /// let mut channel = session.channel_session().unwrap();
@@ -173,13 +130,40 @@ impl<'sess> Channel<'sess> {
     }
 
     /// Start a shell
+    ///
+    /// A shell is one of the standard process services defined by the SSH2
+    /// protocol.
     pub fn shell(&mut self) -> Result<(), Error> {
         self.process_startup("shell", None)
     }
 
-    /// Request a subsystem be started
+    /// Request a subsystem be started.
+    ///
+    /// A subsystem is one of the standard process services defined by the SSH2
+    /// protocol.
     pub fn subsystem(&mut self, system: &str) -> Result<(), Error> {
         self.process_startup("subsystem", Some(system))
+    }
+
+    /// Initiate a request on a session type channel.
+    ///
+    /// The SSH2 protocol currently defines shell, exec, and subsystem as
+    /// standard process services.
+    pub fn process_startup(&mut self, request: &str, message: Option<&str>)
+                           -> Result<(), Error> {
+        let message_len = message.map(|s| s.len()).unwrap_or(0);
+        let message = message.map(|s| s.as_ptr()).unwrap_or(0 as *const _);
+        unsafe {
+            let rc = raw::libssh2_channel_process_startup(self.raw,
+                        request.as_ptr() as *const _, request.len() as c_uint,
+                        message as *const _, message_len as c_uint);
+            self.sess.rc(rc)
+        }
+    }
+
+    /// Flush the stderr buffers.
+    pub fn flush_stderr(&mut self) -> Result<(), Error> {
+        self.flush_stream(::EXTENDED_DATA_STDERR)
     }
 
     /// Flush the read buffer for a given channel instance.
@@ -196,9 +180,9 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Flush the stderr buffers.
-    pub fn flush_stderr(&mut self) -> Result<(), Error> {
-        self.flush_stream(::EXTENDED_DATA_STDERR)
+    /// Write data to the channel stderr stream.
+    pub fn write_stderr(&mut self, data: &[u8]) -> Result<(), Error> {
+        self.write_stream(::EXTENDED_DATA_STDERR, data)
     }
 
     /// Write data to a channel stream.
@@ -218,53 +202,9 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Write data to the channel stderr stream.
-    pub fn write_stderr(&mut self, data: &[u8]) -> Result<(), Error> {
-        self.write_stream(::EXTENDED_DATA_STDERR, data)
-    }
-
-    /// Get the remote exit signal.
-    pub fn exit_signal(&self) -> Result<ExitSignal, Error> {
-        unsafe {
-            let mut sig = 0 as *mut _;
-            let mut siglen = 0;
-            let mut msg = 0 as *mut _;
-            let mut msglen = 0;
-            let mut lang = 0 as *mut _;
-            let mut langlen = 0;
-            let rc = raw::libssh2_channel_get_exit_signal(self.raw,
-                                                          &mut sig, &mut siglen,
-                                                          &mut msg, &mut msglen,
-                                                          &mut lang,
-                                                          &mut langlen);
-            try!(self.sess.rc(rc));
-            return Ok(ExitSignal {
-                exit_signal: convert(self, sig, siglen),
-                error_message: convert(self, msg, msglen),
-                lang_tag: convert(self, lang, langlen),
-            })
-        }
-
-        unsafe fn convert(chan: &Channel, ptr: *mut c_char,
-                          len: size_t) -> Option<String> {
-            if ptr.is_null() { return None }
-            let ret = Vec::from_raw_buf(ptr as *const u8, len as usize);
-            raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
-            String::from_utf8(ret).ok()
-        }
-    }
-
-    /// Returns the exit code raised by the process running on the remote host
-    /// at the other end of the named channel.
-    ///
-    /// Note that the exit status may not be available if the remote end has not
-    /// yet set its status to closed.
-    pub fn exit_status(&self) -> Result<i32, Error> {
-        let ret = unsafe { raw::libssh2_channel_get_exit_status(self.raw) };
-        match Error::last_error(self.sess) {
-            Some(err) => Err(err),
-            None => Ok(ret as i32)
-        }
+    /// Read from the stderr stream .
+    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<usize, Error> {
+        self.read_stream(::EXTENDED_DATA_STDERR, data)
     }
 
     /// Attempt to read data from an active channel stream.
@@ -299,32 +239,47 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Read from the stderr stream .
-    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<usize, Error> {
-        self.read_stream(::EXTENDED_DATA_STDERR, data)
-    }
-
-    /// Set an environment variable in the remote channel's process space.
+    /// Returns the exit code raised by the process running on the remote host
+    /// at the other end of the named channel.
     ///
-    /// Note that this does not make sense for all channel types and may be
-    /// ignored by the server despite returning success.
-    pub fn setenv(&mut self, var: &str, val: &str) -> Result<(), Error> {
-        unsafe {
-            self.sess.rc(raw::libssh2_channel_setenv_ex(self.raw,
-                                                        var.as_ptr() as *const _,
-                                                        var.len() as c_uint,
-                                                        val.as_ptr() as *const _,
-                                                        val.len() as c_uint))
+    /// Note that the exit status may not be available if the remote end has not
+    /// yet set its status to closed.
+    pub fn exit_status(&self) -> Result<i32, Error> {
+        let ret = unsafe { raw::libssh2_channel_get_exit_status(self.raw) };
+        match Error::last_error(self.sess) {
+            Some(err) => Err(err),
+            None => Ok(ret as i32)
         }
     }
 
-    /// Tell the remote host that no further data will be sent on the specified
-    /// channel.
-    ///
-    /// Processes typically interpret this as a closed stdin descriptor.
-    pub fn send_eof(&mut self) -> Result<(), Error> {
+    /// Get the remote exit signal.
+    pub fn exit_signal(&self) -> Result<ExitSignal, Error> {
         unsafe {
-            self.sess.rc(raw::libssh2_channel_send_eof(self.raw))
+            let mut sig = 0 as *mut _;
+            let mut siglen = 0;
+            let mut msg = 0 as *mut _;
+            let mut msglen = 0;
+            let mut lang = 0 as *mut _;
+            let mut langlen = 0;
+            let rc = raw::libssh2_channel_get_exit_signal(self.raw,
+                                                          &mut sig, &mut siglen,
+                                                          &mut msg, &mut msglen,
+                                                          &mut lang,
+                                                          &mut langlen);
+            try!(self.sess.rc(rc));
+            return Ok(ExitSignal {
+                exit_signal: convert(self, sig, siglen),
+                error_message: convert(self, msg, msglen),
+                lang_tag: convert(self, lang, langlen),
+            })
+        }
+
+        unsafe fn convert(chan: &Channel, ptr: *mut c_char,
+                          len: size_t) -> Option<String> {
+            if ptr.is_null() { return None }
+            let ret = Vec::from_raw_buf(ptr as *const u8, len as usize);
+            raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
+            String::from_utf8(ret).ok()
         }
     }
 
@@ -382,6 +337,64 @@ impl<'sess> Channel<'sess> {
     pub fn limit_read(&mut self, limit: u64) {
         self.read_limit = Some(limit);
     }
+
+    /// Check if the remote host has sent an EOF status for the selected stream.
+    pub fn eof(&self) -> bool {
+        self.read_limit == Some(0) ||
+            unsafe { raw::libssh2_channel_eof(self.raw) != 0 }
+    }
+
+    /// Tell the remote host that no further data will be sent on the specified
+    /// channel.
+    ///
+    /// Processes typically interpret this as a closed stdin descriptor.
+    pub fn send_eof(&mut self) -> Result<(), Error> {
+        unsafe {
+            self.sess.rc(raw::libssh2_channel_send_eof(self.raw))
+        }
+    }
+
+    /// Wait for the remote end to acknowledge an EOF request.
+    pub fn wait_eof(&mut self) -> Result<(), Error> {
+        unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
+    }
+
+    /// Close an active data channel.
+    ///
+    /// In practice this means sending an SSH_MSG_CLOSE packet to the remote
+    /// host which serves as instruction that no further data will be sent to
+    /// it. The remote host may still send data back until it sends its own
+    /// close message in response.
+    ///
+    /// To wait for the remote end to close its connection as well, follow this
+    /// command with `wait_closed`
+    pub fn close(&mut self) -> Result<(), Error> {
+        unsafe {
+            self.sess.rc(raw::libssh2_channel_close(self.raw))
+        }
+    }
+
+    /// Enter a temporary blocking state until the remote host closes the named
+    /// channel.
+    ///
+    /// Typically sent after `close` in order to examine the exit status.
+    pub fn wait_close(&mut self) -> Result<(), Error> {
+        unsafe { self.sess.rc(raw::libssh2_channel_wait_closed(self.raw)) }
+    }
+}
+
+impl<'sess> SessionBinding<'sess> for Channel<'sess> {
+    type Raw = raw::LIBSSH2_CHANNEL;
+
+    unsafe fn from_raw(sess: &'sess Session,
+                       raw: *mut raw::LIBSSH2_CHANNEL) -> Channel<'sess> {
+        Channel {
+            raw: raw,
+            sess: sess,
+            read_limit: None,
+        }
+    }
+    fn raw(&self) -> *mut raw::LIBSSH2_CHANNEL { self.raw }
 }
 
 impl<'sess> Writer for Channel<'sess> {

@@ -4,6 +4,7 @@ use std::slice;
 use std::str;
 
 use {raw, Session, Error};
+use util::{Binding, SessionBinding};
 
 /// A structure representing a connection to an SSH agent.
 ///
@@ -26,18 +27,6 @@ pub struct PublicKey<'agent> {
 }
 
 impl<'sess> Agent<'sess> {
-    /// Wraps a raw pointer in a new Agent structure tied to the lifetime of the
-    /// given session.
-    ///
-    /// This consumes ownership of `raw`.
-    pub unsafe fn from_raw(sess: &Session,
-                           raw: *mut raw::LIBSSH2_AGENT) -> Agent {
-        Agent {
-            raw: raw,
-            sess: sess,
-        }
-    }
-
     /// Connect to an ssh-agent running on the system.
     pub fn connect(&mut self) -> Result<(), Error> {
         unsafe { self.sess.rc(raw::libssh2_agent_connect(self.raw)) }
@@ -74,6 +63,16 @@ impl<'sess> Agent<'sess> {
     }
 }
 
+impl<'sess> SessionBinding<'sess> for Agent<'sess> {
+    type Raw = raw::LIBSSH2_AGENT;
+
+    unsafe fn from_raw(sess: &'sess Session,
+                       raw: *mut raw::LIBSSH2_AGENT) -> Agent<'sess> {
+        Agent { raw: raw, sess: sess }
+    }
+    fn raw(&self) -> *mut raw::LIBSSH2_AGENT { self.raw }
+}
+
 #[unsafe_destructor]
 impl<'a> Drop for Agent<'a> {
     fn drop(&mut self) {
@@ -89,7 +88,7 @@ impl<'agent> Iterator for Identities<'agent> {
             match raw::libssh2_agent_get_identity(self.agent.raw,
                                                   &mut next,
                                                   self.prev) {
-                0 => { self.prev = next; Some(Ok(PublicKey::from_raw(next))) }
+                0 => { self.prev = next; Some(Ok(Binding::from_raw(next))) }
                 1 => None,
                 rc => Some(Err(self.agent.sess.rc(rc).err().unwrap())),
             }
@@ -98,18 +97,6 @@ impl<'agent> Iterator for Identities<'agent> {
 }
 
 impl<'agent> PublicKey<'agent> {
-    /// Creates a new public key from its raw counterpart.
-    ///
-    /// Unsafe because the validity of `raw` cannot be guaranteed and there are
-    /// no restrictions on the lifetime returned.
-    pub unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey)
-                           -> PublicKey<'agent> {
-        PublicKey {
-            raw: raw,
-            marker: marker::ContravariantLifetime,
-        }
-    }
-
     /// Return the data of this public key.
     pub fn blob(&self) -> &[u8] {
         unsafe {
@@ -125,7 +112,15 @@ impl<'agent> PublicKey<'agent> {
                 .unwrap()
         }
     }
+}
 
-    /// Gain access to the underlying raw pointer
-    pub fn raw(&self) -> *mut raw::libssh2_agent_publickey { self.raw }
+impl<'agent> Binding for PublicKey<'agent> {
+    type Raw = *mut raw::libssh2_agent_publickey;
+
+    unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey)
+                       -> PublicKey<'agent> {
+        PublicKey { raw: raw, marker: marker::ContravariantLifetime }
+    }
+
+    fn raw(&self) -> *mut raw::libssh2_agent_publickey { self.raw }
 }

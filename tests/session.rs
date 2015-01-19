@@ -10,7 +10,7 @@ fn smoke() {
     sess.set_banner("foo").unwrap();
     assert!(sess.is_blocking());
     assert_eq!(sess.timeout(), 0);
-    sess.flag(ssh2::SessionFlag::Compress, true).unwrap();
+    sess.set_compress(true);
     assert!(sess.host_key().is_none());
     sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1").unwrap();
     assert!(sess.methods(MethodType::Kex).is_none());
@@ -24,9 +24,9 @@ fn smoke() {
 #[test]
 fn smoke_handshake() {
     let user = os::getenv("USER").unwrap();
-    let mut sess = Session::new().unwrap();
     let socket = ::socket();
-    sess.handshake(socket.fd()).unwrap();
+    let mut sess = Session::new().unwrap();
+    sess.handshake(&socket).unwrap();
     sess.host_key().unwrap();
     let methods = sess.auth_methods(user.as_slice()).unwrap();
     assert!(methods.contains("publickey"), "{}", methods);
@@ -46,7 +46,7 @@ fn smoke_handshake() {
 #[test]
 fn keepalive() {
     let (_tcp, sess) = ::authed_session();
-    sess.keepalive_set(false, 10).unwrap();
+    sess.set_keepalive(false, 10).unwrap();
     sess.keepalive_send().unwrap();
 }
 
