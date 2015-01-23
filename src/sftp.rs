@@ -452,7 +452,7 @@ impl<'sftp> Writer for File<'sftp> {
                     detail: Some(self.sftp.last_error().to_string()),
                 })
             }
-            buf = buf.slice_from(rc as usize);
+            buf = &buf[rc as usize..];
         }
         Ok(())
     }

@@ -7,7 +7,7 @@ use {raw, Session};
 use util::Binding;
 
 /// Representation of an error that can occur within libssh2
-#[derive(Show)]
+#[derive(Debug)]
 #[allow(missing_copy_implementations)]
 pub struct Error {
     code: libc::c_int,
@@ -103,7 +103,7 @@ impl Error {
     pub fn code(&self) -> libc::c_int { self.code }
 }
 
-impl fmt::String for Error {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}] {}", self.code, self.msg)
     }

@@ -220,7 +220,7 @@ impl<'sess> Channel<'sess> {
         let data = match self.read_limit {
             Some(amt) => {
                 let len = data.len();
-                data.slice_to_mut(cmp::min(amt as usize, len))
+                &mut data[..cmp::min(amt as usize, len)]
             }
             None => data,
         };
