@@ -1,6 +1,6 @@
 use std::marker;
 use std::mem;
-use std::io;
+use std::old_io;
 use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
 use {raw, Session, Error};
@@ -16,7 +16,7 @@ pub struct Sftp<'sess> {
 
 /// A file handle to an SFTP connection.
 ///
-/// Files behave similarly to `std::io::File` in that they are readable and
+/// Files behave similarly to `std::old_io::File` in that they are readable and
 /// writable and support operations like stat and seek.
 ///
 /// Files are created through `open`, `create`, and `open_mode` on an instance
@@ -98,7 +98,7 @@ pub enum OpenType {
 impl<'sess> Sftp<'sess> {
     /// Open a handle to a file.
     pub fn open_mode(&self, filename: &Path, flags: OpenFlags,
-                     mode: io::FilePermission,
+                     mode: old_io::FilePermission,
                      open_type: OpenType) -> Result<File, Error> {
         let filename = filename.as_vec();
         unsafe {
@@ -118,17 +118,17 @@ impl<'sess> Sftp<'sess> {
 
     /// Helper to open a file in the `Read` mode.
     pub fn open(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, READ, io::USER_FILE, OpenType::File)
+        self.open_mode(filename, READ, old_io::USER_FILE, OpenType::File)
     }
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, WRITE | TRUNCATE, io::USER_FILE, OpenType::File)
+        self.open_mode(filename, WRITE | TRUNCATE, old_io::USER_FILE, OpenType::File)
     }
 
     /// Helper to open a directory for reading its contents.
     pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
-        self.open_mode(dirname, READ, io::USER_FILE, OpenType::Dir)
+        self.open_mode(dirname, READ, old_io::USER_FILE, OpenType::Dir)
     }
 
     /// Convenience function to read the files in a directory.
@@ -155,7 +155,7 @@ impl<'sess> Sftp<'sess> {
     }
 
     /// Create a directory on the remote file system.
-    pub fn mkdir(&self, filename: &Path, mode: io::FilePermission)
+    pub fn mkdir(&self, filename: &Path, mode: old_io::FilePermission)
                  -> Result<(), Error> {
         let filename = filename.as_vec();
         self.rc(unsafe {
@@ -419,15 +419,15 @@ impl<'sftp> File<'sftp> {
 }
 
 impl<'sftp> Reader for File<'sftp> {
-    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
+    fn read(&mut self, buf: &mut [u8]) -> old_io::IoResult<usize> {
         unsafe {
             let rc = raw::libssh2_sftp_read(self.raw,
                                             buf.as_mut_ptr() as *mut _,
                                             buf.len() as size_t);
             match rc {
-                0 => Err(io::standard_error(io::EndOfFile)),
-                n if n < 0 => Err(io::IoError {
-                    kind: io::OtherIoError,
+                0 => Err(old_io::standard_error(old_io::EndOfFile)),
+                n if n < 0 => Err(old_io::IoError {
+                    kind: old_io::OtherIoError,
                     desc: "read error",
                     detail: Some(self.sftp.last_error().to_string()),
                 }),
@@ -438,7 +438,7 @@ impl<'sftp> Reader for File<'sftp> {
 }
 
 impl<'sftp> Writer for File<'sftp> {
-    fn write(&mut self, mut buf: &[u8]) -> io::IoResult<()> {
+    fn write_all(&mut self, mut buf: &[u8]) -> old_io::IoResult<()> {
         while buf.len() > 0 {
             let rc = unsafe {
                 raw::libssh2_sftp_write(self.raw,
@@ -446,8 +446,8 @@ impl<'sftp> Writer for File<'sftp> {
                                         buf.len() as size_t)
             };
             if rc < 0 {
-                return Err(io::IoError {
-                    kind: io::OtherIoError,
+                return Err(old_io::IoError {
+                    kind: old_io::OtherIoError,
                     desc: "write error",
                     detail: Some(self.sftp.last_error().to_string()),
                 })
@@ -459,7 +459,7 @@ impl<'sftp> Writer for File<'sftp> {
 }
 
 impl<'sftp> Seek for File<'sftp> {
-    fn tell(&self) -> io::IoResult<u64> {
+    fn tell(&self) -> old_io::IoResult<u64> {
         Ok(unsafe { raw::libssh2_sftp_tell64(self.raw) })
     }
 
@@ -473,21 +473,21 @@ impl<'sftp> Seek for File<'sftp> {
     /// You MUST NOT seek during writing or reading a file with SFTP, as the
     /// internals use outstanding packets and changing the "file position"
     /// during transit will results in badness.
-    fn seek(&mut self, offset: i64, whence: io::SeekStyle) -> io::IoResult<()> {
+    fn seek(&mut self, offset: i64, whence: old_io::SeekStyle) -> old_io::IoResult<()> {
         let next = match whence {
-            io::SeekSet => offset as u64,
-            io::SeekCur => (self.tell().unwrap() as i64 + offset) as u64,
-            io::SeekEnd => match self.stat() {
+            old_io::SeekSet => offset as u64,
+            old_io::SeekCur => (self.tell().unwrap() as i64 + offset) as u64,
+            old_io::SeekEnd => match self.stat() {
                 Ok(s) => match s.size {
                     Some(size) => (size as i64 + offset) as u64,
-                    None => return Err(io::IoError {
-                        kind: io::OtherIoError,
+                    None => return Err(old_io::IoError {
+                        kind: old_io::OtherIoError,
                         desc: "no file size available",
                         detail: None,
                     })
                 },
-                Err(e) => return Err(io::IoError {
-                    kind: io::OtherIoError,
+                Err(e) => return Err(old_io::IoError {
+                    kind: old_io::OtherIoError,
                     desc: "failed to stat remote file",
                     detail: Some(e.to_string()),
                 }),

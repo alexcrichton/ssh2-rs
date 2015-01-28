@@ -32,7 +32,7 @@
 //! ## Authenticating with ssh-agent
 //!
 //! ```no_run
-//! use std::io::TcpStream;
+//! use std::old_io::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -50,7 +50,7 @@
 //! ## Authenticating with a password
 //!
 //! ```no_run
-//! use std::io::TcpStream;
+//! use std::old_io::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -65,7 +65,7 @@
 //! ## Run a command
 //!
 //! ```no_run
-//! use std::io::{self, TcpStream};
+//! use std::old_io::{self, TcpStream};
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -83,7 +83,7 @@
 //! ## Upload a file
 //!
 //! ```no_run
-//! use std::io::{self, TcpStream};
+//! use std::old_io::{self, TcpStream};
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -93,14 +93,14 @@
 //! sess.userauth_agent("username").unwrap();
 //!
 //! let mut remote_file = sess.scp_send(&Path::new("remote"),
-//!                                     io::USER_FILE, 10, None).unwrap();
+//!                                     old_io::USER_FILE, 10, None).unwrap();
 //! remote_file.write(b"1234567890").unwrap();
 //! ```
 //!
 //! ## Download a file
 //!
 //! ```no_run
-//! use std::io::TcpStream;
+//! use std::old_io::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server

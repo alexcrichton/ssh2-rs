@@ -1,5 +1,5 @@
 use std::cmp;
-use std::io;
+use std::old_io;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -398,20 +398,20 @@ impl<'sess> SessionBinding<'sess> for Channel<'sess> {
 }
 
 impl<'sess> Writer for Channel<'sess> {
-    fn write(&mut self, buf: &[u8]) -> io::IoResult<()> {
+    fn write_all(&mut self, buf: &[u8]) -> old_io::IoResult<()> {
         self.write_stream(0, buf).map_err(|e| {
-            io::IoError {
-                kind: io::OtherIoError,
+            old_io::IoError {
+                kind: old_io::OtherIoError,
                 desc: "ssh write error",
                 detail: Some(e.to_string()),
             }
         })
     }
 
-    fn flush(&mut self) -> io::IoResult<()> {
+    fn flush(&mut self) -> old_io::IoResult<()> {
         self.flush_stream(0).map_err(|e| {
-            io::IoError {
-                kind: io::OtherIoError,
+            old_io::IoError {
+                kind: old_io::OtherIoError,
                 desc: "ssh write error",
                 detail: Some(e.to_string()),
             }
@@ -420,13 +420,13 @@ impl<'sess> Writer for Channel<'sess> {
 }
 
 impl<'sess> Reader for Channel<'sess> {
-    fn read(&mut self, buf: &mut [u8]) -> io::IoResult<usize> {
+    fn read(&mut self, buf: &mut [u8]) -> old_io::IoResult<usize> {
         self.read_stream(0, buf).map_err(|e| {
             if self.eof() {
-                io::standard_error(io::EndOfFile)
+                old_io::standard_error(old_io::EndOfFile)
             } else {
-                io::IoError {
-                    kind: io::OtherIoError,
+                old_io::IoError {
+                    kind: old_io::OtherIoError,
                     desc: "ssh read error",
                     detail: Some(e.to_string()),
                 }

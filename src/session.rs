@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::io::{self, TcpStream};
+use std::old_io::{self, TcpStream};
 use std::mem;
 use std::slice;
 use std::str;
@@ -406,7 +406,7 @@ impl Session {
     /// sent over the returned channel. Some stat information is also returned
     /// about the remote file to prepare for receiving the file.
     pub fn scp_recv(&self, path: &Path)
-                    -> Result<(Channel, io::FileStat), Error> {
+                    -> Result<(Channel, old_io::FileStat), Error> {
         let path = CString::from_slice(path.as_vec());
         unsafe {
             let mut sb: libc::stat = mem::zeroed();
@@ -431,7 +431,7 @@ impl Session {
     ///
     /// The size of the file, `size`, must be known ahead of time before
     /// transmission.
-    pub fn scp_send(&self, remote_path: &Path, mode: io::FilePermission,
+    pub fn scp_send(&self, remote_path: &Path, mode: old_io::FilePermission,
                     size: u64, times: Option<(u64, u64)>)
                     -> Result<Channel, Error> {
         let path = CString::from_slice(remote_path.as_vec());
@@ -611,7 +611,7 @@ impl Binding for Session {
 }
 
 // Sure do wish this was exported in libnative!
-fn mkstat(stat: &libc::stat) -> io::FileStat {
+fn mkstat(stat: &libc::stat) -> old_io::FileStat {
     #[cfg(windows)] type Mode = libc::c_int;
     #[cfg(unix)]    type Mode = libc::mode_t;
 
@@ -628,21 +628,21 @@ fn mkstat(stat: &libc::stat) -> io::FileStat {
     #[cfg(any(target_os = "linux", target_os = "android"))]
     fn gen(_stat: &libc::stat) -> u64 { 0 }
 
-    io::FileStat {
+    old_io::FileStat {
         size: stat.st_size as u64,
         kind: match (stat.st_mode as Mode) & libc::S_IFMT {
-            libc::S_IFREG => io::FileType::RegularFile,
-            libc::S_IFDIR => io::FileType::Directory,
-            libc::S_IFIFO => io::FileType::NamedPipe,
-            libc::S_IFBLK => io::FileType::BlockSpecial,
-            libc::S_IFLNK => io::FileType::Symlink,
-            _ => io::FileType::Unknown,
+            libc::S_IFREG => old_io::FileType::RegularFile,
+            libc::S_IFDIR => old_io::FileType::Directory,
+            libc::S_IFIFO => old_io::FileType::NamedPipe,
+            libc::S_IFBLK => old_io::FileType::BlockSpecial,
+            libc::S_IFLNK => old_io::FileType::Symlink,
+            _ => old_io::FileType::Unknown,
         },
-        perm: io::FilePermission::from_bits_truncate(stat.st_mode as u32),
+        perm: old_io::FilePermission::from_bits_truncate(stat.st_mode as u32),
         created: mktime(stat.st_ctime as u64, stat.st_ctime_nsec as u64),
         modified: mktime(stat.st_mtime as u64, stat.st_mtime_nsec as u64),
         accessed: mktime(stat.st_atime as u64, stat.st_atime_nsec as u64),
-        unstable: io::UnstableFileStat {
+        unstable: old_io::UnstableFileStat {
             device: stat.st_dev as u64,
             inode: stat.st_ino as u64,
             rdev: stat.st_rdev as u64,

@@ -4,7 +4,7 @@ extern crate libc;
 use std::mem;
 use std::num::Int;
 use std::os;
-use std::io::TcpStream;
+use std::old_io::TcpStream;
 
 mod agent;
 mod session;

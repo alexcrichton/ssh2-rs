@@ -1,4 +1,4 @@
-use std::io::{TcpListener, Listener, Acceptor, TcpStream};
+use std::old_io::{TcpListener, Listener, Acceptor, TcpStream};
 use std::thread::Thread;
 
 #[test]

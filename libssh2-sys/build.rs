@@ -3,9 +3,9 @@
 extern crate "pkg-config" as pkg_config;
 
 use std::os;
-use std::io::{self, fs, Command};
-use std::io::process::InheritFd;
-use std::io::fs::PathExtensions;
+use std::old_io::{self, fs, Command};
+use std::old_io::process::InheritFd;
+use std::old_io::fs::PathExtensions;
 
 fn main() {
     match pkg_config::find_library("libssh2") {
@@ -50,7 +50,7 @@ fn main() {
     let _ = fs::rmdir_recursive(&dst.join("include"));
     let _ = fs::rmdir_recursive(&dst.join("lib"));
     let _ = fs::rmdir_recursive(&dst.join("build"));
-    fs::mkdir(&dst.join("build"), io::USER_DIR).unwrap();
+    fs::mkdir(&dst.join("build"), old_io::USER_DIR).unwrap();
 
     let root = src.join("libssh2-1.4.4-20140901");
     // Can't run ./configure directly on msys2 b/c we're handing in
@@ -75,7 +75,7 @@ fn main() {
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), io::USER_DIR).unwrap();
+    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), old_io::USER_DIR).unwrap();
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/src/.libs/libssh2.a");
@@ -92,11 +92,11 @@ fn main() {
         let root = root.join("include");
         let dst = dst.join("include");
         for file in fs::walk_dir(&root).unwrap() {
-            if fs::stat(&file).unwrap().kind != io::FileType::RegularFile { continue }
+            if fs::stat(&file).unwrap().kind != old_io::FileType::RegularFile { continue }
 
             let part = file.path_relative_from(&root).unwrap();
             let dst = dst.join(part);
-            fs::mkdir_recursive(&dst.dir_path(), io::USER_DIR).unwrap();
+            fs::mkdir_recursive(&dst.dir_path(), old_io::USER_DIR).unwrap();
             fs::copy(&file, &dst).unwrap();
         }
     }
