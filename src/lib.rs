@@ -114,10 +114,9 @@
 //! let contents = remote_file.read_to_end();
 //! ```
 
-#![feature(unsafe_destructor)]
+#![feature(unsafe_destructor, std_misc, collections, io, core, path, hash)]
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
-#![allow(unstable)]
 
 extern crate "libssh2-sys" as raw;
 extern crate libc;
