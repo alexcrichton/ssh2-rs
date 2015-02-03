@@ -114,7 +114,7 @@
 //! let contents = remote_file.read_to_end();
 //! ```
 
-#![feature(unsafe_destructor, std_misc, collections, io, core, path, hash)]
+#![feature(unsafe_destructor, std_misc, collections, io, core, path, hash, libc)]
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 

@@ -1,5 +1,6 @@
 #![allow(bad_style)]
 #![allow(missing_copy_implementations)]
+#![feature(libc)]
 
 extern crate libc;
 

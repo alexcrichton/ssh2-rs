@@ -29,7 +29,7 @@ fn writing_data() {
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
     channel.exec("read foo && echo $foo").unwrap();
-    channel.write(b"foo\n").unwrap();
+    channel.write_all(b"foo\n").unwrap();
     channel.close().unwrap();
     let output = channel.read_to_string().unwrap();
     assert_eq!(output.as_slice(), "foo\n");
@@ -72,12 +72,12 @@ fn direct() {
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
-        s.write(&[4, 5, 6]).unwrap();
+        s.write_all(&[4, 5, 6]).unwrap();
     });
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_direct_tcpip("127.0.0.1",
                                                 addr.port, None).unwrap();
-    channel.write(&[1, 2, 3]).unwrap();
+    channel.write_all(&[1, 2, 3]).unwrap();
     let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
@@ -94,11 +94,11 @@ fn forward() {
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
-        s.write(&[4, 5, 6]).unwrap();
+        s.write_all(&[4, 5, 6]).unwrap();
     });
 
     let mut channel = listen.accept().unwrap();
-    channel.write(&[1, 2, 3]).unwrap();
+    channel.write_all(&[1, 2, 3]).unwrap();
     let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());

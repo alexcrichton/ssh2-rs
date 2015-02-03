@@ -21,7 +21,7 @@ fn ops() {
     assert!(td.path().join("bar2").is_dir());
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 
-    sftp.create(&td.path().join("foo5")).unwrap().write(b"foo").unwrap();
+    sftp.create(&td.path().join("foo5")).unwrap().write_all(b"foo").unwrap();
     assert_eq!(File::open(&td.path().join("foo5")).read_to_end().unwrap(),
                b"foo".to_vec());
 

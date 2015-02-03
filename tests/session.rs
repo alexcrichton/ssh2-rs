@@ -1,7 +1,7 @@
 use std::os;
 use std::old_io::{self, File, TempDir};
 
-use ssh2::{self, Session, MethodType, HashType};
+use ssh2::{Session, MethodType, HashType};
 
 #[test]
 fn smoke() {
@@ -66,7 +66,7 @@ fn scp_send() {
     let (_tcp, sess) = ::authed_session();
     let mut ch = sess.scp_send(&td.path().join("foo"),
                                old_io::USER_FILE, 6, None).unwrap();
-    ch.write(b"foobar").unwrap();
+    ch.write_all(b"foobar").unwrap();
     drop(ch);
     let actual = File::open(&td.path().join("foo")).read_to_end().unwrap();
     assert_eq!(actual.as_slice(), b"foobar");
