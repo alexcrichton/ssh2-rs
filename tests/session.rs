@@ -1,4 +1,4 @@
-use std::os;
+use std::env;
 use std::old_io::{self, File, TempDir};
 
 use ssh2::{Session, MethodType, HashType};
@@ -23,7 +23,7 @@ fn smoke() {
 
 #[test]
 fn smoke_handshake() {
-    let user = os::getenv("USER").unwrap();
+    let user = env::var_string("USER").unwrap();
     let socket = ::socket();
     let mut sess = Session::new().unwrap();
     sess.handshake(&socket).unwrap();
@@ -55,7 +55,7 @@ fn scp_recv() {
     let (_tcp, sess) = ::authed_session();
     let (mut ch, _) = sess.scp_recv(&Path::new(".ssh/authorized_keys")).unwrap();
     let data = ch.read_to_string().unwrap();
-    let p = Path::new(os::getenv("HOME").unwrap()).join(".ssh/authorized_keys");
+    let p = Path::new(env::var_string("HOME").unwrap()).join(".ssh/authorized_keys");
     let expected = File::open(&p).read_to_string().unwrap();
     assert!(data == expected);
 }

@@ -1,8 +1,8 @@
-#![feature(io, path, os, core)]
+#![feature(io, path, env, core)]
 
 extern crate "pkg-config" as pkg_config;
 
-use std::os;
+use std::env;
 use std::old_io::{self, fs, Command};
 use std::old_io::process::InheritFd;
 use std::old_io::fs::PathExtensions;
@@ -13,8 +13,8 @@ fn main() {
         Err(..) => {}
     }
 
-    let mut cflags = os::getenv("CFLAGS").unwrap_or(String::new());
-    let target = os::getenv("TARGET").unwrap();
+    let mut cflags = env::var_string("CFLAGS").unwrap_or(String::new());
+    let target = env::var_string("TARGET").unwrap();
     let windows = target.contains("windows") || target.contains("mingw");
     cflags.push_str(" -ffunction-sections -fdata-sections");
 
@@ -27,16 +27,16 @@ fn main() {
         cflags.push_str(" -fPIC");
     }
 
-    match os::getenv("DEP_OPENSSL_ROOT") {
-        Some(s) => {
+    match env::var_string("DEP_OPENSSL_ROOT") {
+        Ok(s) => {
             cflags.push_str(format!(" -I{}/include", s).as_slice());
             cflags.push_str(format!(" -L{}/lib", s).as_slice());
         }
-        None => {}
+        Err(..) => {}
     }
 
-    let src = Path::new(os::getenv("CARGO_MANIFEST_DIR").unwrap());
-    let dst = Path::new(os::getenv("OUT_DIR").unwrap());
+    let src = Path::new(env::var_string("CARGO_MANIFEST_DIR").unwrap());
+    let dst = Path::new(env::var_string("OUT_DIR").unwrap());
 
     let mut config_opts = Vec::new();
     if windows {
@@ -70,7 +70,7 @@ fn main() {
                             .replace("C:\\", "/c/")
                             .replace("\\", "/")));
     run(Command::new(make())
-                .arg(format!("-j{}", os::getenv("NUM_JOBS").unwrap()))
+                .arg(format!("-j{}", env::var_string("NUM_JOBS").unwrap()))
                 .cwd(&dst.join("build/src")));
 
     // Don't run `make install` because apparently it's a little buggy on mingw
@@ -124,7 +124,8 @@ fn run(cmd: &mut Command) {
 }
 
 fn which(cmd: &str) -> Option<Path> {
-    let cmd = format!("{}{}", cmd, os::consts::EXE_SUFFIX);
-    let paths = os::split_paths(os::getenv("PATH").unwrap());
-    paths.iter().map(|p| p.join(&cmd)).find(|p| p.exists())
+    let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
+    env::split_paths(&env::var("PATH").unwrap()).map(|p| {
+        p.join(&cmd)
+    }).find(|p| p.exists())
 }

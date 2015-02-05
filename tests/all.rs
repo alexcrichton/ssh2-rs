@@ -1,10 +1,10 @@
 #![deny(warnings)]
-#![feature(io, core, path, os, std_misc, libc)]
+#![feature(io, core, path, std_misc, libc, env)]
 
 extern crate ssh2;
 extern crate libc;
 
-use std::os;
+use std::env;
 use std::old_io::TcpStream;
 
 mod agent;
@@ -18,7 +18,7 @@ pub fn socket() -> TcpStream {
 }
 
 pub fn authed_session() -> (TcpStream, ssh2::Session) {
-    let user = os::getenv("USER").unwrap();
+    let user = env::var_string("USER").unwrap();
     let socket = socket();
     let mut sess = ssh2::Session::new().unwrap();
     sess.handshake(&socket).unwrap();
