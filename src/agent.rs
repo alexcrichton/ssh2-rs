@@ -100,8 +100,8 @@ impl<'agent> PublicKey<'agent> {
     /// Return the data of this public key.
     pub fn blob(&self) -> &[u8] {
         unsafe {
-            slice::from_raw_mut_buf(&(*self.raw).blob,
-                                    (*self.raw).blob_len as usize)
+            slice::from_raw_parts_mut((*self.raw).blob,
+                                      (*self.raw).blob_len as usize)
         }
     }
 

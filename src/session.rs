@@ -509,8 +509,7 @@ impl Session {
         unsafe {
             let ret = raw::libssh2_session_hostkey(self.raw, &mut len, &mut kind);
             if ret.is_null() { return None }
-            let ret = ret as *const u8;
-            let data = mem::transmute(slice::from_raw_buf(&ret, len as usize));
+            let data = slice::from_raw_parts(ret as *const u8, len as usize);
             let kind = match kind {
                 raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
                 raw::LIBSSH2_HOSTKEY_TYPE_DSS => HostKeyType::Dss,
@@ -535,7 +534,7 @@ impl Session {
                 None
             } else {
                 let ret = ret as *const u8;
-                Some(mem::transmute(slice::from_raw_buf(&ret, len)))
+                Some(slice::from_raw_parts(ret, len))
             }
         }
     }
