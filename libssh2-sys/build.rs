@@ -13,8 +13,8 @@ fn main() {
         Err(..) => {}
     }
 
-    let mut cflags = env::var_string("CFLAGS").unwrap_or(String::new());
-    let target = env::var_string("TARGET").unwrap();
+    let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
+    let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows") || target.contains("mingw");
     cflags.push_str(" -ffunction-sections -fdata-sections");
 
@@ -27,7 +27,7 @@ fn main() {
         cflags.push_str(" -fPIC");
     }
 
-    match env::var_string("DEP_OPENSSL_ROOT") {
+    match env::var("DEP_OPENSSL_ROOT") {
         Ok(s) => {
             cflags.push_str(format!(" -I{}/include", s).as_slice());
             cflags.push_str(format!(" -L{}/lib", s).as_slice());
@@ -35,8 +35,8 @@ fn main() {
         Err(..) => {}
     }
 
-    let src = Path::new(env::var_string("CARGO_MANIFEST_DIR").unwrap());
-    let dst = Path::new(env::var_string("OUT_DIR").unwrap());
+    let src = Path::new(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let dst = Path::new(env::var("OUT_DIR").unwrap());
 
     let mut config_opts = Vec::new();
     if windows {
@@ -70,7 +70,7 @@ fn main() {
                             .replace("C:\\", "/c/")
                             .replace("\\", "/")));
     run(Command::new(make())
-                .arg(format!("-j{}", env::var_string("NUM_JOBS").unwrap()))
+                .arg(format!("-j{}", env::var("NUM_JOBS").unwrap()))
                 .cwd(&dst.join("build/src")));
 
     // Don't run `make install` because apparently it's a little buggy on mingw
