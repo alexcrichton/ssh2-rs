@@ -1,5 +1,5 @@
 use std::old_io::{TcpListener, Listener, Acceptor, TcpStream};
-use std::thread::Thread;
+use std::thread;
 
 #[test]
 fn smoke() {
@@ -67,7 +67,7 @@ fn direct() {
     let mut l = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = l.socket_name().unwrap();
     let mut a = l.listen().unwrap();
-    let t = Thread::scoped(move|| {
+    let t = thread::scoped(move|| {
         let mut s = a.accept().unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
@@ -81,7 +81,7 @@ fn direct() {
     let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
-    t.join().ok().unwrap();
+    t.join();
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn forward() {
     let (_tcp, sess) = ::authed_session();
     let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
                                  .unwrap();
-    let t = Thread::scoped(move|| {
+    let t = thread::scoped(move|| {
         let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
@@ -102,5 +102,5 @@ fn forward() {
     let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
     assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
-    t.join().ok().unwrap();
+    t.join();
 }
