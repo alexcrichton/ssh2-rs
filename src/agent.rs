@@ -23,7 +23,7 @@ pub struct Identities<'agent> {
 /// A public key which is extracted from an SSH agent.
 pub struct PublicKey<'agent> {
     raw: *mut raw::libssh2_agent_publickey,
-    marker: marker::ContravariantLifetime<'agent>,
+    _marker: marker::PhantomData<&'agent [u8]>,
 }
 
 impl<'sess> Agent<'sess> {
@@ -53,7 +53,7 @@ impl<'sess> Agent<'sess> {
     /// Attempt public key authentication with the help of ssh-agent.
     pub fn userauth(&self, username: &str, identity: &PublicKey)
                     -> Result<(), Error>{
-        let username = CString::from_slice(username.as_bytes());
+        let username = try!(CString::new(username));
         unsafe {
             self.sess.rc(raw::libssh2_agent_userauth(self.raw,
                                                      username.as_ptr(),
@@ -119,7 +119,7 @@ impl<'agent> Binding for PublicKey<'agent> {
 
     unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey)
                        -> PublicKey<'agent> {
-        PublicKey { raw: raw, marker: marker::ContravariantLifetime }
+        PublicKey { raw: raw, _marker: marker::PhantomData }
     }
 
     fn raw(&self) -> *mut raw::libssh2_agent_publickey { self.raw }

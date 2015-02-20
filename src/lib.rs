@@ -114,7 +114,7 @@
 //! let contents = remote_file.read_to_end();
 //! ```
 
-#![feature(unsafe_destructor, std_misc, collections, old_io, core, old_path, hash)]
+#![feature(unsafe_destructor, std_misc, collections, old_io, core, old_path)]
 #![feature(io)]
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
@@ -123,8 +123,7 @@ extern crate "libssh2-sys" as raw;
 extern crate libc;
 #[macro_use] extern crate bitflags;
 
-use std::ffi;
-use std::mem;
+use std::ffi::CStr;
 use std::sync::{Once, ONCE_INIT};
 
 pub use agent::{Agent, Identities, PublicKey};
@@ -169,8 +168,7 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
     if c.is_null() {
         None
     } else {
-        let s = ffi::c_str_to_bytes(&c);
-        Some(mem::transmute(s))
+        Some(CStr::from_ptr(c).to_bytes())
     }
 }
 

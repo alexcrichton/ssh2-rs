@@ -1,4 +1,5 @@
-use std::error::Error as StdError;
+use std::error::{self, FromError};
+use std::ffi::NulError;
 use std::fmt;
 use std::str;
 use libc;
@@ -109,6 +110,14 @@ impl fmt::Display for Error {
     }
 }
 
-impl StdError for Error {
+impl error::Error for Error {
     fn description(&self) -> &str { self.message() }
+}
+
+impl FromError<NulError> for Error {
+    fn from_error(_: NulError) -> Error {
+        Error::new(raw::LIBSSH2_ERROR_INVAL,
+                   "provided data contained a nul byte and could not be used \
+                    as as string")
+    }
 }

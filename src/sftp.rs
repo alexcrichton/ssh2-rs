@@ -3,7 +3,7 @@ use std::mem;
 use std::old_io;
 use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
-use {raw, Session, Error};
+use {raw, Session, Error, Channel};
 use util::SessionBinding;
 
 /// A handle to a remote filesystem over SFTP.
@@ -11,7 +11,7 @@ use util::SessionBinding;
 /// Instances are created through the `sftp` method on a `Session`.
 pub struct Sftp<'sess> {
     raw: *mut raw::LIBSSH2_SFTP,
-    marker: marker::ContravariantLifetime<'sess>,
+    _marker: marker::PhantomData<Channel<'sess>>,
 }
 
 /// A file handle to an SFTP connection.
@@ -315,10 +315,7 @@ impl<'sess> SessionBinding<'sess> for Sftp<'sess> {
 
     unsafe fn from_raw(_sess: &'sess Session,
                        raw: *mut raw::LIBSSH2_SFTP) -> Sftp<'sess> {
-        Sftp {
-            raw: raw,
-            marker: marker::ContravariantLifetime,
-        }
+        Sftp { raw: raw, _marker: marker::PhantomData }
     }
     fn raw(&self) -> *mut raw::LIBSSH2_SFTP { self.raw }
 }

@@ -9,7 +9,7 @@ use std::old_io::fs::PathExtensions;
 
 fn main() {
     match pkg_config::find_library("libssh2") {
-        Ok(()) => return,
+        Ok(..) => return,
         Err(..) => {}
     }
 

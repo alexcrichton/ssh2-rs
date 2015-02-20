@@ -60,7 +60,7 @@ pub struct Hosts<'kh> {
 /// Structure representing a known host as part of a `KnownHosts` structure.
 pub struct Host<'kh> {
     raw: *mut raw::libssh2_knownhost,
-    marker: marker::ContravariantLifetime<'kh>,
+    _marker: marker::PhantomData<&'kh str>,
 }
 
 impl<'sess> KnownHosts<'sess> {
@@ -68,7 +68,7 @@ impl<'sess> KnownHosts<'sess> {
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind)
                      -> Result<u32, Error> {
-        let file = CString::from_slice(file.as_vec());
+        let file = try!(CString::new(file.as_vec()));
         let n = unsafe {
             raw::libssh2_knownhost_readfile(self.raw, file.as_ptr(),
                                             kind as c_int)
@@ -92,7 +92,7 @@ impl<'sess> KnownHosts<'sess> {
     /// file format.
     pub fn write_file(&self, file: &Path, kind: KnownHostFileKind)
                       -> Result<(), Error> {
-        let file = CString::from_slice(file.as_vec());
+        let file = try!(CString::new(file.as_vec()));
         let n = unsafe {
             raw::libssh2_knownhost_writefile(self.raw, file.as_ptr(),
                                              kind as c_int)
@@ -154,7 +154,7 @@ impl<'sess> KnownHosts<'sess> {
     }
 
     fn check_port_(&self, host: &str, port: i32, key: &[u8]) -> CheckResult {
-        let host = CString::from_slice(host.as_bytes());
+        let host = CString::new(host).unwrap();
         let flags = raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN |
                     raw::LIBSSH2_KNOWNHOST_KEYENC_RAW;
         unsafe {
@@ -187,7 +187,7 @@ impl<'sess> KnownHosts<'sess> {
     pub fn add(&mut self, host: &str, key: &[u8], comment: &str,
                fmt: ::KnownHostKeyFormat)
                -> Result<(), Error> {
-        let host = CString::from_slice(host.as_bytes());
+        let host = try!(CString::new(host));
         let flags = raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN |
                     raw::LIBSSH2_KNOWNHOST_KEYENC_RAW |
                     (fmt as c_int);
@@ -265,10 +265,7 @@ impl<'kh> Binding for Host<'kh> {
     type Raw = *mut raw::libssh2_knownhost;
 
     unsafe fn from_raw(raw: *mut raw::libssh2_knownhost) -> Host<'kh> {
-        Host {
-            raw: raw,
-            marker: marker::ContravariantLifetime,
-        }
+        Host { raw: raw, _marker: marker::PhantomData }
     }
     fn raw(&self) -> *mut raw::libssh2_knownhost { self.raw }
 }
