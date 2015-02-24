@@ -1,5 +1,5 @@
 #![deny(warnings)]
-#![feature(io, core, path, env, net, fs)]
+#![feature(io, core, path, env, net, fs, old_io, old_path)]
 
 extern crate ssh2;
 extern crate libc;
