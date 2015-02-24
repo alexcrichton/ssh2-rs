@@ -1,6 +1,6 @@
 [package]
 name = "libssh2-sys"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 links = "ssh2"
 build = "build.rs"
@@ -36,4 +36,4 @@ openssl-sys = "0.4.0"
 openssl-sys = "0.4.0"
 
 [build-dependencies]
-pkg-config = "0.2"
+pkg-config = "0.3"

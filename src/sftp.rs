@@ -1,10 +1,12 @@
+use std::io::prelude::*;
+use std::io::{self, ErrorKind, Seek, SeekFrom};
 use std::marker;
 use std::mem;
-use std::old_io;
+use std::path::{Path, PathBuf};
 use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
 use {raw, Session, Error, Channel};
-use util::SessionBinding;
+use util::{self, SessionBinding};
 
 /// A handle to a remote filesystem over SFTP.
 ///
@@ -98,15 +100,14 @@ pub enum OpenType {
 impl<'sess> Sftp<'sess> {
     /// Open a handle to a file.
     pub fn open_mode(&self, filename: &Path, flags: OpenFlags,
-                     mode: old_io::FilePermission,
-                     open_type: OpenType) -> Result<File, Error> {
-        let filename = filename.as_vec();
+                     mode: i32, open_type: OpenType) -> Result<File, Error> {
+        let filename = try!(util::path2bytes(filename));
         unsafe {
             let ret = raw::libssh2_sftp_open_ex(self.raw,
                                                 filename.as_ptr() as *const _,
                                                 filename.len() as c_uint,
                                                 flags.bits() as c_ulong,
-                                                mode.bits() as c_long,
+                                                mode as c_long,
                                                 open_type as c_int);
             if ret.is_null() {
                 Err(self.last_error())
@@ -118,17 +119,17 @@ impl<'sess> Sftp<'sess> {
 
     /// Helper to open a file in the `Read` mode.
     pub fn open(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, READ, old_io::USER_FILE, OpenType::File)
+        self.open_mode(filename, READ, 0o644, OpenType::File)
     }
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, WRITE | TRUNCATE, old_io::USER_FILE, OpenType::File)
+        self.open_mode(filename, WRITE | TRUNCATE, 0o644, OpenType::File)
     }
 
     /// Helper to open a directory for reading its contents.
     pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
-        self.open_mode(dirname, READ, old_io::USER_FILE, OpenType::Dir)
+        self.open_mode(dirname, READ, 0, OpenType::Dir)
     }
 
     /// Convenience function to read the files in a directory.
@@ -136,16 +137,16 @@ impl<'sess> Sftp<'sess> {
     /// The returned paths are all joined with `dirname` when returned, and the
     /// paths `.` and `..` are filtered out of the returned list.
     pub fn readdir(&self, dirname: &Path)
-                   -> Result<Vec<(Path, FileStat)>, Error> {
+                   -> Result<Vec<(PathBuf, FileStat)>, Error> {
         let mut dir = try!(self.opendir(dirname));
         let mut ret = Vec::new();
         loop {
             match dir.readdir() {
                 Ok((filename, stat)) => {
-                    if filename.as_vec() == b"." ||
-                       filename.as_vec() == b".." { continue }
+                    if &*filename == Path::new(".") ||
+                       &*filename == Path::new("..") { continue }
 
-                    ret.push((dirname.join(filename), stat))
+                    ret.push((dirname.join(&filename), stat))
                 }
                 Err(ref e) if e.code() == raw::LIBSSH2_ERROR_FILE => break,
                 Err(e) => return Err(e),
@@ -155,20 +156,20 @@ impl<'sess> Sftp<'sess> {
     }
 
     /// Create a directory on the remote file system.
-    pub fn mkdir(&self, filename: &Path, mode: old_io::FilePermission)
+    pub fn mkdir(&self, filename: &Path, mode: i32)
                  -> Result<(), Error> {
-        let filename = filename.as_vec();
+        let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
             raw::libssh2_sftp_mkdir_ex(self.raw,
                                        filename.as_ptr() as *const _,
                                        filename.len() as c_uint,
-                                       mode.bits() as c_long)
+                                       mode as c_long)
         })
     }
 
     /// Remove a directory from the remote file system.
     pub fn rmdir(&self, filename: &Path) -> Result<(), Error> {
-        let filename = filename.as_vec();
+        let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
             raw::libssh2_sftp_rmdir_ex(self.raw,
                                        filename.as_ptr() as *const _,
@@ -178,7 +179,7 @@ impl<'sess> Sftp<'sess> {
 
     /// Get the metadata for a file, performed by stat(2)
     pub fn stat(&self, filename: &Path) -> Result<FileStat, Error> {
-        let filename = filename.as_vec();
+        let filename = try!(util::path2bytes(filename));
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(self.raw,
@@ -193,7 +194,7 @@ impl<'sess> Sftp<'sess> {
 
     /// Get the metadata for a file, performed by lstat(2)
     pub fn lstat(&self, filename: &Path) -> Result<FileStat, Error> {
-        let filename = filename.as_vec();
+        let filename = try!(util::path2bytes(filename));
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(self.raw,
@@ -208,7 +209,7 @@ impl<'sess> Sftp<'sess> {
 
     /// Set the metadata for a file.
     pub fn setstat(&self, filename: &Path, stat: FileStat) -> Result<(), Error> {
-        let filename = filename.as_vec();
+        let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
             let mut raw = stat.raw();
             raw::libssh2_sftp_stat_ex(self.raw,
@@ -221,8 +222,8 @@ impl<'sess> Sftp<'sess> {
 
     /// Create a symlink at `target` pointing at `path`.
     pub fn symlink(&self, path: &Path, target: &Path) -> Result<(), Error> {
-        let path = path.as_vec();
-        let target = target.as_vec();
+        let path = try!(util::path2bytes(path));
+        let target = try!(util::path2bytes(target));
         self.rc(unsafe {
             raw::libssh2_sftp_symlink_ex(self.raw,
                                          path.as_ptr() as *const _,
@@ -234,17 +235,17 @@ impl<'sess> Sftp<'sess> {
     }
 
     /// Read a symlink at `path`.
-    pub fn readlink(&self, path: &Path) -> Result<Path, Error> {
+    pub fn readlink(&self, path: &Path) -> Result<PathBuf, Error> {
         self.readlink_op(path, raw::LIBSSH2_SFTP_READLINK)
     }
 
     /// Resolve the real path for `path`.
-    pub fn realpath(&self, path: &Path) -> Result<Path, Error> {
+    pub fn realpath(&self, path: &Path) -> Result<PathBuf, Error> {
         self.readlink_op(path, raw::LIBSSH2_SFTP_REALPATH)
     }
 
-    fn readlink_op(&self, path: &Path, op: c_int) -> Result<Path, Error> {
-        let path = path.as_vec();
+    fn readlink_op(&self, path: &Path, op: c_int) -> Result<PathBuf, Error> {
+        let path = try!(util::path2bytes(path));
         let mut ret = Vec::<u8>::with_capacity(128);
         let mut rc;
         loop {
@@ -267,7 +268,7 @@ impl<'sess> Sftp<'sess> {
             Err(self.last_error())
         } else {
             unsafe { ret.set_len(rc as usize) }
-            Ok(Path::new(ret))
+            Ok(mkpath(ret))
         }
     }
 
@@ -286,8 +287,8 @@ impl<'sess> Sftp<'sess> {
     pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>)
                   -> Result<(), Error> {
         let flags = flags.unwrap_or(ATOMIC | OVERWRITE | NATIVE);
-        let src = src.as_vec();
-        let dst = dst.as_vec();
+        let src = try!(util::path2bytes(src));
+        let dst = try!(util::path2bytes(dst));
         self.rc(unsafe {
             raw::libssh2_sftp_rename_ex(self.raw,
                                         src.as_ptr() as *const _,
@@ -377,7 +378,7 @@ impl<'sftp> File<'sftp> {
     ///
     /// Also note that the return paths will not be absolute paths, they are
     /// the filenames of the files in this directory.
-    pub fn readdir(&mut self) -> Result<(Path, FileStat), Error> {
+    pub fn readdir(&mut self) -> Result<(PathBuf, FileStat), Error> {
         let mut buf = Vec::<u8>::with_capacity(128);
         let mut stat = unsafe { mem::zeroed() };
         let mut rc;
@@ -403,7 +404,7 @@ impl<'sftp> File<'sftp> {
         } else {
             unsafe { buf.set_len(rc as usize); }
         }
-        Ok((Path::new(buf), FileStat::from_raw(&stat)))
+        Ok((mkpath(buf), FileStat::from_raw(&stat)))
     }
 
     /// This function causes the remote server to synchronize the file data and
@@ -415,51 +416,40 @@ impl<'sftp> File<'sftp> {
     }
 }
 
-impl<'sftp> Reader for File<'sftp> {
-    fn read(&mut self, buf: &mut [u8]) -> old_io::IoResult<usize> {
+impl<'sftp> Read for File<'sftp> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         unsafe {
             let rc = raw::libssh2_sftp_read(self.raw,
                                             buf.as_mut_ptr() as *mut _,
                                             buf.len() as size_t);
             match rc {
-                0 => Err(old_io::standard_error(old_io::EndOfFile)),
-                n if n < 0 => Err(old_io::IoError {
-                    kind: old_io::OtherIoError,
-                    desc: "read error",
-                    detail: Some(self.sftp.last_error().to_string()),
-                }),
+                n if n < 0 => Err(io::Error::new(ErrorKind::Other, "read error",
+                                                 Some(self.sftp.last_error()
+                                                          .to_string()))),
                 n => Ok(n as usize)
             }
         }
     }
 }
 
-impl<'sftp> Writer for File<'sftp> {
-    fn write_all(&mut self, mut buf: &[u8]) -> old_io::IoResult<()> {
-        while buf.len() > 0 {
-            let rc = unsafe {
-                raw::libssh2_sftp_write(self.raw,
-                                        buf.as_ptr() as *const _,
-                                        buf.len() as size_t)
-            };
-            if rc < 0 {
-                return Err(old_io::IoError {
-                    kind: old_io::OtherIoError,
-                    desc: "write error",
-                    detail: Some(self.sftp.last_error().to_string()),
-                })
-            }
-            buf = &buf[rc as usize..];
+impl<'sftp> Write for File<'sftp> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let rc = unsafe {
+            raw::libssh2_sftp_write(self.raw,
+                                    buf.as_ptr() as *const _,
+                                    buf.len() as size_t)
+        };
+        if rc < 0 {
+            Err(io::Error::new(ErrorKind::Other, "write error",
+                               Some(self.sftp.last_error().to_string())))
+        } else {
+            Ok(rc as usize)
         }
-        Ok(())
     }
+    fn flush(&mut self) -> io::Result<()> { Ok(()) }
 }
 
 impl<'sftp> Seek for File<'sftp> {
-    fn tell(&self) -> old_io::IoResult<u64> {
-        Ok(unsafe { raw::libssh2_sftp_tell64(self.raw) })
-    }
-
     /// Move the file handle's internal pointer to an arbitrary location.
     ///
     /// libssh2 implements file pointers as a localized concept to make file
@@ -470,28 +460,31 @@ impl<'sftp> Seek for File<'sftp> {
     /// You MUST NOT seek during writing or reading a file with SFTP, as the
     /// internals use outstanding packets and changing the "file position"
     /// during transit will results in badness.
-    fn seek(&mut self, offset: i64, whence: old_io::SeekStyle) -> old_io::IoResult<()> {
-        let next = match whence {
-            old_io::SeekSet => offset as u64,
-            old_io::SeekCur => (self.tell().unwrap() as i64 + offset) as u64,
-            old_io::SeekEnd => match self.stat() {
+    fn seek(&mut self, how: SeekFrom) -> io::Result<u64> {
+        let next = match how {
+            SeekFrom::Start(pos) => pos,
+            SeekFrom::Current(offset) => {
+                let cur = unsafe { raw::libssh2_sftp_tell64(self.raw) };
+                (cur as i64 + offset) as u64
+            }
+            SeekFrom::End(offset) => match self.stat() {
                 Ok(s) => match s.size {
                     Some(size) => (size as i64 + offset) as u64,
-                    None => return Err(old_io::IoError {
-                        kind: old_io::OtherIoError,
-                        desc: "no file size available",
-                        detail: None,
-                    })
+                    None => {
+                        return Err(io::Error::new(ErrorKind::Other,
+                                                  "no file size available",
+                                                  None))
+                    }
                 },
-                Err(e) => return Err(old_io::IoError {
-                    kind: old_io::OtherIoError,
-                    desc: "failed to stat remote file",
-                    detail: Some(e.to_string()),
-                }),
+                Err(e) => {
+                    return Err(io::Error::new(ErrorKind::Other,
+                                              "failed to stat remote file",
+                                              Some(e.to_string())))
+                }
             }
         };
         unsafe { raw::libssh2_sftp_seek64(self.raw, next) }
-        Ok(())
+        Ok(next)
     }
 }
 
@@ -546,4 +539,16 @@ impl FileStat {
             mtime: self.mtime.unwrap_or(0) as c_ulong,
         }
     }
+}
+
+#[cfg(unix)]
+fn mkpath(v: Vec<u8>) -> PathBuf {
+    use std::os::unix::prelude::*;
+    use std::ffi::OsStr;
+    PathBuf::new(<OsStr as OsStrExt>::from_bytes(&v))
+}
+#[cfg(windows)]
+fn mkpath(v: Vec<u8>) -> PathBuf {
+    use std::str;
+    PathBuf::new(str::from_utf8(&v).unwrap())
 }

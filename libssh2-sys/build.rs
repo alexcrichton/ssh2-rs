@@ -1,11 +1,12 @@
-#![feature(old_io, old_path, env, core)]
+#![feature(io, path, env, core, fs, process, old_path)]
 
 extern crate "pkg-config" as pkg_config;
 
 use std::env;
-use std::old_io::{self, fs, Command};
-use std::old_io::process::InheritFd;
-use std::old_io::fs::PathExtensions;
+use std::fs;
+use std::io::prelude::*;
+use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
     match pkg_config::find_library("libssh2") {
@@ -35,8 +36,8 @@ fn main() {
         Err(..) => {}
     }
 
-    let src = Path::new(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let dst = Path::new(env::var("OUT_DIR").unwrap());
+    let src = PathBuf::new(&env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let dst = PathBuf::new(&env::var_os("OUT_DIR").unwrap());
 
     let mut config_opts = Vec::new();
     if windows {
@@ -47,10 +48,10 @@ fn main() {
     config_opts.push("--disable-examples-build".to_string());
     config_opts.push(format!("--prefix={}", dst.display()));
 
-    let _ = fs::rmdir_recursive(&dst.join("include"));
-    let _ = fs::rmdir_recursive(&dst.join("lib"));
-    let _ = fs::rmdir_recursive(&dst.join("build"));
-    fs::mkdir(&dst.join("build"), old_io::USER_DIR).unwrap();
+    let _ = fs::remove_dir_all(&dst.join("include"));
+    let _ = fs::remove_dir_all(&dst.join("lib"));
+    let _ = fs::remove_dir_all(&dst.join("build"));
+    fs::create_dir(&dst.join("build")).unwrap();
 
     let root = src.join("libssh2-1.4.4-20140901");
     // Can't run ./configure directly on msys2 b/c we're handing in
@@ -61,21 +62,21 @@ fn main() {
     // Also apparently the buildbots choke unless we manually set LD, who knows
     // why?!
     run(Command::new("sh")
-                .env("CFLAGS", cflags)
-                .env("LD", which("ld").unwrap())
-                .cwd(&dst.join("build"))
+                .env("CFLAGS", &cflags)
+                .env("LD", &which("ld").unwrap())
+                .current_dir(&dst.join("build"))
                 .arg("-c")
-                .arg(format!("{} {}", root.join("configure").display(),
-                             config_opts.connect(" "))
-                            .replace("C:\\", "/c/")
-                            .replace("\\", "/")));
-    run(Command::new(make())
-                .arg(format!("-j{}", env::var("NUM_JOBS").unwrap()))
-                .cwd(&dst.join("build/src")));
+                .arg(&format!("{} {}", root.join("configure").display(),
+                              config_opts.connect(" "))
+                             .replace("C:\\", "/c/")
+                             .replace("\\", "/")));
+    run(Command::new(&make())
+                .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
+                .current_dir(&dst.join("build/src")));
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), old_io::USER_DIR).unwrap();
+    fs::create_dir_all(&dst.join("lib/pkgconfig")).unwrap();
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/src/.libs/libssh2.a");
@@ -92,11 +93,12 @@ fn main() {
         let root = root.join("include");
         let dst = dst.join("include");
         for file in fs::walk_dir(&root).unwrap() {
-            if fs::stat(&file).unwrap().kind != old_io::FileType::RegularFile { continue }
+            let file = file.unwrap().path();
+            if !file.is_file() { continue }
 
-            let part = file.path_relative_from(&root).unwrap();
+            let part = file.relative_from(&root).unwrap();
             let dst = dst.join(part);
-            fs::mkdir_recursive(&dst.dir_path(), old_io::USER_DIR).unwrap();
+            fs::create_dir_all(dst.parent().unwrap()).unwrap();
             fs::copy(&file, &dst).unwrap();
         }
     }
@@ -115,17 +117,14 @@ fn make() -> &'static str {
 
 fn run(cmd: &mut Command) {
     println!("running: {:?}", cmd);
-    assert!(cmd.stdout(InheritFd(1))
-               .stderr(InheritFd(2))
-               .status()
-               .unwrap()
-               .success());
-
+    assert!(cmd.status().unwrap().success());
 }
 
-fn which(cmd: &str) -> Option<Path> {
+fn which(cmd: &str) -> Option<PathBuf> {
     let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
     env::split_paths(&env::var("PATH").unwrap()).map(|p| {
         p.join(&cmd)
+    }).map(|p| {
+        PathBuf::new(p.as_str().unwrap())
     }).find(|p| p.exists())
 }

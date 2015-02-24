@@ -1,13 +1,14 @@
 use std::ffi::CString;
-use std::old_io::{self, TcpStream};
 use std::mem;
+use std::net::TcpStream;
+use std::path::Path;
 use std::slice;
 use std::str;
 use libc::{self, c_uint, c_int, c_void, c_long};
 
 use {raw, Error, DisconnectCode, ByApplication, HostKeyType};
 use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
-use util::{Binding, SessionBinding};
+use util::{self, Binding, SessionBinding};
 
 /// An SSH session, typically representing one TCP connection.
 ///
@@ -19,6 +20,11 @@ pub struct Session {
 }
 
 unsafe impl Send for Session {}
+
+/// Metadata returned about a remote file when received via `scp`.
+pub struct ScpFileStat {
+    stat: libc::stat,
+}
 
 impl Session {
     /// Initializes an SSH session object.
@@ -193,10 +199,10 @@ impl Session {
                                 privatekey: &Path,
                                 passphrase: Option<&str>) -> Result<(), Error> {
         let pubkey = match pubkey {
-            Some(s) => Some(try!(CString::new(s.as_vec()))),
+            Some(s) => Some(try!(CString::new(try!(util::path2bytes(s))))),
             None => None,
         };
-        let privatekey = try!(CString::new(privatekey.as_vec()));
+        let privatekey = try!(CString::new(try!(util::path2bytes(privatekey))));
         let passphrase = match passphrase {
             Some(s) => Some(try!(CString::new(s))),
             None => None,
@@ -222,8 +228,8 @@ impl Session {
                                    hostname: &str,
                                    local_username: Option<&str>)
                                    -> Result<(), Error> {
-        let publickey = try!(CString::new(publickey.as_vec()));
-        let privatekey = try!(CString::new(privatekey.as_vec()));
+        let publickey = try!(CString::new(try!(util::path2bytes(publickey))));
+        let privatekey = try!(CString::new(try!(util::path2bytes(privatekey))));
         let passphrase = match passphrase {
             Some(s) => Some(try!(CString::new(s))),
             None => None,
@@ -415,8 +421,8 @@ impl Session {
     /// sent over the returned channel. Some stat information is also returned
     /// about the remote file to prepare for receiving the file.
     pub fn scp_recv(&self, path: &Path)
-                    -> Result<(Channel, old_io::FileStat), Error> {
-        let path = try!(CString::new(path.as_vec()));
+                    -> Result<(Channel, ScpFileStat), Error> {
+        let path = try!(CString::new(try!(util::path2bytes(path))));
         unsafe {
             let mut sb: libc::stat = mem::zeroed();
             let ret = raw::libssh2_scp_recv(self.raw, path.as_ptr(), &mut sb);
@@ -428,7 +434,7 @@ impl Session {
             // artificially limit the channel to a certain amount of bytes that
             // can be read.
             c.limit_read(sb.st_size as u64);
-            Ok((c, mkstat(&sb)))
+            Ok((c, ScpFileStat { stat: sb }))
         }
     }
 
@@ -440,15 +446,15 @@ impl Session {
     ///
     /// The size of the file, `size`, must be known ahead of time before
     /// transmission.
-    pub fn scp_send(&self, remote_path: &Path, mode: old_io::FilePermission,
+    pub fn scp_send(&self, remote_path: &Path, mode: i32,
                     size: u64, times: Option<(u64, u64)>)
                     -> Result<Channel, Error> {
-        let path = try!(CString::new(remote_path.as_vec()));
+        let path = try!(CString::new(try!(util::path2bytes(remote_path))));
         let (mtime, atime) = times.unwrap_or((0, 0));
         unsafe {
             let ret = raw::libssh2_scp_send64(self.raw,
                                               path.as_ptr(),
-                                              mode.bits() as c_int,
+                                              mode as c_int,
                                               size,
                                               mtime as libc::time_t,
                                               atime as libc::time_t);
@@ -618,57 +624,69 @@ impl Binding for Session {
     fn raw(&self) -> *mut raw::LIBSSH2_SESSION { self.raw }
 }
 
-// Sure do wish this was exported in libnative!
-fn mkstat(stat: &libc::stat) -> old_io::FileStat {
-    #[cfg(windows)] type Mode = libc::c_int;
-    #[cfg(unix)]    type Mode = libc::mode_t;
-
-    // FileStat times are in milliseconds
-    fn mktime(secs: u64, nsecs: u64) -> u64 { secs * 1000 + nsecs / 1000000 }
-
-    #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
-    fn flags(stat: &libc::stat) -> u64 { stat.st_flags as u64 }
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    fn flags(_stat: &libc::stat) -> u64 { 0 }
-
-    #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
-    fn gen(stat: &libc::stat) -> u64 { stat.st_gen as u64 }
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    fn gen(_stat: &libc::stat) -> u64 { 0 }
-
-    old_io::FileStat {
-        size: stat.st_size as u64,
-        kind: match (stat.st_mode as Mode) & libc::S_IFMT {
-            libc::S_IFREG => old_io::FileType::RegularFile,
-            libc::S_IFDIR => old_io::FileType::Directory,
-            libc::S_IFIFO => old_io::FileType::NamedPipe,
-            libc::S_IFBLK => old_io::FileType::BlockSpecial,
-            libc::S_IFLNK => old_io::FileType::Symlink,
-            _ => old_io::FileType::Unknown,
-        },
-        perm: old_io::FilePermission::from_bits_truncate(stat.st_mode as u32),
-        created: mktime(stat.st_ctime as u64, stat.st_ctime_nsec as u64),
-        modified: mktime(stat.st_mtime as u64, stat.st_mtime_nsec as u64),
-        accessed: mktime(stat.st_atime as u64, stat.st_atime_nsec as u64),
-        unstable: old_io::UnstableFileStat {
-            device: stat.st_dev as u64,
-            inode: stat.st_ino as u64,
-            rdev: stat.st_rdev as u64,
-            nlink: stat.st_nlink as u64,
-            uid: stat.st_uid as u64,
-            gid: stat.st_gid as u64,
-            blksize: stat.st_blksize as u64,
-            blocks: stat.st_blocks as u64,
-            flags: flags(stat),
-            gen: gen(stat),
-        }
-    }
-}
-
 impl Drop for Session {
     fn drop(&mut self) {
-        unsafe {
-            assert_eq!(raw::libssh2_session_free(self.raw), 0);
-        }
+        unsafe { assert_eq!(raw::libssh2_session_free(self.raw), 0); }
     }
 }
+
+impl ScpFileStat {
+    /// Returns the size of the remote file.
+    pub fn size(&self) -> u64 { self.stat.st_size as u64 }
+    /// Returns the listed mode of the remote file.
+    pub fn mode(&self) -> i32 { self.stat.st_mode as i32 }
+    /// Returns whether the remote file is a directory.
+    pub fn is_dir(&self) -> bool {
+        self.mode() & (libc::S_IFMT as i32) == (libc::S_IFDIR as i32)
+    }
+    /// Returns whether the remote file is a regular file.
+    pub fn is_file(&self) -> bool {
+        self.mode() & (libc::S_IFMT as i32) == (libc::S_IFREG as i32)
+    }
+}
+
+// fn mkstat(stat: &libc::stat) -> old_io::FileStat {
+//     #[cfg(windows)] type Mode = libc::c_int;
+//     #[cfg(unix)]    type Mode = libc::mode_t;
+//
+//     // FileStat times are in milliseconds
+//     fn mktime(secs: u64, nsecs: u64) -> u64 { secs * 1000 + nsecs / 1000000 }
+//
+//     #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
+//     fn flags(stat: &libc::stat) -> u64 { stat.st_flags as u64 }
+//     #[cfg(any(target_os = "linux", target_os = "android"))]
+//     fn flags(_stat: &libc::stat) -> u64 { 0 }
+//
+//     #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
+//     fn gen(stat: &libc::stat) -> u64 { stat.st_gen as u64 }
+//     #[cfg(any(target_os = "linux", target_os = "android"))]
+//     fn gen(_stat: &libc::stat) -> u64 { 0 }
+//
+//     old_io::FileStat {
+//         size: stat.st_size as u64,
+//         kind: match (stat.st_mode as Mode) & libc::S_IFMT {
+//             libc::S_IFREG => old_io::FileType::RegularFile,
+//             libc::S_IFDIR => old_io::FileType::Directory,
+//             libc::S_IFIFO => old_io::FileType::NamedPipe,
+//             libc::S_IFBLK => old_io::FileType::BlockSpecial,
+//             libc::S_IFLNK => old_io::FileType::Symlink,
+//             _ => old_io::FileType::Unknown,
+//         },
+//         perm: old_io::FilePermission::from_bits_truncate(stat.st_mode as u32),
+//         created: mktime(stat.st_ctime as u64, stat.st_ctime_nsec as u64),
+//         modified: mktime(stat.st_mtime as u64, stat.st_mtime_nsec as u64),
+//         accessed: mktime(stat.st_atime as u64, stat.st_atime_nsec as u64),
+//         unstable: old_io::UnstableFileStat {
+//             device: stat.st_dev as u64,
+//             inode: stat.st_ino as u64,
+//             rdev: stat.st_rdev as u64,
+//             nlink: stat.st_nlink as u64,
+//             uid: stat.st_uid as u64,
+//             gid: stat.st_gid as u64,
+//             blksize: stat.st_blksize as u64,
+//             blocks: stat.st_blocks as u64,
+//             flags: flags(stat),
+//             gen: gen(stat),
+//         }
+//     }
+// }

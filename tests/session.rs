@@ -1,5 +1,8 @@
 use std::env;
-use std::old_io::{self, File, TempDir};
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::{Path, PathBuf};
+use tempdir::TempDir;
 
 use ssh2::{Session, MethodType, HashType};
 
@@ -53,10 +56,12 @@ fn keepalive() {
 #[test]
 fn scp_recv() {
     let (_tcp, sess) = ::authed_session();
-    let (mut ch, _) = sess.scp_recv(&Path::new(".ssh/authorized_keys")).unwrap();
-    let data = ch.read_to_string().unwrap();
-    let p = Path::new(env::var("HOME").unwrap()).join(".ssh/authorized_keys");
-    let expected = File::open(&p).read_to_string().unwrap();
+    let (mut ch, _) = sess.scp_recv(Path::new(".ssh/authorized_keys")).unwrap();
+    let mut data = String::new();
+    ch.read_to_string(&mut data).unwrap();
+    let p = PathBuf::new(&env::var("HOME").unwrap()).join(".ssh/authorized_keys");
+    let mut expected = String::new();
+    File::open(&p).unwrap().read_to_string(&mut expected).unwrap();
     assert!(data == expected);
 }
 
@@ -64,10 +69,10 @@ fn scp_recv() {
 fn scp_send() {
     let td = TempDir::new("test").unwrap();
     let (_tcp, sess) = ::authed_session();
-    let mut ch = sess.scp_send(&td.path().join("foo"),
-                               old_io::USER_FILE, 6, None).unwrap();
+    let mut ch = sess.scp_send(&td.path().join("foo"), 0o644, 6, None).unwrap();
     ch.write_all(b"foobar").unwrap();
     drop(ch);
-    let actual = File::open(&td.path().join("foo")).read_to_end().unwrap();
-    assert_eq!(actual.as_slice(), b"foobar");
+    let mut actual = Vec::new();
+    File::open(&td.path().join("foo")).unwrap().read_to_end(&mut actual).unwrap();
+    assert_eq!(actual, b"foobar");
 }

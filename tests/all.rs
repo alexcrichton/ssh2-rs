@@ -1,17 +1,18 @@
 #![deny(warnings)]
-#![feature(old_io, core, old_path, env)]
+#![feature(io, core, path, env, net, fs)]
 
 extern crate ssh2;
 extern crate libc;
 
 use std::env;
-use std::old_io::TcpStream;
+use std::net::TcpStream;
 
 mod agent;
 mod session;
 mod channel;
 mod knownhosts;
 mod sftp;
+mod tempdir;
 
 pub fn socket() -> TcpStream {
     TcpStream::connect("127.0.0.1:22").unwrap()

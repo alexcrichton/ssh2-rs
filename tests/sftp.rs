@@ -1,5 +1,7 @@
-use std::old_io::{self, fs, File, TempDir};
-use std::old_io::fs::PathExtensions;
+use std::io::prelude::*;
+use std::fs::{self, File};
+
+use tempdir::TempDir;
 
 #[test]
 fn smoke() {
@@ -11,22 +13,25 @@ fn smoke() {
 fn ops() {
     let td = TempDir::new("foo").unwrap();
     File::create(&td.path().join("foo")).unwrap();
-    fs::mkdir(&td.path().join("bar"), old_io::USER_DIR).unwrap();
+    fs::create_dir(&td.path().join("bar")).unwrap();
 
     let (_tcp, sess) = ::authed_session();
     let sftp = sess.sftp().unwrap();
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
-    sftp.mkdir(&td.path().join("bar2"), old_io::USER_DIR).unwrap();
+    sftp.mkdir(&td.path().join("bar2"), 0o755).unwrap();
     assert!(td.path().join("bar2").is_dir());
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 
     sftp.create(&td.path().join("foo5")).unwrap().write_all(b"foo").unwrap();
-    assert_eq!(File::open(&td.path().join("foo5")).read_to_end().unwrap(),
-               b"foo".to_vec());
+    let mut v = Vec::new();
+    File::open(&td.path().join("foo5")).unwrap().read_to_end(&mut v).unwrap();
+    assert_eq!(v, b"foo");
 
     assert_eq!(sftp.stat(&td.path().join("foo")).unwrap().size, Some(0));
-    assert_eq!(foo.read_to_end().unwrap(), Vec::new());
+    v.truncate(0);
+    foo.read_to_end(&mut v).unwrap();
+    assert_eq!(v, Vec::new());
 
     sftp.symlink(&td.path().join("foo"),
                  &td.path().join("foo2")).unwrap();

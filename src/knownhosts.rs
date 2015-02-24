@@ -1,10 +1,11 @@
 use std::ffi::CString;
 use std::marker;
+use std::path::Path;
 use std::str;
 use libc::{c_int, size_t};
 
 use {raw, Session, Error, KnownHostFileKind, CheckResult};
-use util::{Binding, SessionBinding};
+use util::{self, Binding, SessionBinding};
 
 /// A set of known hosts which can be used to verify the identity of a remote
 /// server.
@@ -12,8 +13,8 @@ use util::{Binding, SessionBinding};
 /// # Example
 ///
 /// ```no_run
-/// # #![allow(unstable)]
-/// use std::os;
+/// use std::env;
+/// use std::path::Path;
 /// use ssh2::{self, CheckResult, HostKeyType, KnownHostKeyFormat};
 /// use ssh2::KnownHostFileKind;
 ///
@@ -21,7 +22,7 @@ use util::{Binding, SessionBinding};
 ///     let mut known_hosts = session.known_hosts().unwrap();
 ///
 ///     // Initialize the known hosts with a global known hosts file
-///     let file = Path::new(os::getenv("HOME").unwrap()).join(".ssh/known_hosts");
+///     let file = Path::new(&env::var("HOME").unwrap()).join(".ssh/known_hosts");
 ///     known_hosts.read_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 ///
 ///     // Now check to see if the seesion's host key is anywhere in the known
@@ -68,7 +69,7 @@ impl<'sess> KnownHosts<'sess> {
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind)
                      -> Result<u32, Error> {
-        let file = try!(CString::new(file.as_vec()));
+        let file = try!(CString::new(try!(util::path2bytes(file))));
         let n = unsafe {
             raw::libssh2_knownhost_readfile(self.raw, file.as_ptr(),
                                             kind as c_int)
@@ -92,7 +93,7 @@ impl<'sess> KnownHosts<'sess> {
     /// file format.
     pub fn write_file(&self, file: &Path, kind: KnownHostFileKind)
                       -> Result<(), Error> {
-        let file = try!(CString::new(file.as_vec()));
+        let file = try!(CString::new(try!(util::path2bytes(file))));
         let n = unsafe {
             raw::libssh2_knownhost_writefile(self.raw, file.as_ptr(),
                                              kind as c_int)

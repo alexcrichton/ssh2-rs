@@ -1,5 +1,6 @@
+use std::io::prelude::*;
+use std::io::{self, ErrorKind};
 use std::cmp;
-use std::old_io;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -119,11 +120,14 @@ impl<'sess> Channel<'sess> {
     /// # Example
     ///
     /// ```no_run
+    /// # use std::io::prelude::*;
     /// # use ssh2::Session;
     /// # let session: Session = panic!();
     /// let mut channel = session.channel_session().unwrap();
     /// channel.exec("ls").unwrap();
-    /// println!("{}", channel.read_to_string().unwrap());
+    /// let mut s = String::new();
+    /// channel.read_to_string(&mut s).unwrap();
+    /// println!("{}", s);
     /// ```
     pub fn exec(&mut self, command: &str) -> Result<(), Error> {
         self.process_startup("exec", Some(command))
@@ -181,7 +185,7 @@ impl<'sess> Channel<'sess> {
     }
 
     /// Write data to the channel stderr stream.
-    pub fn write_stderr(&mut self, data: &[u8]) -> Result<(), Error> {
+    pub fn write_stderr(&mut self, data: &[u8]) -> Result<usize, Error> {
         self.write_stream(::EXTENDED_DATA_STDERR, data)
     }
 
@@ -192,13 +196,13 @@ impl<'sess> Channel<'sess> {
     /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
     /// to be the stderr substream.
     pub fn write_stream(&mut self, stream_id: i32, data: &[u8])
-                        -> Result<(), Error> {
+                        -> Result<usize, Error> {
         unsafe {
             let rc = raw::libssh2_channel_write_ex(self.raw,
                                                    stream_id as c_int,
                                                    data.as_ptr() as *mut _,
                                                    data.len() as size_t);
-            self.sess.rc(rc)
+            self.sess.rc(rc).map(|()| rc as usize)
         }
     }
 
@@ -215,7 +219,7 @@ impl<'sess> Channel<'sess> {
     /// to be the stderr substream.
     pub fn read_stream(&mut self, stream_id: i32, data: &mut [u8])
                        -> Result<usize, Error> {
-        if self.eof() { return Err(Error::eof()) }
+        if self.eof() { return Ok(0) }
 
         let data = match self.read_limit {
             Some(amt) => {
@@ -230,7 +234,6 @@ impl<'sess> Channel<'sess> {
                                                   data.as_mut_ptr() as *mut _,
                                                   data.len() as size_t);
             if rc < 0 { try!(self.sess.rc(rc)); }
-            if rc == 0 && self.eof() { return Err(Error::eof()) }
             match self.read_limit {
                 Some(ref mut amt) => *amt -= rc as u64,
                 None => {}
@@ -397,40 +400,27 @@ impl<'sess> SessionBinding<'sess> for Channel<'sess> {
     fn raw(&self) -> *mut raw::LIBSSH2_CHANNEL { self.raw }
 }
 
-impl<'sess> Writer for Channel<'sess> {
-    fn write_all(&mut self, buf: &[u8]) -> old_io::IoResult<()> {
+impl<'sess> Write for Channel<'sess> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.write_stream(0, buf).map_err(|e| {
-            old_io::IoError {
-                kind: old_io::OtherIoError,
-                desc: "ssh write error",
-                detail: Some(e.to_string()),
-            }
+            io::Error::new(ErrorKind::Other, "ssh write error",
+                           Some(e.to_string()))
         })
     }
 
-    fn flush(&mut self) -> old_io::IoResult<()> {
+    fn flush(&mut self) -> io::Result<()> {
         self.flush_stream(0).map_err(|e| {
-            old_io::IoError {
-                kind: old_io::OtherIoError,
-                desc: "ssh write error",
-                detail: Some(e.to_string()),
-            }
+            io::Error::new(ErrorKind::Other, "ssh write error",
+                           Some(e.to_string()))
         })
     }
 }
 
-impl<'sess> Reader for Channel<'sess> {
-    fn read(&mut self, buf: &mut [u8]) -> old_io::IoResult<usize> {
+impl<'sess> Read for Channel<'sess> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.read_stream(0, buf).map_err(|e| {
-            if self.eof() {
-                old_io::standard_error(old_io::EndOfFile)
-            } else {
-                old_io::IoError {
-                    kind: old_io::OtherIoError,
-                    desc: "ssh read error",
-                    detail: Some(e.to_string()),
-                }
-            }
+            io::Error::new(ErrorKind::Other, "ssh read error",
+                           Some(e.to_string()))
         })
     }
 }

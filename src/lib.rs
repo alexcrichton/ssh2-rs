@@ -32,7 +32,7 @@
 //! ## Authenticating with ssh-agent
 //!
 //! ```no_run
-//! use std::old_io::TcpStream;
+//! use std::net::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -50,7 +50,7 @@
 //! ## Authenticating with a password
 //!
 //! ```no_run
-//! use std::old_io::TcpStream;
+//! use std::net::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -65,7 +65,8 @@
 //! ## Run a command
 //!
 //! ```no_run
-//! use std::old_io::{self, TcpStream};
+//! use std::io::prelude::*;
+//! use std::net::{TcpStream};
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -76,14 +77,18 @@
 //!
 //! let mut channel = sess.channel_session().unwrap();
 //! channel.exec("ls").unwrap();
-//! println!("{}", channel.read_to_string().unwrap());
+//! let mut s = String::new();
+//! channel.read_to_string(&mut s).unwrap();
+//! println!("{}", s);
 //! println!("{}", channel.exit_status().unwrap());
 //! ```
 //!
 //! ## Upload a file
 //!
 //! ```no_run
-//! use std::old_io::{self, TcpStream};
+//! use std::io::prelude::*;
+//! use std::net::TcpStream;
+//! use std::path::Path;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -92,15 +97,17 @@
 //! sess.handshake(&tcp).unwrap();
 //! sess.userauth_agent("username").unwrap();
 //!
-//! let mut remote_file = sess.scp_send(&Path::new("remote"),
-//!                                     old_io::USER_FILE, 10, None).unwrap();
+//! let mut remote_file = sess.scp_send(Path::new("remote"),
+//!                                     0o644, 10, None).unwrap();
 //! remote_file.write(b"1234567890").unwrap();
 //! ```
 //!
 //! ## Download a file
 //!
 //! ```no_run
-//! use std::old_io::TcpStream;
+//! use std::io::prelude::*;
+//! use std::net::TcpStream;
+//! use std::path::Path;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -109,13 +116,14 @@
 //! sess.handshake(&tcp).unwrap();
 //! sess.userauth_agent("username").unwrap();
 //!
-//! let (mut remote_file, stat) = sess.scp_recv(&Path::new("remote")).unwrap();
-//! println!("remote file size: {}", stat.size);
-//! let contents = remote_file.read_to_end();
+//! let (mut remote_file, stat) = sess.scp_recv(Path::new("remote")).unwrap();
+//! println!("remote file size: {}", stat.size());
+//! let mut contents = Vec::new();
+//! remote_file.read_to_end(&mut contents).unwrap();
+//! // ...
 //! ```
 
-#![feature(unsafe_destructor, std_misc, collections, old_io, core, old_path)]
-#![feature(io)]
+#![feature(unsafe_destructor, std_misc, collections, io, core, path, os, net)]
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 
@@ -131,7 +139,7 @@ pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow};
 pub use error::Error;
 pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
-pub use session::Session;
+pub use session::{Session, ScpFileStat};
 pub use sftp::{Sftp, OpenFlags, READ, WRITE, APPEND, CREATE, TRUNCATE};
 pub use sftp::{EXCLUSIVE, OpenType, File, FileStat};
 pub use sftp::{RenameFlags, ATOMIC, OVERWRITE, NATIVE};

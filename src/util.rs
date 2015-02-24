@@ -1,4 +1,6 @@
-use {Session, Error};
+use std::path::Path;
+
+use {raw, Session, Error};
 
 #[doc(hidden)]
 pub trait Binding: Sized {
@@ -22,5 +24,29 @@ pub trait SessionBinding<'sess>: Sized {
         } else {
             Ok(SessionBinding::from_raw(sess, raw))
         }
+    }
+}
+
+#[cfg(unix)]
+pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
+    use std::os::unix::prelude::*;
+    use std::ffi::AsOsStr;
+    check(p.as_os_str().as_bytes())
+}
+#[cfg(windows)]
+pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
+    match p.to_str() {
+        Some(s) => check(s),
+        None => Error::new(raw::LIBSSH2_ERROR_INVAL,
+                           "only unicode paths on windows may be used"),
+    }
+}
+
+fn check(b: &[u8]) -> Result<&[u8], Error> {
+    if b.iter().any(|b| *b == 0) {
+        Err(Error::new(raw::LIBSSH2_ERROR_INVAL,
+                       "path provided contains a 0 byte"))
+    } else {
+        Ok(b)
     }
 }

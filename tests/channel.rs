@@ -1,4 +1,5 @@
-use std::old_io::{TcpListener, Listener, Acceptor, TcpStream};
+use std::io::prelude::*;
+use std::net::{TcpStream, TcpListener};
 use std::thread;
 
 #[test]
@@ -20,8 +21,9 @@ fn reading_data() {
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
     channel.exec("echo foo").unwrap();
-    let output = channel.read_to_string().unwrap();
-    assert_eq!(output.as_slice(), "foo\n");
+    let mut output = String::new();
+    channel.read_to_string(&mut output).unwrap();
+    assert_eq!(output, "foo\n");
 }
 
 #[test]
@@ -31,8 +33,9 @@ fn writing_data() {
     channel.exec("read foo && echo $foo").unwrap();
     channel.write_all(b"foo\n").unwrap();
     channel.close().unwrap();
-    let output = channel.read_to_string().unwrap();
-    assert_eq!(output.as_slice(), "foo\n");
+    let mut output = String::new();
+    channel.read_to_string(&mut output).unwrap();
+    assert_eq!(output, "foo\n");
 }
 
 #[test]
@@ -42,8 +45,9 @@ fn eof() {
     channel.adjust_receive_window(10, false).unwrap();
     channel.exec("read foo").unwrap();
     channel.send_eof().unwrap();
-    let output = channel.read_to_string().unwrap();
-    assert_eq!(output.as_slice(), "");
+    let mut output = String::new();
+    channel.read_to_string(&mut output).unwrap();
+    assert_eq!(output, "");
 }
 
 #[test]
@@ -64,11 +68,10 @@ fn setenv() {
 
 #[test]
 fn direct() {
-    let mut l = TcpListener::bind("127.0.0.1:0").unwrap();
-    let addr = l.socket_name().unwrap();
-    let mut a = l.listen().unwrap();
+    let a = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = a.socket_addr().unwrap();
     let t = thread::scoped(move|| {
-        let mut s = a.accept().unwrap();
+        let mut s = a.accept().unwrap().0;
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
@@ -76,7 +79,7 @@ fn direct() {
     });
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_direct_tcpip("127.0.0.1",
-                                                addr.port, None).unwrap();
+                                                addr.port(), None).unwrap();
     channel.write_all(&[1, 2, 3]).unwrap();
     let r = &mut [0, 0, 0];
     channel.read(r).unwrap();
@@ -90,7 +93,7 @@ fn forward() {
     let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
                                  .unwrap();
     let t = thread::scoped(move|| {
-        let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        let mut s = TcpStream::connect(&("127.0.0.1", port)).unwrap();
         let b = &mut [0, 0, 0];
         s.read(b).unwrap();
         assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
