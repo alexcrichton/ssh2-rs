@@ -1,4 +1,4 @@
-#![feature(io, path, env, core, fs, process, old_path)]
+#![feature(io, path, env, core, fs, process)]
 
 extern crate "pkg-config" as pkg_config;
 
@@ -125,6 +125,6 @@ fn which(cmd: &str) -> Option<PathBuf> {
     env::split_paths(&env::var("PATH").unwrap()).map(|p| {
         p.join(&cmd)
     }).map(|p| {
-        PathBuf::new(p.as_str().unwrap())
+        PathBuf::new(p.to_str().unwrap())
     }).find(|p| p.exists())
 }
