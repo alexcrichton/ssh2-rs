@@ -1,5 +1,5 @@
 #![deny(warnings)]
-#![feature(io, core, path, env, net, fs, old_io, old_path)]
+#![feature(io, core, path, env, net, fs, tempdir)]
 
 extern crate ssh2;
 extern crate libc;
@@ -12,7 +12,6 @@ mod session;
 mod channel;
 mod knownhosts;
 mod sftp;
-mod tempdir;
 
 pub fn socket() -> TcpStream {
     TcpStream::connect("127.0.0.1:22").unwrap()

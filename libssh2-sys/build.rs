@@ -124,7 +124,5 @@ fn which(cmd: &str) -> Option<PathBuf> {
     let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
     env::split_paths(&env::var("PATH").unwrap()).map(|p| {
         p.join(&cmd)
-    }).map(|p| {
-        PathBuf::new(p.to_str().unwrap())
     }).find(|p| p.exists())
 }

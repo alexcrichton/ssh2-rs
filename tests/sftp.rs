@@ -1,7 +1,5 @@
 use std::io::prelude::*;
-use std::fs::{self, File};
-
-use tempdir::TempDir;
+use std::fs::{self, File, TempDir};
 
 #[test]
 fn smoke() {

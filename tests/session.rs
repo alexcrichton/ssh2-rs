@@ -1,8 +1,7 @@
 use std::env;
-use std::fs::File;
+use std::fs::{File, TempDir};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use tempdir::TempDir;
 
 use ssh2::{Session, MethodType, HashType};
 
