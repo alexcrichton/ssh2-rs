@@ -136,7 +136,7 @@ use std::ffi::CStr;
 use std::sync::{Once, ONCE_INIT};
 
 pub use agent::{Agent, Identities, PublicKey};
-pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow};
+pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow, Stream};
 pub use error::Error;
 pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;

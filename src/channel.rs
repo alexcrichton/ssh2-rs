@@ -20,6 +20,13 @@ pub struct Channel<'sess> {
     read_limit: Option<u64>,
 }
 
+/// A channel can have a number of streams, each identified by an id, each of
+/// which implements the `Read` and `Write` traits.
+pub struct Stream<'channel, 'sess: 'channel> {
+    channel: &'channel mut Channel<'sess>,
+    id: i32,
+}
+
 /// Data received from when a program exits with a signal.
 pub struct ExitSignal {
     /// The exit signal received, if the program did not exit cleanly. Does not
@@ -165,81 +172,24 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Flush the stderr buffers.
-    pub fn flush_stderr(&mut self) -> Result<(), Error> {
-        self.flush_stream(::EXTENDED_DATA_STDERR)
+    /// Get a handle to the stderr stream of this channel.
+    ///
+    /// The returned handle implements the `Read` and `Write` traits.
+    pub fn stderr<'a>(&'a mut self) -> Stream<'a, 'sess> {
+        self.stream(::EXTENDED_DATA_STDERR)
     }
 
-    /// Flush the read buffer for a given channel instance.
+    /// Get a handle to a particular stream for this channel.
+    ///
+    /// The returned handle implements the `Read` and `Write` traits.
     ///
     /// Groups of substreams may be flushed by passing on of the following
-    /// constants
+    /// constants and then calling `flush()`.
     ///
     /// * FLUSH_EXTENDED_DATA - Flush all extended data substreams
     /// * FLUSH_ALL - Flush all substreams
-    pub fn flush_stream(&mut self, stream_id: i32) -> Result<(), Error> {
-        unsafe {
-            self.sess.rc(raw::libssh2_channel_flush_ex(self.raw,
-                                                       stream_id as c_int))
-        }
-    }
-
-    /// Write data to the channel stderr stream.
-    pub fn write_stderr(&mut self, data: &[u8]) -> Result<usize, Error> {
-        self.write_stream(::EXTENDED_DATA_STDERR, data)
-    }
-
-    /// Write data to a channel stream.
-    ///
-    /// All channel streams have one standard I/O substream (stream_id == 0),
-    /// and may have up to 2^32 extended data streams as identified by the
-    /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
-    /// to be the stderr substream.
-    pub fn write_stream(&mut self, stream_id: i32, data: &[u8])
-                        -> Result<usize, Error> {
-        unsafe {
-            let rc = raw::libssh2_channel_write_ex(self.raw,
-                                                   stream_id as c_int,
-                                                   data.as_ptr() as *mut _,
-                                                   data.len() as size_t);
-            self.sess.rc(rc).map(|()| rc as usize)
-        }
-    }
-
-    /// Read from the stderr stream .
-    pub fn read_stderr(&mut self, data: &mut [u8]) -> Result<usize, Error> {
-        self.read_stream(::EXTENDED_DATA_STDERR, data)
-    }
-
-    /// Attempt to read data from an active channel stream.
-    ///
-    /// All channel streams have one standard I/O substream (stream_id == 0),
-    /// and may have up to 2^32 extended data streams as identified by the
-    /// selected stream_id. The SSH2 protocol currently defines a stream ID of 1
-    /// to be the stderr substream.
-    pub fn read_stream(&mut self, stream_id: i32, data: &mut [u8])
-                       -> Result<usize, Error> {
-        if self.eof() { return Ok(0) }
-
-        let data = match self.read_limit {
-            Some(amt) => {
-                let len = data.len();
-                &mut data[..cmp::min(amt as usize, len)]
-            }
-            None => data,
-        };
-        unsafe {
-            let rc = raw::libssh2_channel_read_ex(self.raw,
-                                                  stream_id as c_int,
-                                                  data.as_mut_ptr() as *mut _,
-                                                  data.len() as size_t);
-            if rc < 0 { try!(self.sess.rc(rc)); }
-            match self.read_limit {
-                Some(ref mut amt) => *amt -= rc as u64,
-                None => {}
-            }
-            Ok(rc as usize)
-        }
+    pub fn stream<'a>(&'a mut self, stream_id: i32) -> Stream<'a, 'sess> {
+        Stream { channel: self, id: stream_id }
     }
 
     /// Returns the exit code raised by the process running on the remote host
@@ -402,26 +352,17 @@ impl<'sess> SessionBinding<'sess> for Channel<'sess> {
 
 impl<'sess> Write for Channel<'sess> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_stream(0, buf).map_err(|e| {
-            io::Error::new(ErrorKind::Other, "ssh write error",
-                           Some(e.to_string()))
-        })
+        self.stream(0).write(buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.flush_stream(0).map_err(|e| {
-            io::Error::new(ErrorKind::Other, "ssh write error",
-                           Some(e.to_string()))
-        })
+        self.stream(0).flush()
     }
 }
 
 impl<'sess> Read for Channel<'sess> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.read_stream(0, buf).map_err(|e| {
-            io::Error::new(ErrorKind::Other, "ssh read error",
-                           Some(e.to_string()))
-        })
+        self.stream(0).read(buf)
     }
 }
 
@@ -429,5 +370,62 @@ impl<'sess> Read for Channel<'sess> {
 impl<'sess> Drop for Channel<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_channel_free(self.raw), 0) }
+    }
+}
+
+impl<'channel, 'sess> Read for Stream<'channel, 'sess> {
+    fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
+        if self.channel.eof() { return Ok(0) }
+
+        let data = match self.channel.read_limit {
+            Some(amt) => {
+                let len = data.len();
+                &mut data[..cmp::min(amt as usize, len)]
+            }
+            None => data,
+        };
+        let ret = unsafe {
+            let rc = raw::libssh2_channel_read_ex(self.channel.raw,
+                                                  self.id as c_int,
+                                                  data.as_mut_ptr() as *mut _,
+                                                  data.len() as size_t);
+            self.channel.sess.rc(rc).map(|()| rc as usize)
+        };
+        match ret {
+            Ok(n) => {
+                if let Some(ref mut amt) = self.channel.read_limit {
+                    *amt -= n as u64;
+                }
+                Ok(n)
+            }
+            Err(e) => Err(io::Error::new(ErrorKind::Other, "ssh read error",
+                                         Some(e.to_string())))
+        }
+    }
+}
+
+impl<'channel, 'sess> Write for Stream<'channel, 'sess> {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        unsafe {
+            let rc = raw::libssh2_channel_write_ex(self.channel.raw,
+                                                   self.id as c_int,
+                                                   data.as_ptr() as *mut _,
+                                                   data.len() as size_t);
+            self.channel.sess.rc(rc).map(|()| rc as usize)
+        }.map_err(|e| {
+            io::Error::new(ErrorKind::Other, "ssh write error",
+                           Some(e.to_string()))
+        })
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        unsafe {
+            let rc = raw::libssh2_channel_flush_ex(self.channel.raw,
+                                                   self.id as c_int);
+            self.channel.sess.rc(rc)
+        }.map_err(|e| {
+            io::Error::new(ErrorKind::Other, "ssh flush error",
+                           Some(e.to_string()))
+        })
     }
 }
