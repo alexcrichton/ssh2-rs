@@ -1,5 +1,6 @@
 use std::io::prelude::*;
-use std::fs::{self, File, TempDir};
+use std::fs::{self, File};
+use tempdir::TempDir;
 
 #[test]
 fn smoke() {
@@ -18,7 +19,8 @@ fn ops() {
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
     sftp.mkdir(&td.path().join("bar2"), 0o755).unwrap();
-    assert!(td.path().join("bar2").is_dir());
+    assert_eq!(fs::metadata(&td.path().join("bar2")).map(|m| m.is_dir()),
+               Ok(true));
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 
     sftp.create(&td.path().join("foo5")).unwrap().write_all(b"foo").unwrap();

@@ -1,10 +1,9 @@
-#![feature(io, path, core, fs)]
+#![feature(path, fs_walk)]
 
 extern crate "pkg-config" as pkg_config;
 
 use std::env;
 use std::fs;
-use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -21,7 +20,7 @@ fn main() {
 
     if target.contains("i686") {
         cflags.push_str(" -m32");
-    } else if target.as_slice().contains("x86_64") {
+    } else if target.contains("x86_64") {
         cflags.push_str(" -m64");
     }
     if !target.contains("i686") {
@@ -30,8 +29,8 @@ fn main() {
 
     match env::var("DEP_OPENSSL_ROOT") {
         Ok(s) => {
-            cflags.push_str(format!(" -I{}/include", s).as_slice());
-            cflags.push_str(format!(" -L{}/lib", s).as_slice());
+            cflags.push_str(&format!(" -I{}/include", s));
+            cflags.push_str(&format!(" -L{}/lib", s));
         }
         Err(..) => {}
     }
@@ -81,7 +80,7 @@ fn main() {
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/src/.libs/libssh2.a");
     let p2 = dst.join("build/src/.libs/libssh2.lib");
-    if p1.exists() {
+    if fs::metadata(&p1).is_ok() {
         fs::rename(&p1, &dst.join("lib/libssh2.a")).unwrap();
     } else {
         fs::rename(&p2, &dst.join("lib/libssh2.a")).unwrap();
@@ -94,7 +93,7 @@ fn main() {
         let dst = dst.join("include");
         for file in fs::walk_dir(&root).unwrap() {
             let file = file.unwrap().path();
-            if !file.is_file() { continue }
+            if fs::metadata(&file).map(|m| m.is_file()) != Ok(true) { continue }
 
             let part = file.relative_from(&root).unwrap();
             let dst = dst.join(part);
@@ -124,5 +123,5 @@ fn which(cmd: &str) -> Option<PathBuf> {
     let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
     env::split_paths(&env::var("PATH").unwrap()).map(|p| {
         p.join(&cmd)
-    }).find(|p| p.exists())
+    }).find(|p| fs::metadata(p).is_ok())
 }

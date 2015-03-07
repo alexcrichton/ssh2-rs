@@ -23,3 +23,6 @@ libc = "0.1"
 [dependencies.libssh2-sys]
 path = "libssh2-sys"
 version = "0.1.0"
+
+[dev-dependencies]
+tempdir = "0.3"

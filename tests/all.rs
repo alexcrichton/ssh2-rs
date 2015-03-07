@@ -1,8 +1,9 @@
 #![deny(warnings)]
-#![feature(io, core, path, net, fs, tempdir)]
+#![feature(io, core, path, net)]
 
 extern crate ssh2;
 extern crate libc;
+extern crate tempdir;
 
 use std::env;
 use std::net::TcpStream;
