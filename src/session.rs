@@ -324,7 +324,7 @@ impl Session {
             let rc = raw::libssh2_session_supported_algs(self.raw, method_type,
                                                          &mut ptr);
             if rc <= 0 { try!(self.rc(rc)) }
-            for i in range(0, rc as isize) {
+            for i in 0..(rc as isize) {
                 let s = ::opt_bytes(&STATIC, *ptr.offset(i)).unwrap();;
                 let s = str::from_utf8(s).unwrap();
                 ret.push(s);
