@@ -505,6 +505,9 @@ extern {
                                    longentry: *mut c_char,
                                    longentry_len: size_t,
                                    attrs: *mut LIBSSH2_SFTP_ATTRIBUTES) -> c_int;
+    pub fn libssh2_sftp_unlink_ex(sftp: *mut LIBSSH2_SFTP,
+                                  filename: *const c_char,
+                                  filename_len: c_uint) -> c_int;
 }
 
 #[test]

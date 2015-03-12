@@ -299,6 +299,16 @@ impl<'sess> Sftp<'sess> {
         })
     }
 
+    /// Remove a file on the remote filesystem
+    pub fn unlink(&self, file: &Path) -> Result<(), Error> {
+        let file = try!(util::path2bytes(file));
+        self.rc(unsafe {
+            raw::libssh2_sftp_unlink_ex(self.raw,
+                                        file.as_ptr() as *const _,
+                                        file.len() as c_uint)
+        })
+    }
+
     /// Peel off the last error to happen on this SFTP instance.
     pub fn last_error(&self) -> Error {
         let code = unsafe { raw::libssh2_sftp_last_error(self.raw) };
