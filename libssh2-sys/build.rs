@@ -1,4 +1,4 @@
-#![feature(path, fs_walk)]
+#![feature(fs_walk)]
 
 extern crate "pkg-config" as pkg_config;
 
@@ -95,8 +95,9 @@ fn main() {
             let file = file.unwrap().path();
             if fs::metadata(&file).map(|m| m.is_file()) != Ok(true) { continue }
 
-            let part = file.relative_from(&root).unwrap();
-            let dst = dst.join(part);
+            let mut root = root.iter();
+            let mut dst = dst.clone();
+            dst.extend(file.iter().skip_while(|c| Some(*c) == root.next()));
             fs::create_dir_all(dst.parent().unwrap()).unwrap();
             fs::copy(&file, &dst).unwrap();
         }
