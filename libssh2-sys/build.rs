@@ -1,11 +1,16 @@
-#![feature(fs_walk)]
-
 extern crate "pkg-config" as pkg_config;
 
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+
+macro_rules! t {
+    ($e:expr) => (match $e {
+        Ok(n) => n,
+        Err(e) => panic!("\n{} failed with {}\n", stringify!($e), e),
+    })
+}
 
 fn main() {
     match pkg_config::find_library("libssh2") {
@@ -50,7 +55,7 @@ fn main() {
     let _ = fs::remove_dir_all(&dst.join("include"));
     let _ = fs::remove_dir_all(&dst.join("lib"));
     let _ = fs::remove_dir_all(&dst.join("build"));
-    fs::create_dir(&dst.join("build")).unwrap();
+    t!(fs::create_dir(&dst.join("build")));
 
     let root = src.join("libssh2-1.4.4-20140901");
     // Can't run ./configure directly on msys2 b/c we're handing in
@@ -75,32 +80,27 @@ fn main() {
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::create_dir_all(&dst.join("lib/pkgconfig")).unwrap();
+    t!(fs::create_dir_all(&dst.join("lib/pkgconfig")));
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/src/.libs/libssh2.a");
     let p2 = dst.join("build/src/.libs/libssh2.lib");
     if fs::metadata(&p1).is_ok() {
-        fs::rename(&p1, &dst.join("lib/libssh2.a")).unwrap();
+        t!(fs::copy(&p1, &dst.join("lib/libssh2.a")));
     } else {
-        fs::rename(&p2, &dst.join("lib/libssh2.a")).unwrap();
+        t!(fs::copy(&p2, &dst.join("lib/libssh2.a")));
     }
-    fs::rename(&dst.join("build/libssh2.pc"),
-               &dst.join("lib/pkgconfig/libssh2.pc")).unwrap();
+    t!(fs::rename(&dst.join("build/libssh2.pc"),
+                  &dst.join("lib/pkgconfig/libssh2.pc")));
 
     {
         let root = root.join("include");
         let dst = dst.join("include");
-        for file in fs::walk_dir(&root).unwrap() {
-            let file = file.unwrap().path();
-            if fs::metadata(&file).map(|m| m.is_file()) != Ok(true) { continue }
-
-            let mut root = root.iter();
-            let mut dst = dst.clone();
-            dst.extend(file.iter().skip_while(|c| Some(*c) == root.next()));
-            fs::create_dir_all(dst.parent().unwrap()).unwrap();
-            fs::copy(&file, &dst).unwrap();
-        }
+        t!(fs::create_dir_all(&dst));
+        t!(fs::copy(&root.join("libssh2.h"), &dst.join("libssh2.h")));
+        t!(fs::copy(&root.join("libssh2_publickey.h"),
+                    &dst.join("libssh2_publickey.h")));
+        t!(fs::copy(&root.join("libssh2_sftp.h"), &dst.join("libssh2_sftp.h")));
     }
 
     if windows {
@@ -117,7 +117,7 @@ fn make() -> &'static str {
 
 fn run(cmd: &mut Command) {
     println!("running: {:?}", cmd);
-    assert!(cmd.status().unwrap().success());
+    assert!(t!(cmd.status()).success());
 }
 
 fn which(cmd: &str) -> Option<PathBuf> {
