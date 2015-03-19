@@ -104,9 +104,12 @@ fn main() {
     }
 
     if windows {
-        println!("cargo:rustc-flags=-l ws2_32 -l bcrypt -l crypt32");
+        println!("cargo:rustc-link-lib=ws2_32");
+        println!("cargo:rustc-link-lib=bcrypt");
+        println!("cargo:rustc-link-lib=crypt32");
     }
-    println!("cargo:rustc-flags=-L {}/lib -l ssh2:static", dst.display());
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=ssh2");
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());
 }

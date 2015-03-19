@@ -69,7 +69,7 @@ fn setenv() {
 #[test]
 fn direct() {
     let a = TcpListener::bind("127.0.0.1:0").unwrap();
-    let addr = a.socket_addr().unwrap();
+    let addr = a.local_addr().unwrap();
     let t = thread::scoped(move|| {
         let mut s = a.accept().unwrap().0;
         let b = &mut [0, 0, 0];

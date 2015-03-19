@@ -143,14 +143,14 @@ impl Session {
         #[cfg(windows)]
         unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream)
                             -> libc::c_int {
-            use std::os::windows::AsRawSocket;
+            use std::os::windows::prelude::*;
             raw::libssh2_session_handshake(raw, stream.as_raw_socket())
         }
 
         #[cfg(unix)]
         unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream)
                             -> libc::c_int {
-            use std::os::unix::AsRawFd;
+            use std::os::unix::prelude::*;
             raw::libssh2_session_handshake(raw, stream.as_raw_fd())
         }
     }
