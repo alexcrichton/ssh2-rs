@@ -1,5 +1,5 @@
 use std::io::prelude::*;
-use std::io::{self, ErrorKind, Seek, SeekFrom};
+use std::io::{self, ErrorKind, SeekFrom};
 use std::marker;
 use std::mem;
 use std::path::{Path, PathBuf};
