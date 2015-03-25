@@ -72,18 +72,18 @@ fn direct() {
     let addr = a.local_addr().unwrap();
     let t = thread::scoped(move|| {
         let mut s = a.accept().unwrap().0;
-        let b = &mut [0, 0, 0];
-        s.read(b).unwrap();
-        assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
+        let mut b = [0, 0, 0];
+        s.read(&mut b).unwrap();
+        assert_eq!(b, [1, 2, 3]);
         s.write_all(&[4, 5, 6]).unwrap();
     });
     let (_tcp, sess) = ::authed_session();
     let mut channel = sess.channel_direct_tcpip("127.0.0.1",
                                                 addr.port(), None).unwrap();
     channel.write_all(&[1, 2, 3]).unwrap();
-    let r = &mut [0, 0, 0];
-    channel.read(r).unwrap();
-    assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
+    let mut r = [0, 0, 0];
+    channel.read(&mut r).unwrap();
+    assert_eq!(r, [4, 5, 6]);
     t.join();
 }
 
@@ -94,16 +94,16 @@ fn forward() {
                                  .unwrap();
     let t = thread::scoped(move|| {
         let mut s = TcpStream::connect(&("127.0.0.1", port)).unwrap();
-        let b = &mut [0, 0, 0];
-        s.read(b).unwrap();
-        assert_eq!(b.as_slice(), [1, 2, 3].as_slice());
+        let mut b = [0, 0, 0];
+        s.read(&mut b).unwrap();
+        assert_eq!(b, [1, 2, 3]);
         s.write_all(&[4, 5, 6]).unwrap();
     });
 
     let mut channel = listen.accept().unwrap();
     channel.write_all(&[1, 2, 3]).unwrap();
-    let r = &mut [0, 0, 0];
-    channel.read(r).unwrap();
-    assert_eq!(r.as_slice(), [4, 5, 6].as_slice());
+    let mut r = [0, 0, 0];
+    channel.read(&mut r).unwrap();
+    assert_eq!(r, [4, 5, 6]);
     t.join();
 }

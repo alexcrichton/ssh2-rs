@@ -31,7 +31,7 @@ fn smoke_handshake() {
     let mut sess = Session::new().unwrap();
     sess.handshake(&socket).unwrap();
     sess.host_key().unwrap();
-    let methods = sess.auth_methods(user.as_slice()).unwrap();
+    let methods = sess.auth_methods(&user).unwrap();
     assert!(methods.contains("publickey"), "{}", methods);
     assert!(!sess.authenticated());
 
@@ -40,7 +40,7 @@ fn smoke_handshake() {
     agent.list_identities().unwrap();
     {
         let identity = agent.identities().next().unwrap().unwrap();
-        agent.userauth(user.as_slice(), &identity).unwrap();
+        agent.userauth(&user, &identity).unwrap();
     }
     assert!(sess.authenticated());
     sess.host_key_hash(HashType::Md5).unwrap();
@@ -59,7 +59,7 @@ fn scp_recv() {
     let (mut ch, _) = sess.scp_recv(Path::new(".ssh/authorized_keys")).unwrap();
     let mut data = String::new();
     ch.read_to_string(&mut data).unwrap();
-    let p = PathBuf::new(&env::var("HOME").unwrap()).join(".ssh/authorized_keys");
+    let p = PathBuf::from(env::var("HOME").unwrap()).join(".ssh/authorized_keys");
     let mut expected = String::new();
     File::open(&p).unwrap().read_to_string(&mut expected).unwrap();
     assert!(data == expected);

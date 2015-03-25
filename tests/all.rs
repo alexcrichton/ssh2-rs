@@ -1,5 +1,5 @@
 #![deny(warnings)]
-#![feature(core)]
+#![feature(convert)]
 
 extern crate ssh2;
 extern crate libc;
@@ -30,7 +30,7 @@ pub fn authed_session() -> (TcpStream, ssh2::Session) {
         agent.connect().unwrap();
         agent.list_identities().unwrap();
         let identity = agent.identities().next().unwrap().unwrap();
-        agent.userauth(user.as_slice(), &identity).unwrap();
+        agent.userauth(&user, &identity).unwrap();
     }
     assert!(sess.authenticated());
     (socket, sess)

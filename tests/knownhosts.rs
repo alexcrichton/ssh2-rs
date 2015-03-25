@@ -35,6 +35,6 @@ CZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2R\
 PW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi\
 /w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==");
 
-    assert_eq!(hosts.write_string(&host, KnownHostFileKind::OpenSSH).unwrap().as_slice(), encoded);
+    assert_eq!(hosts.write_string(&host, KnownHostFileKind::OpenSSH).unwrap(), encoded);
     hosts.remove(host).unwrap();
 }

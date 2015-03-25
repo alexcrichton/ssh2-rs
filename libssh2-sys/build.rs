@@ -1,3 +1,5 @@
+#![feature(convert)]
+
 extern crate "pkg-config" as pkg_config;
 
 use std::env;
@@ -40,8 +42,8 @@ fn main() {
         Err(..) => {}
     }
 
-    let src = PathBuf::new(&env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    let dst = PathBuf::new(&env::var_os("OUT_DIR").unwrap());
+    let src = PathBuf::from(&env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let dst = PathBuf::from(&env::var_os("OUT_DIR").unwrap());
 
     let mut config_opts = Vec::new();
     if windows {

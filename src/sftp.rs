@@ -555,10 +555,10 @@ impl FileStat {
 fn mkpath(v: Vec<u8>) -> PathBuf {
     use std::os::unix::prelude::*;
     use std::ffi::OsStr;
-    PathBuf::new(<OsStr as OsStrExt>::from_bytes(&v))
+    PathBuf::from(OsStr::from_bytes(&v))
 }
 #[cfg(windows)]
 fn mkpath(v: Vec<u8>) -> PathBuf {
     use std::str;
-    PathBuf::new(str::from_utf8(&v).unwrap())
+    PathBuf::from(str::from_utf8(&v).unwrap())
 }
