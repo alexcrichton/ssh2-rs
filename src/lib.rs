@@ -128,7 +128,7 @@
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 
-extern crate "libssh2-sys" as raw;
+extern crate libssh2_sys as raw;
 extern crate libc;
 #[macro_use] extern crate bitflags;
 
