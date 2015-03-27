@@ -30,8 +30,9 @@ pub trait SessionBinding<'sess>: Sized {
 #[cfg(unix)]
 pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
     use std::os::unix::prelude::*;
-    use std::ffi::AsOsStr;
-    check(p.as_os_str().as_bytes())
+    use std::ffi::OsStr;
+    let s: &OsStr = p.as_ref();
+    check(s.as_bytes())
 }
 #[cfg(windows)]
 pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
