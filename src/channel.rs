@@ -1,6 +1,7 @@
+use std::cmp;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind};
-use std::cmp;
+use std::slice;
 use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
 
 use {raw, Session, Error};
@@ -230,7 +231,8 @@ impl<'sess> Channel<'sess> {
         unsafe fn convert(chan: &Channel, ptr: *mut c_char,
                           len: size_t) -> Option<String> {
             if ptr.is_null() { return None }
-            let ret = Vec::from_raw_buf(ptr as *const u8, len as usize);
+            let slice = slice::from_raw_parts(ptr as *const u8, len as usize);
+            let ret = slice.to_vec();
             raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
             String::from_utf8(ret).ok()
         }
