@@ -248,7 +248,7 @@ impl<'kh> Host<'kh> {
     /// This is `None` if no plain text host name exists.
     pub fn name(&self) -> Option<&str> {
         unsafe {
-            ::opt_bytes(self, (*self.raw).name as *const _)
+            ::opt_bytes(self, (*self.raw).name)
                        .and_then(|s| str::from_utf8(s).ok())
         }
     }
@@ -256,7 +256,7 @@ impl<'kh> Host<'kh> {
     /// Returns the key in base64/printable format
     pub fn key(&self) -> &str {
         let bytes = unsafe {
-            ::opt_bytes(self, (*self.raw).key as *const _).unwrap()
+            ::opt_bytes(self, (*self.raw).key).unwrap()
         };
         str::from_utf8(bytes).unwrap()
     }

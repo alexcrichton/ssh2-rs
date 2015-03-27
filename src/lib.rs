@@ -125,6 +125,7 @@
 
 #![doc(html_root_url = "http://alexcrichton.com/ssh2-rs")]
 #![feature(unsafe_destructor, std_misc, collections, io, io_ext, convert)]
+#![allow(trivial_numeric_casts)]
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 

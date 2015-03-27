@@ -26,7 +26,7 @@ impl Error {
             let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg,
                                                      0 as *mut _, 0);
             if rc == 0 { return None }
-            let s = ::opt_bytes(&STATIC, msg as *const _).unwrap();
+            let s = ::opt_bytes(&STATIC, msg).unwrap();
             Some(Error::new(rc, str::from_utf8(s).unwrap()))
         }
     }
