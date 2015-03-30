@@ -332,7 +332,6 @@ impl<'sess> SessionBinding<'sess> for Sftp<'sess> {
 }
 
 
-#[unsafe_destructor]
 impl<'sess> Drop for Sftp<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_sftp_shutdown(self.raw), 0) }
@@ -498,7 +497,6 @@ impl<'sftp> Seek for File<'sftp> {
     }
 }
 
-#[unsafe_destructor]
 impl<'sftp> Drop for File<'sftp> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_sftp_close_handle(self.raw), 0) }

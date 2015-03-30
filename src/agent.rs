@@ -73,7 +73,6 @@ impl<'sess> SessionBinding<'sess> for Agent<'sess> {
     fn raw(&self) -> *mut raw::LIBSSH2_AGENT { self.raw }
 }
 
-#[unsafe_destructor]
 impl<'a> Drop for Agent<'a> {
     fn drop(&mut self) {
         unsafe { raw::libssh2_agent_free(self.raw) }

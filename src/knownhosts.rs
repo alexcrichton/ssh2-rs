@@ -221,7 +221,6 @@ impl<'sess> SessionBinding<'sess> for KnownHosts<'sess> {
 }
 
 
-#[unsafe_destructor]
 impl<'sess> Drop for KnownHosts<'sess> {
     fn drop(&mut self) {
         unsafe { raw::libssh2_knownhost_free(self.raw) }

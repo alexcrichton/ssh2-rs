@@ -33,7 +33,6 @@ impl<'sess> SessionBinding<'sess> for Listener<'sess> {
     fn raw(&self) -> *mut raw::LIBSSH2_LISTENER { self.raw }
 }
 
-#[unsafe_destructor]
 impl<'sess> Drop for Listener<'sess> {
     fn drop(&mut self) {
         unsafe {

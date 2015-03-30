@@ -368,7 +368,6 @@ impl<'sess> Read for Channel<'sess> {
     }
 }
 
-#[unsafe_destructor]
 impl<'sess> Drop for Channel<'sess> {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_channel_free(self.raw), 0) }
