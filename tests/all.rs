@@ -1,5 +1,4 @@
 #![deny(warnings)]
-#![feature(convert)]
 
 extern crate ssh2;
 extern crate libc;

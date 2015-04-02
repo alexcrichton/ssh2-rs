@@ -19,8 +19,8 @@ fn ops() {
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
     sftp.mkdir(&td.path().join("bar2"), 0o755).unwrap();
-    assert_eq!(fs::metadata(&td.path().join("bar2")).map(|m| m.is_dir()),
-               Ok(true));
+    assert!(fs::metadata(&td.path().join("bar2")).map(|m| m.is_dir())
+               .unwrap_or(false));
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 
     sftp.create(&td.path().join("foo5")).unwrap().write_all(b"foo").unwrap();

@@ -432,9 +432,8 @@ impl<'sftp> Read for File<'sftp> {
                                             buf.as_mut_ptr() as *mut _,
                                             buf.len() as size_t);
             match rc {
-                n if n < 0 => Err(io::Error::new(ErrorKind::Other, "read error",
-                                                 Some(self.sftp.last_error()
-                                                          .to_string()))),
+                n if n < 0 => Err(io::Error::new(ErrorKind::Other,
+                                                 self.sftp.last_error())),
                 n => Ok(n as usize)
             }
         }
@@ -449,8 +448,7 @@ impl<'sftp> Write for File<'sftp> {
                                     buf.len() as size_t)
         };
         if rc < 0 {
-            Err(io::Error::new(ErrorKind::Other, "write error",
-                               Some(self.sftp.last_error().to_string())))
+            Err(io::Error::new(ErrorKind::Other, self.sftp.last_error()))
         } else {
             Ok(rc as usize)
         }
@@ -481,14 +479,11 @@ impl<'sftp> Seek for File<'sftp> {
                     Some(size) => (size as i64 + offset) as u64,
                     None => {
                         return Err(io::Error::new(ErrorKind::Other,
-                                                  "no file size available",
-                                                  None))
+                                                  "no file size available"))
                     }
                 },
                 Err(e) => {
-                    return Err(io::Error::new(ErrorKind::Other,
-                                              "failed to stat remote file",
-                                              Some(e.to_string())))
+                    return Err(io::Error::new(ErrorKind::Other, e))
                 }
             }
         };

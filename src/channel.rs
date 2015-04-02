@@ -399,8 +399,7 @@ impl<'channel, 'sess> Read for Stream<'channel, 'sess> {
                 }
                 Ok(n)
             }
-            Err(e) => Err(io::Error::new(ErrorKind::Other, "ssh read error",
-                                         Some(e.to_string())))
+            Err(e) => Err(io::Error::new(ErrorKind::Other, e)),
         }
     }
 }
@@ -414,8 +413,7 @@ impl<'channel, 'sess> Write for Stream<'channel, 'sess> {
                                                    data.len() as size_t);
             self.channel.sess.rc(rc).map(|()| rc as usize)
         }.map_err(|e| {
-            io::Error::new(ErrorKind::Other, "ssh write error",
-                           Some(e.to_string()))
+            io::Error::new(ErrorKind::Other, e)
         })
     }
 
@@ -425,8 +423,7 @@ impl<'channel, 'sess> Write for Stream<'channel, 'sess> {
                                                    self.id as c_int);
             self.channel.sess.rc(rc)
         }.map_err(|e| {
-            io::Error::new(ErrorKind::Other, "ssh flush error",
-                           Some(e.to_string()))
+            io::Error::new(ErrorKind::Other, e)
         })
     }
 }
