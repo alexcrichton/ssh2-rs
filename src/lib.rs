@@ -182,7 +182,7 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
 }
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum DisconnectCode {
     HostNotAllowedToConnect =
         raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as isize,
@@ -205,7 +205,7 @@ pub enum DisconnectCode {
 }
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum HostKeyType {
     Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as isize,
     Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as isize,
@@ -213,7 +213,7 @@ pub enum HostKeyType {
 }
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum MethodType {
     Kex = raw::LIBSSH2_METHOD_KEX as isize,
     HostKey = raw::LIBSSH2_METHOD_HOSTKEY as isize,
@@ -236,20 +236,20 @@ pub static FLUSH_ALL: i32 = -2;
 pub static EXTENDED_DATA_STDERR: i32 = 1;
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum HashType {
     Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as isize,
     Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as isize,
 }
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum KnownHostFileKind {
     OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as isize,
 }
 
 /// Possible results of a call to `KnownHosts::check`
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum CheckResult {
     /// Hosts and keys match
     Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as isize,
@@ -262,7 +262,7 @@ pub enum CheckResult {
 }
 
 #[allow(missing_docs)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum KnownHostKeyFormat {
     Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as isize,
     SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as isize,

@@ -169,7 +169,7 @@ pub struct libssh2_knownhost {
 }
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct LIBSSH2_SFTP_ATTRIBUTES {
     pub flags: c_ulong,
     pub filesize: u64,
@@ -181,7 +181,7 @@ pub struct LIBSSH2_SFTP_ATTRIBUTES {
 }
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct LIBSSH2_SFTP_STATVFS {
     pub f_bsize: u64,
     pub f_frsize: u64,

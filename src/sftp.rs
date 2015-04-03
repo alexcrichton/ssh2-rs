@@ -89,7 +89,7 @@ bitflags! {
 }
 
 /// How to open a file handle with libssh2.
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum OpenType {
     /// Specify that a file shoud be opened.
     File = raw::LIBSSH2_SFTP_OPENFILE as isize,
