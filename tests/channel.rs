@@ -70,7 +70,7 @@ fn setenv() {
 fn direct() {
     let a = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = a.local_addr().unwrap();
-    let t = thread::scoped(move|| {
+    let t = thread::spawn(move|| {
         let mut s = a.accept().unwrap().0;
         let mut b = [0, 0, 0];
         s.read(&mut b).unwrap();
@@ -84,7 +84,7 @@ fn direct() {
     let mut r = [0, 0, 0];
     channel.read(&mut r).unwrap();
     assert_eq!(r, [4, 5, 6]);
-    t.join();
+    t.join().unwrap();
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn forward() {
     let (_tcp, sess) = ::authed_session();
     let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
                                  .unwrap();
-    let t = thread::scoped(move|| {
+    let t = thread::spawn(move|| {
         let mut s = TcpStream::connect(&("127.0.0.1", port)).unwrap();
         let mut b = [0, 0, 0];
         s.read(&mut b).unwrap();
@@ -105,5 +105,5 @@ fn forward() {
     let mut r = [0, 0, 0];
     channel.read(&mut r).unwrap();
     assert_eq!(r, [4, 5, 6]);
-    t.join();
+    t.join().unwrap();
 }
