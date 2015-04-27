@@ -8,6 +8,6 @@ Rust bindings to libssh2
 
 ```toml
 # Cargo.toml
-[dependencies.ssh2]
-git = "https://github.com/alexcrichton/ssh2-rs"
+[dependencies]
+ssh2 = "0.2"
 ```
