@@ -84,7 +84,7 @@ fn direct() {
     let mut r = [0, 0, 0];
     channel.read(&mut r).unwrap();
     assert_eq!(r, [4, 5, 6]);
-    t.join().unwrap();
+    t.join().ok().unwrap();
 }
 
 #[test]
@@ -105,5 +105,5 @@ fn forward() {
     let mut r = [0, 0, 0];
     channel.read(&mut r).unwrap();
     assert_eq!(r, [4, 5, 6]);
-    t.join().unwrap();
+    t.join().ok().unwrap();
 }
