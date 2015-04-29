@@ -1,0 +1,12 @@
+install:
+  - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.0.0-beta-x86_64-pc-windows-gnu.exe'
+  - rust-1.0.0-beta-x86_64-pc-windows-gnu.exe /VERYSILENT /NORESTART /DIR="C:\Rust"
+  - SET PATH=%PATH%;C:\Rust\bin
+  - rustc -V
+  - cargo -V
+
+cache:
+  - x86_64-4.9.2-release-win32-seh-rt_v3-rev1.7z
+
+test_script:
+  - C:\MinGW\msys\1.0\bin\sh --login /c/projects/ssh2-rs/.appveyor-mingw-w64.sh
