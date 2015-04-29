@@ -8,5 +8,7 @@ install:
 cache:
   - x86_64-4.9.2-release-win32-seh-rt_v3-rev1.7z
 
+build: false
+
 test_script:
   - C:\MinGW\msys\1.0\bin\sh --login /c/projects/ssh2-rs/.appveyor-mingw-w64.sh
