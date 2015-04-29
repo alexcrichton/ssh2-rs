@@ -57,7 +57,7 @@ fn main() {
     let _ = fs::remove_dir_all(&dst.join("build"));
     t!(fs::create_dir(&dst.join("build")));
 
-    let root = src.join("libssh2-1.4.4-20140901");
+    let root = src.join("libssh2-1.5.0");
     // Can't run ./configure directly on msys2 b/c we're handing in
     // Windows-style paths (those starting with C:\), but it chokes on those.
     // For that reason we build up a shell script with paths converted to
