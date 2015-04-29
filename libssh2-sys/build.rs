@@ -1,7 +1,8 @@
 extern crate pkg_config;
 
 use std::env;
-use std::fs;
+use std::fs::{self, File};
+use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -90,8 +91,17 @@ fn main() {
     } else {
         t!(fs::copy(&p2, &dst.join("lib/libssh2.a")));
     }
-    t!(fs::rename(&dst.join("build/libssh2.pc"),
-                  &dst.join("lib/pkgconfig/libssh2.pc")));
+
+    // Unfortunately the pkg-config file generated for libssh2 indicates that it
+    // depends on zlib, but most systems don't actually have a zlib.pc, so
+    // pkg-config will say that libssh2 doesn't exist. We generally take care of
+    // the zlib dependency elsewhere, so we just remove that part from the
+    // pkg-config file
+    let mut pc = String::new();
+    t!(t!(File::open(dst.join("build/libssh2.pc"))).read_to_string(&mut pc));
+    let pc = pc.replace(",zlib", "");
+    let bytes = pc.as_bytes();
+    t!(t!(File::create(dst.join("lib/pkgconfig/libssh2.pc"))).write_all(bytes));
 
     {
         let root = root.join("include");
