@@ -37,9 +37,9 @@ pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
 #[cfg(windows)]
 pub fn path2bytes(p: &Path) -> Result<&[u8], Error> {
     match p.to_str() {
-        Some(s) => check(s),
-        None => Error::new(raw::LIBSSH2_ERROR_INVAL,
-                           "only unicode paths on windows may be used"),
+        Some(s) => check(s.as_bytes()),
+        None => Err(Error::new(raw::LIBSSH2_ERROR_INVAL,
+                               "only unicode paths on windows may be used")),
     }
 }
 
