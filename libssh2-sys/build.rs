@@ -14,6 +14,27 @@ macro_rules! t {
 }
 
 fn main() {
+    let args = env::args_os();
+
+    // Oh boy! If we're compiling on MSVC, then it turns out this build script
+    // itself is going to be used as a compiler! Currently the nmake build
+    // files for libssh2 *always* add the /GL compiler option to compiler
+    // invocations to enable whole program optimization.
+    //
+    // Unfortunately this requires the linker be passed /LTCG as a parameter,
+    // and we don't currently have a great way of passing that parameter to the
+    // Rust compiler itself. As such, this script uses itself as a compiler for
+    // the MSVC code and passes the /GL- option to disable whole program
+    // optimization, allowing the linker to succeed.
+    if args.len() > 1 {
+        let args = args.collect::<Vec<_>>();
+        assert!(Command::new("cl").args(&args)
+                                  .arg("/GL-")
+                                  .status().unwrap()
+                                  .success());
+        return
+    }
+
     match pkg_config::find_library("libssh2") {
         Ok(..) => return,
         Err(..) => {}
@@ -81,7 +102,20 @@ fn main() {
     } else {
         t!(fs::create_dir(dst.join("lib")));
 
-        if Command::new("make").arg("-v").output().is_ok() {
+        if target.contains("msvc") {
+            run(Command::new("nmake")
+                        .current_dir(&root)
+                        .arg("/nologo")
+                        // see above for why we set CC here
+                        .env("CC", env::current_exe().unwrap())
+                        .env_remove("TARGET")
+                        .arg("/fNMakefile")
+                        .arg("BUILD_STATIC_LIB=1")
+                        .arg("WITH_WINCNG=1"));
+            t!(fs::copy(root.join("Release/src/libssh2.lib"),
+                        dst.join("lib/libssh2.a")));
+            t!(fs::remove_dir_all(root.join("Release")));
+        } else {
             run(Command::new("make")
                         .current_dir(root.join("win32"))
                         .arg("-fGNUmakefile")
@@ -91,8 +125,6 @@ fn main() {
             t!(fs::remove_dir_all(root.join("win32/release")));
             t!(fs::copy(root.join("win32/libssh2.a"), dst.join("lib/libssh2.a")));
             t!(fs::remove_file(root.join("win32/libssh2.a")));
-        } else {
-            panic!("\n\ncurrently need `make` installed on windows\n");
         }
 
         let root = root.join("include");
@@ -108,6 +140,7 @@ fn main() {
         println!("cargo:rustc-link-lib=ws2_32");
         println!("cargo:rustc-link-lib=bcrypt");
         println!("cargo:rustc-link-lib=crypt32");
+        println!("cargo:rustc-link-lib=user32");
     }
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=ssh2");
