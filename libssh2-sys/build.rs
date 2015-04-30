@@ -99,7 +99,7 @@ fn main() {
     // pkg-config file
     let mut pc = String::new();
     t!(t!(File::open(dst.join("build/libssh2.pc"))).read_to_string(&mut pc));
-    let pc = pc.replace(",zlib", "");
+    let pc = pc.replace(",zlib", "").replace("zlib", "");
     let bytes = pc.as_bytes();
     t!(t!(File::create(dst.join("lib/pkgconfig/libssh2.pc"))).write_all(bytes));
 
