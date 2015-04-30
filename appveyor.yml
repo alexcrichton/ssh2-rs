@@ -1,11 +1,20 @@
 install:
+  # libssh2 depends on libbcrypt, but apparently this library is not available
+  # in the normal MinGW distribution (installed on bots by default), so we
+  # install our own custom mingw-w64 compiler
   - ps: |
       if (!(Test-Path 'x86_64-4.9.2-release-win32-seh-rt_v3-rev1.7z')) {
         Start-FileDownload 'http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v3-rev1.7z'
       }
   - 7z x x86_64-4.9.2-release-win32-seh-rt_v3-rev1.7z > nul
   - set PATH=%PATH%;C:\projects\ssh2-rs\mingw64\bin
+
+  # Our build script currently relies on `make`, so be sure that it's in the PATH
   - set PATH=%PATH%;C:\MinGW\msys\1.0\bin
+
+  # Download a 64-bit compiler (matching the 64-bit mingw-w64 compiler being
+  # used), and currently also use a beta (there's a bug in nightly for executing
+  # commands).
   - ps: |
       if (!(Test-Path 'rust-1.0.0-beta-x86_64-pc-windows-gnu.exe')) {
         Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.0.0-beta-x86_64-pc-windows-gnu.exe'
