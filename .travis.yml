@@ -1,4 +1,8 @@
 language: rust
+rust:
+  - 1.0.0
+  - beta
+  - nightly
 sudo: false
 before_script:
   - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
@@ -14,6 +18,7 @@ script:
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
+  [ $TRAVIS_RUST_VERSION = nightly ] &&
   echo '<meta http-equiv=refresh content=0;url=ssh2/index.html>' > target/doc/index.html &&
   pip install ghp-import --user $USER &&
   $HOME/.local/bin/ghp-import -n target/doc &&
