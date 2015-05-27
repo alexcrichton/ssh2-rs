@@ -1,6 +1,6 @@
 [package]
 name = "libssh2-sys"
-version = "0.1.23"
+version = "0.1.24"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 links = "ssh2"
 build = "build.rs"
