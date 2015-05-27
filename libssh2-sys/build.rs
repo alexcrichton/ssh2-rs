@@ -61,6 +61,9 @@ fn main() {
                     .current_dir(dst.join("build/src")));
         run(Command::new(&make())
                     .arg("install")
+                    .current_dir(dst.join("build/src")));
+        run(Command::new(&make())
+                    .arg("install-data")
                     .current_dir(dst.join("build")));
 
         // Unfortunately the pkg-config file generated for libssh2 indicates
