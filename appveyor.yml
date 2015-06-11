@@ -1,7 +1,13 @@
 install:
-  - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-nightly-i686-pc-windows-gnu.exe'
-  - rust-nightly-i686-pc-windows-gnu.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
-  - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rustc-nightly-x86_64-pc-windows-msvc.tar.gz'
+  - ps: Start-FileDownload 'https://static.rust-lang.org/cargo-dist/cargo-nightly-x86_64-pc-windows-gnu.tar.gz'
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64
+  - 7z x rustc-nightly-x86_64-pc-windows-msvc.tar.gz > nul
+  - 7z x rustc-nightly-x86_64-pc-windows-msvc.tar > nul
+  - 7z x cargo-nightly-x86_64-pc-windows-gnu.tar.gz > nul
+  - 7z x cargo-nightly-x86_64-pc-windows-gnu.tar > nul
+  - SET PATH=%PATH%;%cd%/rustc-nightly-x86_64-pc-windows-msvc/rustc/bin
+  - SET PATH=%PATH%;%cd%/cargo-nightly-x86_64-pc-windows-gnu/cargo/bin
   - rustc -V
   - cargo -V
 
