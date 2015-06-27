@@ -13,31 +13,31 @@ name = "libssh2_sys"
 path = "lib.rs"
 
 [dependencies]
-libz-sys = "0.1.0"
-libc = "0.1"
+libz-sys = "*"
+libc = "*"
 
 [target.i686-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.i686-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.aarch64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.arm-unknown-linux-gnueabihf.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.i686-unknown-freebsd.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-unknown-freebsd.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-unknown-dragonfly.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-unknown-bitrig.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 [target.x86_64-unknown-openbsd.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "*"
 
 [build-dependencies]
-pkg-config = "0.3"
+pkg-config = "*"

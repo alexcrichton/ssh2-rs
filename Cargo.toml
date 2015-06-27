@@ -17,12 +17,12 @@ commands, forwarding local ports, etc.
 name = "all"
 
 [dependencies]
-bitflags = "0.1"
-libc = "0.1"
+bitflags = "*"
+libc = "*"
 
 [dependencies.libssh2-sys]
 path = "libssh2-sys"
-version = "0.1.0"
+version = "*"
 
 [dev-dependencies]
-tempdir = "0.3"
+tempdir = "*"
