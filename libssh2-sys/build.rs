@@ -35,9 +35,11 @@ fn main() {
         return
     }
 
-    match pkg_config::find_library("libssh2") {
-        Ok(..) => return,
-        Err(..) => {}
+    if let Ok(lib) = pkg_config::find_library("libssh2") {
+        for path in &lib.include_paths {
+            println!("cargo:include={}", path.display());
+        }
+        return
     }
 
     let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
