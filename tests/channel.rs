@@ -32,7 +32,6 @@ fn writing_data() {
     let mut channel = sess.channel_session().unwrap();
     channel.exec("read foo && echo $foo").unwrap();
     channel.write_all(b"foo\n").unwrap();
-    channel.close().unwrap();
     let mut output = String::new();
     channel.read_to_string(&mut output).unwrap();
     assert_eq!(output, "foo\n");
