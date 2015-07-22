@@ -1,4 +1,5 @@
 extern crate pkg_config;
+extern crate gcc;
 
 use std::env;
 use std::fs::{self, File};
@@ -105,15 +106,16 @@ fn main() {
         t!(fs::create_dir(dst.join("lib")));
 
         if target.contains("msvc") {
-            run(Command::new("nmake")
-                        .current_dir(&root)
-                        .arg("/nologo")
-                        // see above for why we set CC here
-                        .env("CC", env::current_exe().unwrap())
-                        .env_remove("TARGET")
-                        .arg("/fNMakefile")
-                        .arg("BUILD_STATIC_LIB=1")
-                        .arg("WITH_WINCNG=1"));
+            let nmake = gcc::windows_registry::find(&target, "nmake.exe");
+            let mut nmake = nmake.unwrap_or(Command::new("nmake.exe"));
+            run(nmake.current_dir(&root)
+                     .arg("/nologo")
+                     // see above for why we set CC here
+                     .env("CC", env::current_exe().unwrap())
+                     .env_remove("TARGET")
+                     .arg("/fNMakefile")
+                     .arg("BUILD_STATIC_LIB=1")
+                     .arg("WITH_WINCNG=1"));
             t!(fs::copy(root.join("Release/src/libssh2.lib"),
                         dst.join("lib/libssh2.a")));
             t!(fs::remove_dir_all(root.join("Release")));
