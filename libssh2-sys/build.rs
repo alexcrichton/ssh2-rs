@@ -34,6 +34,10 @@ fn main() {
         println!("cargo:rustc-link-lib=bcrypt");
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=user32");
+    }
+
+    // msvc generates libssh2.lib, everywhere else generates libssh2.a
+    if target.contains("msvc") {
         println!("cargo:rustc-link-lib=static=libssh2");
     } else {
         println!("cargo:rustc-link-lib=static=ssh2");
