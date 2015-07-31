@@ -42,9 +42,11 @@ fn main() {
         println!("cargo:rustc-link-lib=bcrypt");
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=user32");
+        println!("cargo:rustc-link-lib=static=libssh2");
+    } else {
+        println!("cargo:rustc-link-lib=static=ssh2");
     }
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
-    println!("cargo:rustc-link-lib=static=ssh2");
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());
 }
