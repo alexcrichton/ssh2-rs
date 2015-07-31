@@ -18,12 +18,19 @@ fn main() {
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     if target.contains("windows") {
         cfg.define("CRYPTO_BACKEND", "WinCNG");
-
-        if target.contains("-gnu") {
-            cfg.define("ZLIB_INCLUDE_DIR", "/");
-        }
     } else {
         cfg.define("CRYPTO_BACKEND", "OpenSSL");
+    }
+    match env::var_os("DEP_Z_INCLUDE") {
+        Some(path) => { cfg.define("ZLIB_INCLUDE_DIR", path); }
+        None if target.contains("-gnu") => { cfg.define("ZLIB_INCLUDE_DIR", "/"); }
+        None => {}
+    }
+    if let Some(path) = env::var_os("DEP_Z_ROOT") {
+        let path = PathBuf::from(path);
+        if target.contains("msvc") {
+            cfg.define("ZLIB_LIBRARY", path.join("lib/zlib.lib"));
+        }
     }
     cfg.define("BUILD_SHARED_LIBS", "OFF")
        .define("ENABLE_ZLIB_COMPRESSION", "ON")
@@ -31,6 +38,7 @@ fn main() {
        .define("BUILD_EXAMPLES", "OFF")
        .define("BUILD_TESTING", "OFF")
        .register_dep("OPENSSL")
+       .register_dep("Z")
        .build();
 
     if target.contains("windows") {
