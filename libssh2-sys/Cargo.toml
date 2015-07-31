@@ -41,4 +41,4 @@ openssl-sys = "0.6.0"
 
 [build-dependencies]
 pkg-config = "0.3"
-gcc = "0.3.10"
+cmake = "0.1"
