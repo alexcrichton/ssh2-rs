@@ -18,6 +18,10 @@ fn main() {
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     if target.contains("windows") {
         cfg.define("CRYPTO_BACKEND", "WinCNG");
+
+        if target.contains("-gnu") {
+            cfg.define("ZLIB_INCLUDE_DIR", "/");
+        }
     } else {
         cfg.define("CRYPTO_BACKEND", "OpenSSL");
     }
