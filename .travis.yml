@@ -24,6 +24,8 @@ notifications:
     on_success: never
 addons:
   apt:
+    sources:
+      - kalakris-cmake
     packages:
       - cmake
 env:
