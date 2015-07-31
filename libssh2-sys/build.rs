@@ -28,8 +28,9 @@ fn main() {
     } else {
         cfg.define("CRYPTO_BACKEND", "OpenSSL");
     }
+    let zlib = if target.contains("msvc") {"OFF"} else {"ON"};
     cfg.define("BUILD_SHARED_LIBS", "OFF")
-       .define("ENABLE_ZLIB_COMPRESSION", "ON")
+       .define("ENABLE_ZLIB_COMPRESSION", zlib)
        .define("CMAKE_INSTALL_LIBDIR", dst.join("lib"))
        .define("BUILD_EXAMPLES", "OFF")
        .define("BUILD_TESTING", "OFF")
