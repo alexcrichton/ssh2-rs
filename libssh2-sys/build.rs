@@ -28,7 +28,7 @@ fn main() {
     } else {
         cfg.define("CRYPTO_BACKEND", "OpenSSL");
     }
-    let zlib = if target.contains("msvc") {"OFF"} else {"ON"};
+    let zlib = if target.contains("windows") {"OFF"} else {"ON"};
     cfg.define("BUILD_SHARED_LIBS", "OFF")
        .define("ENABLE_ZLIB_COMPRESSION", zlib)
        .define("CMAKE_INSTALL_LIBDIR", dst.join("lib"))
