@@ -4,13 +4,6 @@ extern crate cmake;
 use std::env;
 use std::path::PathBuf;
 
-macro_rules! t {
-    ($e:expr) => (match $e {
-        Ok(n) => n,
-        Err(e) => panic!("\n{} failed with {}\n", stringify!($e), e),
-    })
-}
-
 fn main() {
     if let Ok(lib) = pkg_config::find_library("libssh2") {
         for path in &lib.include_paths {
