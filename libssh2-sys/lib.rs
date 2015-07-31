@@ -3,7 +3,6 @@
 
 extern crate libc;
 
-#[cfg(not(target_env = "msvc"))]
 extern crate libz_sys;
 #[cfg(unix)]
 extern crate openssl_sys;
