@@ -16,22 +16,34 @@ fn main() {
 
     let target = env::var("TARGET").unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+
+    // Don't use OpenSSL on Windows, instead use the native Windows backend.
     if target.contains("windows") {
         cfg.define("CRYPTO_BACKEND", "WinCNG");
     } else {
         cfg.define("CRYPTO_BACKEND", "OpenSSL");
     }
+
+    // If libz-sys was built it'll give us an include directory to learn how to
+    // link to it, and for MinGW targets we just pass a dummy include dir to
+    // ensure it's detected (apparently it isn't otherwise?)
     match env::var_os("DEP_Z_INCLUDE") {
         Some(path) => { cfg.define("ZLIB_INCLUDE_DIR", path); }
-        None if target.contains("-gnu") => { cfg.define("ZLIB_INCLUDE_DIR", "/"); }
+        None if target.contains("windows-gnu") => {
+            cfg.define("ZLIB_INCLUDE_DIR", "/");
+        }
         None => {}
     }
+
+    // MSVC targets also need us to tell libssh2's cmake exactly where zlib is
+    // installed, so learn that through the ROOT metadata.
     if let Some(path) = env::var_os("DEP_Z_ROOT") {
         let path = PathBuf::from(path);
         if target.contains("msvc") {
             cfg.define("ZLIB_LIBRARY", path.join("lib/zlib.lib"));
         }
     }
+
     cfg.define("BUILD_SHARED_LIBS", "OFF")
        .define("ENABLE_ZLIB_COMPRESSION", "ON")
        .define("CMAKE_INSTALL_LIBDIR", dst.join("lib"))
