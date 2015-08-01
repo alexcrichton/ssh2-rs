@@ -15,7 +15,6 @@ fn main() {
     let mut cfg = cmake::Config::new("libssh2");
 
     let target = env::var("TARGET").unwrap();
-    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     // Don't use OpenSSL on Windows, instead use the native Windows backend.
     if target.contains("windows") {
@@ -44,14 +43,14 @@ fn main() {
         }
     }
 
-    cfg.define("BUILD_SHARED_LIBS", "OFF")
-       .define("ENABLE_ZLIB_COMPRESSION", "ON")
-       .define("CMAKE_INSTALL_LIBDIR", dst.join("lib"))
-       .define("BUILD_EXAMPLES", "OFF")
-       .define("BUILD_TESTING", "OFF")
-       .register_dep("OPENSSL")
-       .register_dep("Z")
-       .build();
+    let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
+                 .define("ENABLE_ZLIB_COMPRESSION", "ON")
+                 .define("CMAKE_INSTALL_LIBDIR", "lib")
+                 .define("BUILD_EXAMPLES", "OFF")
+                 .define("BUILD_TESTING", "OFF")
+                 .register_dep("OPENSSL")
+                 .register_dep("Z")
+                 .build();
 
     if target.contains("windows") {
         println!("cargo:rustc-link-lib=ws2_32");
@@ -67,6 +66,5 @@ fn main() {
         println!("cargo:rustc-link-lib=static=ssh2");
     }
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
-    println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());
 }
