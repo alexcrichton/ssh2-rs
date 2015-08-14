@@ -2,6 +2,8 @@ extern crate pkg_config;
 extern crate cmake;
 
 use std::env;
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::PathBuf;
 
 fn main() {
@@ -51,6 +53,21 @@ fn main() {
                  .register_dep("OPENSSL")
                  .register_dep("Z")
                  .build();
+
+    // Unfortunately the pkg-config file generated for libssh2 indicates
+    // that it depends on zlib, but most systems don't actually have a
+    // zlib.pc, so pkg-config will say that libssh2 doesn't exist. We
+    // generally take care of the zlib dependency elsewhere, so we just
+    // remove that part from the pkg-config file
+    let mut pc = String::new();
+    let pkgconfig = dst.join("lib/pkgconfig/libssh2.pc");
+    if let Ok(mut f) = File::open(&pkgconfig) {
+        f.read_to_string(&mut pc).unwrap();;
+        drop(f);
+        let pc = pc.replace(",zlib", "");
+        let bytes = pc.as_bytes();
+        File::create(pkgconfig).unwrap().write_all(bytes).unwrap();
+    }
 
     if target.contains("windows") {
         println!("cargo:rustc-link-lib=ws2_32");
