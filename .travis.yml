@@ -12,10 +12,12 @@ before_script:
   - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
   - telnet localhost 22 &
 script:
+  - export CARGO_TARGET_DIR=`pwd`/target
   - cargo build --verbose
   - cargo test --verbose
   - rustdoc --test README.md -L target
-  - cargo doc
+  - cargo doc --no-deps
+  - cargo doc --no-deps --manifest-path libssh2-sys/Cargo.toml
 after_success:
   - travis-cargo --only nightly doc-upload
   - travis-cargo coveralls --no-sudo
