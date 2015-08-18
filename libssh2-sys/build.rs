@@ -4,9 +4,12 @@ extern crate cmake;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 fn main() {
+    register_dep("Z");
+    register_dep("OPENSSL");
+
     if let Ok(lib) = pkg_config::find_library("libssh2") {
         for path in &lib.include_paths {
             println!("cargo:include={}", path.display());
@@ -84,4 +87,20 @@ fn main() {
     }
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:include={}/include", dst.display());
+}
+
+fn register_dep(dep: &str) {
+    match env::var(&format!("DEP_{}_ROOT", dep)) {
+        Ok(s) => {
+            prepend("PKG_CONFIG_PATH", Path::new(&s).join("lib/pkgconfig"));
+        }
+        Err(..) => {}
+    }
+}
+
+fn prepend(var: &str, val: PathBuf) {
+    let prefix = env::var(var).unwrap_or(String::new());
+    let mut v = vec![val];
+    v.extend(env::split_paths(&prefix));
+    env::set_var(var, &env::join_paths(v).unwrap());
 }
