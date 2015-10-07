@@ -2,7 +2,7 @@ use std::cmp;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::slice;
-use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar};
+use libc::{c_uint, c_int, size_t, c_char, c_void, c_uchar, c_ulong};
 
 use {raw, Session, Error};
 use util::{Binding, SessionBinding};
@@ -274,17 +274,17 @@ impl<'sess> Channel<'sess> {
     ///
     /// This function returns the new size of the receive window (as understood
     /// by remote end) on success.
-    pub fn adjust_receive_window(&mut self, adjust: u32, force: bool)
-                                 -> Result<u32, Error> {
+    pub fn adjust_receive_window(&mut self, adjust: u64, force: bool)
+                                 -> Result<u64, Error> {
         let mut ret = 0;
         let rc = unsafe {
             raw::libssh2_channel_receive_window_adjust2(self.raw,
-                                                        adjust as c_uint,
+                                                        adjust as c_ulong,
                                                         force as c_uchar,
                                                         &mut ret)
         };
         try!(self.sess.rc(rc));
-        Ok(ret as u32)
+        Ok(ret as u64)
     }
 
     /// Artificially limit the number of bytes that will be read from this
@@ -390,7 +390,7 @@ impl<'channel, 'sess> Read for Stream<'channel, 'sess> {
                                                   self.id as c_int,
                                                   data.as_mut_ptr() as *mut _,
                                                   data.len() as size_t);
-            self.channel.sess.rc(rc).map(|()| rc as usize)
+            self.channel.sess.rc(rc as c_int).map(|()| rc as usize)
         };
         match ret {
             Ok(n) => {
@@ -411,7 +411,7 @@ impl<'channel, 'sess> Write for Stream<'channel, 'sess> {
                                                    self.id as c_int,
                                                    data.as_ptr() as *mut _,
                                                    data.len() as size_t);
-            self.channel.sess.rc(rc).map(|()| rc as usize)
+            self.channel.sess.rc(rc as c_int).map(|()| rc as usize)
         }.map_err(|e| {
             io::Error::new(ErrorKind::Other, e)
         })

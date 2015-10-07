@@ -13,9 +13,10 @@ before_script:
   - telnet localhost 22 &
 script:
   - export CARGO_TARGET_DIR=`pwd`/target
-  - cargo build --verbose
-  - cargo test --verbose
+  - cargo build
+  - cargo test
   - rustdoc --test README.md -L target
+  - cargo run --manifest-path systest/Cargo.toml
   - cargo doc --no-deps
   - cargo doc --no-deps --manifest-path libssh2-sys/Cargo.toml
 after_success:

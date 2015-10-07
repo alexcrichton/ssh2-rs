@@ -37,7 +37,8 @@ impl Session {
     pub fn new() -> Option<Session> {
         ::init();
         unsafe {
-            let ret = raw::libssh2_session_init_ex(None, None, None);
+            let ret = raw::libssh2_session_init_ex(None, None, None,
+                                                   0 as *mut _);
             if ret.is_null() {None} else {Some(Binding::from_raw(ret))}
         }
     }
@@ -455,7 +456,7 @@ impl Session {
             let ret = raw::libssh2_scp_send64(self.raw,
                                               path.as_ptr(),
                                               mode as c_int,
-                                              size,
+                                              size as i64,
                                               mtime as libc::time_t,
                                               atime as libc::time_t);
             SessionBinding::from_raw_opt(self, ret)
@@ -562,11 +563,10 @@ impl Session {
     /// The interval argument is number of seconds that can pass without any
     /// I/O, use 0 (the default) to disable keepalives. To avoid some busy-loop
     /// corner-cases, if you specify an interval of 1 it will be treated as 2.
-    pub fn set_keepalive(&self, want_reply: bool, interval: u32)
-                         -> Result<(), Error> {
+    pub fn set_keepalive(&self, want_reply: bool, interval: u32) {
         unsafe {
-            self.rc(raw::libssh2_keepalive_config(self.raw, want_reply as c_int,
-                                                  interval as c_uint))
+            raw::libssh2_keepalive_config(self.raw, want_reply as c_int,
+                                          interval as c_uint)
         }
     }
 

@@ -13,4 +13,5 @@ install:
 build: false
 
 test_script:
-  - cargo test --verbose --no-run
+  - cargo test --no-run
+  - cargo run --manifest-path systest/Cargo.toml

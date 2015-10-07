@@ -49,7 +49,7 @@ fn smoke_handshake() {
 #[test]
 fn keepalive() {
     let (_tcp, sess) = ::authed_session();
-    sess.set_keepalive(false, 10).unwrap();
+    sess.set_keepalive(false, 10);
     sess.keepalive_send().unwrap();
 }
 

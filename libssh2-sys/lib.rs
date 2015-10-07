@@ -151,13 +151,16 @@ pub enum LIBSSH2_KNOWNHOSTS {}
 pub enum LIBSSH2_SFTP {}
 pub enum LIBSSH2_SFTP_HANDLE {}
 
+pub type libssh2_int64_t = i64;
+pub type libssh2_uint64_t = u64;
+
 #[repr(C)]
 pub struct libssh2_agent_publickey {
     pub magic: c_uint,
     pub node: *mut c_void,
     pub blob: *mut c_uchar,
     pub blob_len: size_t,
-    pub comment: *const c_char,
+    pub comment: *mut c_char,
 }
 
 #[repr(C)]
@@ -173,7 +176,7 @@ pub struct libssh2_knownhost {
 #[derive(Copy, Clone)]
 pub struct LIBSSH2_SFTP_ATTRIBUTES {
     pub flags: c_ulong,
-    pub filesize: u64,
+    pub filesize: libssh2_uint64_t,
     pub uid: c_ulong,
     pub gid: c_ulong,
     pub permissions: c_ulong,
@@ -184,17 +187,17 @@ pub struct LIBSSH2_SFTP_ATTRIBUTES {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct LIBSSH2_SFTP_STATVFS {
-    pub f_bsize: u64,
-    pub f_frsize: u64,
-    pub f_blocks: u64,
-    pub f_bfree: u64,
-    pub f_bavail: u64,
-    pub f_files: u64,
-    pub f_ffree: u64,
-    pub f_favail: u64,
-    pub f_fsid: u64,
-    pub f_flag: u64,
-    pub f_namemax: u64,
+    pub f_bsize: libssh2_uint64_t,
+    pub f_frsize: libssh2_uint64_t,
+    pub f_blocks: libssh2_uint64_t,
+    pub f_bfree: libssh2_uint64_t,
+    pub f_bavail: libssh2_uint64_t,
+    pub f_files: libssh2_uint64_t,
+    pub f_ffree: libssh2_uint64_t,
+    pub f_favail: libssh2_uint64_t,
+    pub f_fsid: libssh2_uint64_t,
+    pub f_flag: libssh2_uint64_t,
+    pub f_namemax: libssh2_uint64_t,
 }
 
 pub type LIBSSH2_ALLOC_FUNC = extern fn(size_t, *mut *mut c_void) -> *mut c_void;
@@ -220,7 +223,8 @@ extern {
     // session
     pub fn libssh2_session_init_ex(alloc: Option<LIBSSH2_ALLOC_FUNC>,
                                    free: Option<LIBSSH2_FREE_FUNC>,
-                                   realloc: Option<LIBSSH2_REALLOC_FUNC>)
+                                   realloc: Option<LIBSSH2_REALLOC_FUNC>,
+                                   abstrakt: *mut c_void)
                                    -> *mut LIBSSH2_SESSION;
     pub fn libssh2_session_free(sess: *mut LIBSSH2_SESSION) -> c_int;
     pub fn libssh2_session_banner_get(sess: *mut LIBSSH2_SESSION) -> *const c_char;
@@ -257,7 +261,7 @@ extern {
                                      socket: libssh2_socket_t) -> c_int;
     pub fn libssh2_keepalive_config(sess: *mut LIBSSH2_SESSION,
                                     want_reply: c_int,
-                                    interval: c_uint) -> c_int;
+                                    interval: c_uint);
     pub fn libssh2_keepalive_send(sess: *mut LIBSSH2_SESSION,
                                   seconds_to_next: *mut c_int) -> c_int;
 
@@ -290,8 +294,8 @@ extern {
                                     streamid: c_int) -> c_int;
     pub fn libssh2_channel_write_ex(chan: *mut LIBSSH2_CHANNEL,
                                     stream_id: c_int,
-                                    buf: *mut c_char,
-                                    buflen: size_t) -> c_int;
+                                    buf: *const c_char,
+                                    buflen: size_t) -> ssize_t;
     pub fn libssh2_channel_get_exit_signal(chan: *mut LIBSSH2_CHANNEL,
                                            exitsignal: *mut *mut c_char,
                                            exitsignal_len: *mut size_t,
@@ -310,7 +314,7 @@ extern {
     pub fn libssh2_channel_read_ex(chan: *mut LIBSSH2_CHANNEL,
                                    stream_id: c_int,
                                    buf: *mut c_char,
-                                   buflen: size_t) -> c_int;
+                                   buflen: size_t) -> ssize_t;
     pub fn libssh2_channel_setenv_ex(chan: *mut LIBSSH2_CHANNEL,
                                      var: *const c_char,
                                      varlen: c_uint,
@@ -332,14 +336,14 @@ extern {
                                                width_px: c_int,
                                                height_px: c_int) -> c_int;
     pub fn libssh2_channel_window_read_ex(chan: *mut LIBSSH2_CHANNEL,
-                                          read_avail: *mut c_uint,
-                                          window_size_initial: *mut c_uint)
-                                          -> c_uint;
+                                          read_avail: *mut c_ulong,
+                                          window_size_initial: *mut c_ulong)
+                                          -> c_ulong;
     pub fn libssh2_channel_window_write_ex(chan: *mut LIBSSH2_CHANNEL,
-                                           window_size_initial: *mut c_uint)
-                                           -> c_uint;
+                                           window_size_initial: *mut c_ulong)
+                                           -> c_ulong;
     pub fn libssh2_channel_receive_window_adjust2(chan: *mut LIBSSH2_CHANNEL,
-                                                  adjust: c_uint,
+                                                  adjust: c_ulong,
                                                   force: c_uchar,
                                                   window: *mut c_uint) -> c_int;
     pub fn libssh2_channel_direct_tcpip_ex(ses: *mut LIBSSH2_SESSION,
@@ -353,7 +357,7 @@ extern {
     pub fn libssh2_channel_forward_cancel(listener: *mut LIBSSH2_LISTENER)
                                           -> c_int;
     pub fn libssh2_channel_forward_listen_ex(sess: *mut LIBSSH2_SESSION,
-                                             host: *mut c_char,
+                                             host: *const c_char,
                                              port: c_int,
                                              bound_port: *mut c_int,
                                              queue_maxsize: c_int)
@@ -363,7 +367,7 @@ extern {
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;
     pub fn libssh2_userauth_list(sess: *mut LIBSSH2_SESSION,
                                  username: *const c_char,
-                                 username_len: c_uint) -> *const c_char;
+                                 username_len: c_uint) -> *mut c_char;
     pub fn libssh2_userauth_hostbased_fromfile_ex(sess: *mut LIBSSH2_SESSION,
                                                   username: *const c_char,
                                                   username_len: c_uint,
@@ -393,9 +397,9 @@ extern {
     // knownhost
     pub fn libssh2_knownhost_free(hosts: *mut LIBSSH2_KNOWNHOSTS);
     pub fn libssh2_knownhost_addc(hosts: *mut LIBSSH2_KNOWNHOSTS,
-                                  host: *mut c_char,
-                                  salt: *mut c_char,
-                                  key: *mut c_char,
+                                  host: *const c_char,
+                                  salt: *const c_char,
+                                  key: *const c_char,
                                   keylen: size_t,
                                   comment: *const c_char,
                                   commentlen: size_t,
@@ -447,7 +451,7 @@ extern {
     pub fn libssh2_scp_send64(sess: *mut LIBSSH2_SESSION,
                               path: *const c_char,
                               mode: c_int,
-                              size: u64,
+                              size: libssh2_int64_t,
                               mtime: libc::time_t,
                               atime: libc::time_t) -> *mut LIBSSH2_CHANNEL;
 
@@ -498,8 +502,10 @@ extern {
     pub fn libssh2_sftp_write(handle: *mut LIBSSH2_SFTP_HANDLE,
                               buffer: *const c_char,
                               len: size_t) -> ssize_t;
-    pub fn libssh2_sftp_tell64(handle: *mut LIBSSH2_SFTP_HANDLE) -> u64;
-    pub fn libssh2_sftp_seek64(handle: *mut LIBSSH2_SFTP_HANDLE, off: u64);
+    pub fn libssh2_sftp_tell64(handle: *mut LIBSSH2_SFTP_HANDLE)
+                               -> libssh2_uint64_t;
+    pub fn libssh2_sftp_seek64(handle: *mut LIBSSH2_SFTP_HANDLE,
+                               off: libssh2_uint64_t);
     pub fn libssh2_sftp_readdir_ex(handle: *mut LIBSSH2_SFTP_HANDLE,
                                    buffer: *mut c_char,
                                    buffer_len: size_t,
