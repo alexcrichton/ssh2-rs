@@ -48,6 +48,10 @@ fn main() {
         }
     }
 
+    if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+        cfg.define("OPENSSL_INCLUDE_DIR", path);
+    }
+
     let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
                  .define("ENABLE_ZLIB_COMPRESSION", "ON")
                  .define("CMAKE_INSTALL_LIBDIR", "lib")
