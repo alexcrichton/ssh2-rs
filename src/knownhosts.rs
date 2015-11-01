@@ -117,7 +117,8 @@ impl<'sess> KnownHosts<'sess> {
                                                           &mut outlen,
                                                           kind as c_int);
                 if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
-                    v.reserve(outlen as usize);
+                    // + 1 for the trailing zero
+                    v.reserve(outlen as usize + 1);
                 } else {
                     try!(self.sess.rc(rc));
                     v.set_len(outlen as usize);
