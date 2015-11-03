@@ -18,7 +18,7 @@ name = "all"
 
 [dependencies]
 bitflags = "0.1"
-libc = "0.1"
+libc = "0.2"
 
 [dependencies.libssh2-sys]
 path = "libssh2-sys"
