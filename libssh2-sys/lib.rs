@@ -3,6 +3,7 @@
 
 extern crate libc;
 extern crate ws2_32;
+extern crate winapi;
 
 extern crate libz_sys;
 #[cfg(unix)]
@@ -211,7 +212,7 @@ pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern fn(sess: *mut LIBSSH2_SESSION,
                                                    abstrakt: *mut *mut c_void);
 
 #[cfg(unix)]    pub type libssh2_socket_t = c_int;
-#[cfg(windows)] pub type libssh2_socket_t = ws2_32::SOCKET;
+#[cfg(windows)] pub type libssh2_socket_t = winapi::SOCKET;
 
 extern {
     // misc
