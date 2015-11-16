@@ -39,15 +39,6 @@ fn main() {
         None => {}
     }
 
-    // MSVC targets also need us to tell libssh2's cmake exactly where zlib is
-    // installed, so learn that through the ROOT metadata.
-    if let Some(path) = env::var_os("DEP_Z_ROOT") {
-        let path = PathBuf::from(path);
-        if target.contains("msvc") {
-            cfg.define("ZLIB_LIBRARY", path.join("lib/zlib.lib"));
-        }
-    }
-
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
         cfg.define("OPENSSL_INCLUDE_DIR", path);
     }
