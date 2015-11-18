@@ -40,7 +40,13 @@ fn main() {
     }
 
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
-        cfg.define("OPENSSL_INCLUDE_DIR", path);
+        if let Some(path) = env::split_paths(&path).next() {
+            if let Some(path) = path.to_str() {
+                if path.len() > 0 {
+                    cfg.define("OPENSSL_INCLUDE_DIR", path);
+                }
+            }
+        }
     }
 
     let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
