@@ -19,7 +19,7 @@ Currently libssh2 requires linking against OpenSSL, and to compile libssh2 it
 also needs to find the OpenSSL headers. On OSX 10.10+ the OpenSSL headers have
 been removed, but if you're using Homebrew you can install them via:
 
-```
+```sh
 brew install openssl
 ```
 
@@ -29,7 +29,7 @@ the header files are:
 
 [instr]: https://github.com/sfackler/rust-openssl#osx
 
-```
+```sh
 export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
 export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
 ```
