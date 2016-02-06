@@ -626,7 +626,9 @@ impl Binding for Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        unsafe { assert_eq!(raw::libssh2_session_free(self.raw), 0); }
+        unsafe {
+            let _rc = raw::libssh2_session_free(self.raw);
+        }
     }
 }
 
@@ -644,49 +646,3 @@ impl ScpFileStat {
         self.mode() & (libc::S_IFMT as i32) == (libc::S_IFREG as i32)
     }
 }
-
-// fn mkstat(stat: &libc::stat) -> old_io::FileStat {
-//     #[cfg(windows)] type Mode = libc::c_int;
-//     #[cfg(unix)]    type Mode = libc::mode_t;
-//
-//     // FileStat times are in milliseconds
-//     fn mktime(secs: u64, nsecs: u64) -> u64 { secs * 1000 + nsecs / 1000000 }
-//
-//     #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
-//     fn flags(stat: &libc::stat) -> u64 { stat.st_flags as u64 }
-//     #[cfg(any(target_os = "linux", target_os = "android"))]
-//     fn flags(_stat: &libc::stat) -> u64 { 0 }
-//
-//     #[cfg(all(not(target_os = "linux"), not(target_os = "android")))]
-//     fn gen(stat: &libc::stat) -> u64 { stat.st_gen as u64 }
-//     #[cfg(any(target_os = "linux", target_os = "android"))]
-//     fn gen(_stat: &libc::stat) -> u64 { 0 }
-//
-//     old_io::FileStat {
-//         size: stat.st_size as u64,
-//         kind: match (stat.st_mode as Mode) & libc::S_IFMT {
-//             libc::S_IFREG => old_io::FileType::RegularFile,
-//             libc::S_IFDIR => old_io::FileType::Directory,
-//             libc::S_IFIFO => old_io::FileType::NamedPipe,
-//             libc::S_IFBLK => old_io::FileType::BlockSpecial,
-//             libc::S_IFLNK => old_io::FileType::Symlink,
-//             _ => old_io::FileType::Unknown,
-//         },
-//         perm: old_io::FilePermission::from_bits_truncate(stat.st_mode as u32),
-//         created: mktime(stat.st_ctime as u64, stat.st_ctime_nsec as u64),
-//         modified: mktime(stat.st_mtime as u64, stat.st_mtime_nsec as u64),
-//         accessed: mktime(stat.st_atime as u64, stat.st_atime_nsec as u64),
-//         unstable: old_io::UnstableFileStat {
-//             device: stat.st_dev as u64,
-//             inode: stat.st_ino as u64,
-//             rdev: stat.st_rdev as u64,
-//             nlink: stat.st_nlink as u64,
-//             uid: stat.st_uid as u64,
-//             gid: stat.st_gid as u64,
-//             blksize: stat.st_blksize as u64,
-//             blocks: stat.st_blocks as u64,
-//             flags: flags(stat),
-//             gen: gen(stat),
-//         }
-//     }
-// }

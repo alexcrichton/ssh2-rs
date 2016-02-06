@@ -106,3 +106,21 @@ fn forward() {
     assert_eq!(r, [4, 5, 6]);
     t.join().ok().unwrap();
 }
+
+#[test]
+fn drop_nonblocking() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+
+    let (_tcp, sess) = ::authed_session();
+    sess.set_blocking(false);
+
+    let t = thread::spawn(move || {
+        let _s = listener.accept().unwrap();
+    });
+
+    let _ = sess.channel_direct_tcpip("127.0.0.1", addr.port(), None);
+    drop(sess);
+
+    t.join().unwrap();
+}
