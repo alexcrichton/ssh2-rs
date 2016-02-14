@@ -2,8 +2,6 @@
 #![allow(bad_style)]
 
 extern crate libc;
-extern crate ws2_32;
-extern crate winapi;
 
 extern crate libz_sys;
 #[cfg(unix)]
@@ -211,8 +209,12 @@ pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern fn(sess: *mut LIBSSH2_SESSION,
                                                    newpw_len: *mut c_int,
                                                    abstrakt: *mut *mut c_void);
 
-#[cfg(unix)]    pub type libssh2_socket_t = c_int;
-#[cfg(windows)] pub type libssh2_socket_t = winapi::SOCKET;
+#[cfg(unix)]
+pub type libssh2_socket_t = c_int;
+#[cfg(all(windows, target_arch = "x86"))]
+pub type libssh2_socket_t = u32;
+#[cfg(all(windows, target_arch = "x86_64"))]
+pub type libssh2_socket_t = u64;
 
 extern {
     // misc
