@@ -20,6 +20,16 @@ libc = "0.2"
 openssl-sys = ">= 0"
 [target.x86_64-apple-darwin.dependencies]
 openssl-sys = ">= 0"
+[target.i386-apple-ios.dependencies]
+openssl-sys = ">= 0"
+[target.x86_64-apple-ios.dependencies]
+openssl-sys = ">= 0"
+[target.aarch64-apple-ios.dependencies]
+openssl-sys = ">= 0"
+[target.armv7-apple-ios.dependencies]
+openssl-sys = ">= 0"
+[target.armv7s-apple-ios.dependencies]
+openssl-sys = ">= 0"
 [target.i686-unknown-linux-gnu.dependencies]
 openssl-sys = ">= 0"
 [target.i586-unknown-linux-gnu.dependencies]
