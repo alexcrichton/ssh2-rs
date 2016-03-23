@@ -604,7 +604,7 @@ impl Session {
 
     /// Translate a return code into a Rust-`Result`.
     pub fn rc(&self, rc: c_int) -> Result<(), Error> {
-        if rc == 0 {
+        if rc >= 0 {
             Ok(())
         } else {
             match Error::last_error(self) {
