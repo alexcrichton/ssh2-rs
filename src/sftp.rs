@@ -31,6 +31,7 @@ pub struct File<'sftp> {
 /// Metadata information about a remote file.
 ///
 /// Fields are not necessarily all provided
+#[derive(debug)]
 #[allow(missing_copy_implementations)]
 pub struct FileStat {
     /// File size, in bytes of the file.
