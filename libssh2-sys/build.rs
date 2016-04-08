@@ -5,6 +5,7 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{PathBuf, Path};
+use std::process::Command;
 
 fn main() {
     register_dep("Z");
