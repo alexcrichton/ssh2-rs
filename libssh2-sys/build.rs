@@ -17,6 +17,11 @@ fn main() {
         return
     }
 
+    if !Path::new("libssh2").exists() {
+        let _ = Command::new("git").args(&["submodule", "update", "--init"])
+                                   .status();
+    }
+
     let mut cfg = cmake::Config::new("libssh2");
 
     let target = env::var("TARGET").unwrap();
