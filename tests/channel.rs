@@ -124,3 +124,43 @@ fn drop_nonblocking() {
 
     t.join().unwrap();
 }
+
+const LIBSSH2_ERROR_EAGAIN: i32 = -37; // from libssh2-sys
+#[test]
+fn nonblocking_before_exit_code() {
+    let (_tcp, sess) = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    channel.send_eof().unwrap();
+    let mut output = String::new();
+
+    channel.exec("sleep 1; echo foo").unwrap();
+    sess.set_blocking(false);
+    assert!(channel.read_to_string(&mut output).is_err());
+    {
+        use std::time::Duration;
+        use std::thread;
+        thread::sleep(Duration::from_millis(1500));
+    }
+    sess.set_blocking(true);
+    assert!(channel.read_to_string(&mut output).is_ok());
+
+    channel.wait_eof().unwrap();
+    channel.close().unwrap();
+    channel.wait_close().unwrap();
+    assert_eq!(output, "foo\n");
+    assert!(::ssh2::Error::last_error(&sess).unwrap().code() == LIBSSH2_ERROR_EAGAIN);
+    assert!(channel.exit_status().unwrap() == 0);
+}
+
+#[test]
+fn exit_code_ignores_other_errors() {
+    let (_tcp, sess) = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    channel.exec("true").unwrap();
+    channel.wait_eof().unwrap();
+    channel.close().unwrap();
+    channel.wait_close().unwrap();
+    let longdescription: String = ::std::iter::repeat('a').take(300).collect();
+    assert!(sess.disconnect(None, &longdescription, None).is_err()); // max len == 256
+    assert!(channel.exit_status().unwrap() == 0);
+}
