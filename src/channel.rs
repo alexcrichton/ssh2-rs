@@ -199,11 +199,11 @@ impl<'sess> Channel<'sess> {
     /// Note that the exit status may not be available if the remote end has not
     /// yet set its status to closed.
     pub fn exit_status(&self) -> Result<i32, Error> {
-        let ret = unsafe { raw::libssh2_channel_get_exit_status(self.raw) };
-        match Error::last_error(self.sess) {
-            Some(err) => Err(err),
-            None => Ok(ret as i32)
-        }
+        // Should really store existing error, call function, check for error
+        // after and restore previous error if no new one...but the only error
+        // condition right now is a NULL pointer check on self.raw, so let's
+        // assume that's not the case.
+        Ok(unsafe { raw::libssh2_channel_get_exit_status(self.raw) })
     }
 
     /// Get the remote exit signal.
