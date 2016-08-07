@@ -143,6 +143,8 @@ pub const LIBSSH2_SFTP_RENAME_OVERWRITE: c_long = 0x1;
 pub const LIBSSH2_SFTP_RENAME_ATOMIC: c_long = 0x2;
 pub const LIBSSH2_SFTP_RENAME_NATIVE: c_long = 0x4;
 
+pub const LIBSSH2_INIT_NO_CRYPTO: c_int = 0x1;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
