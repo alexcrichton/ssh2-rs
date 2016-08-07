@@ -1,6 +1,6 @@
 [package]
 name = "ssh2"
-version = "0.2.12"
+version = "0.2.13"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT/Apache-2.0"
 keywords = ["ssh"]
@@ -19,10 +19,10 @@ name = "all"
 [dependencies]
 bitflags = "0.1"
 libc = "0.2"
+libssh2-sys = { path = "libssh2-sys", version = "0.1.38" }
 
-[dependencies.libssh2-sys]
-path = "libssh2-sys"
-version = "0.1.0"
+[target."cfg(unix)".dependencies]
+openssl-sys = "0.7"
 
 [dev-dependencies]
 tempdir = "0.3"

@@ -166,10 +166,20 @@ mod util;
 pub fn init() {
     static INIT: Once = ONCE_INIT;
     INIT.call_once(|| unsafe {
-        assert_eq!(raw::libssh2_init(0), 0);
+        platform_init();
+        assert_eq!(raw::libssh2_init(raw::LIBSSH2_INIT_NO_CRYPTO), 0);
         assert_eq!(libc::atexit(shutdown), 0);
     });
     extern fn shutdown() { unsafe { raw::libssh2_exit(); } }
+
+    #[cfg(unix)]
+    fn platform_init() {
+        extern crate openssl_sys;
+        openssl_sys::init();
+    }
+
+    #[cfg(windows)]
+    fn platform_init() {}
 }
 
 unsafe fn opt_bytes<'a, T>(_: &'a T,
