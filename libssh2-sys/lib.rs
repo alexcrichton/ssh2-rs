@@ -145,6 +145,11 @@ pub const LIBSSH2_SFTP_RENAME_NATIVE: c_long = 0x4;
 
 pub const LIBSSH2_INIT_NO_CRYPTO: c_int = 0x1;
 
+pub const LIBSSH2_SFTP_S_IFMT: c_ulong = 0o170000;
+pub const LIBSSH2_SFTP_S_IFDIR: c_ulong = 0o040000;
+pub const LIBSSH2_SFTP_S_IFREG: c_ulong = 0o100000;
+pub const LIBSSH2_SFTP_S_IFLNK: c_ulong = 0o120000;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}

@@ -48,6 +48,11 @@ pub struct FileStat {
     pub mtime: Option<u64>,
 }
 
+/// An structure representing a type of file.
+pub struct FileType {
+    perm: c_ulong,
+}
+
 bitflags! {
     #[doc = "Options that can be used to configure how a file is opened"]
     flags OpenFlags: c_ulong {
@@ -500,6 +505,17 @@ impl<'sftp> Drop for File<'sftp> {
 }
 
 impl FileStat {
+    /// Returns the file type for this filestat.
+    pub fn file_type(&self) -> FileType {
+        FileType { perm: self.perm.unwrap_or(0) as c_ulong }
+    }
+
+    /// Returns whether this metadata is for a directory.
+    pub fn is_dir(&self) -> bool { self.file_type().is_dir() }
+
+    /// Returns whether this metadata is for a regular file.
+    pub fn is_file(&self) -> bool { self.file_type().is_file() }
+
     /// Creates a new instance of a stat from a raw instance.
     pub fn from_raw(raw: &raw::LIBSSH2_SFTP_ATTRIBUTES) -> FileStat {
         fn val<T: Copy>(raw: &raw::LIBSSH2_SFTP_ATTRIBUTES, t: &T,
@@ -542,6 +558,21 @@ impl FileStat {
             atime: self.atime.unwrap_or(0) as c_ulong,
             mtime: self.mtime.unwrap_or(0) as c_ulong,
         }
+    }
+}
+
+impl FileType {
+    /// Test whether this file type represents a directory.
+    pub fn is_dir(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFDIR) }
+
+    /// Test whether this file type represents a regular file.
+    pub fn is_file(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFREG) }
+
+    /// Test whether this file type represents a symbolic link.
+    pub fn is_symlink(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFLNK) }
+
+    fn is(&self, perm: c_ulong) -> bool {
+        (self.perm & raw::LIBSSH2_SFTP_S_IFMT) == perm
     }
 }
 
