@@ -288,7 +288,8 @@ impl<'sess> Channel<'sess> {
     }
 
     /// Artificially limit the number of bytes that will be read from this
-    /// channel.
+    /// channel. Hack intended for use by scp_recv only.
+    #[doc(hidden)]
     pub fn limit_read(&mut self, limit: u64) {
         self.read_limit = Some(limit);
     }
