@@ -309,7 +309,7 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Wait for the remote end to acknowledge an EOF request.
+    /// Wait for the remote end to send EOF.
     pub fn wait_eof(&mut self) -> Result<(), Error> {
         unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
     }
