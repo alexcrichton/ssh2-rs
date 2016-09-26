@@ -288,7 +288,8 @@ impl<'sess> Channel<'sess> {
     }
 
     /// Artificially limit the number of bytes that will be read from this
-    /// channel.
+    /// channel. Hack intended for use by scp_recv only.
+    #[doc(hidden)]
     pub fn limit_read(&mut self, limit: u64) {
         self.read_limit = Some(limit);
     }
@@ -309,7 +310,7 @@ impl<'sess> Channel<'sess> {
         }
     }
 
-    /// Wait for the remote end to acknowledge an EOF request.
+    /// Wait for the remote end to send EOF.
     pub fn wait_eof(&mut self) -> Result<(), Error> {
         unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
     }
