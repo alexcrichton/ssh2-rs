@@ -37,6 +37,8 @@ addons:
 env:
   global:
     secure: UE1kMuctz/nGnlAN5b6dnCDAxY4B71FYBEauFVt/+T7RkhVXzEArf1zepjr+G2mtARqbWy8J93GxTD1ZFU0q8MmYkPRBLnL6ULCr2hmedabtDSuImXFeyBYHIXwRWNcFzsBtBTdBRfKx2YBTjYC0J3LkYaHoYcJEi8O8hW5w6q4=
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: osx
+      before_install: brew install openssl
+      env: OPENSSL_INCLUDE_DIR=/usr/local/include OPENSSL_LIB_DIR=/usr/local/lib
