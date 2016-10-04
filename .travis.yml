@@ -40,6 +40,5 @@ env:
 matrix:
   include:
     - os: osx
-      before_install: brew install openssl
-      env: OPENSSL_INCLUDE_DIR=/usr/local/include OPENSSL_LIB_DIR=/usr/local/lib
+      env: OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
       rust: stable
