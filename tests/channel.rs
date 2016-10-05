@@ -55,6 +55,7 @@ fn shell() {
     let mut channel = sess.channel_session().unwrap();
     channel.request_pty("xterm", None, None).unwrap();
     channel.shell().unwrap();
+    channel.close().unwrap();
 }
 
 #[test]
@@ -115,14 +116,12 @@ fn drop_nonblocking() {
     let (_tcp, sess) = ::authed_session();
     sess.set_blocking(false);
 
-    let t = thread::spawn(move || {
+    thread::spawn(move || {
         let _s = listener.accept().unwrap();
     });
 
     let _ = sess.channel_direct_tcpip("127.0.0.1", addr.port(), None);
     drop(sess);
-
-    t.join().unwrap();
 }
 
 const LIBSSH2_ERROR_EAGAIN: i32 = -37; // from libssh2-sys
