@@ -38,7 +38,7 @@ fn ops() {
     let readlink = sftp.readlink(&td.path().join("foo2")).unwrap();
     assert!(readlink == td.path().join("foo"));
     let realpath = sftp.realpath(&td.path().join("foo2")).unwrap();
-    assert!(realpath == td.path().join("foo"));
+    assert_eq!(realpath, td.path().join("foo").canonicalize().unwrap());
 
     let files = sftp.readdir(td.path()).unwrap();
     assert_eq!(files.len(), 4);
