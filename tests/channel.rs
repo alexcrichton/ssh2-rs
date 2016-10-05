@@ -124,7 +124,6 @@ fn drop_nonblocking() {
     drop(sess);
 }
 
-const LIBSSH2_ERROR_EAGAIN: i32 = -37; // from libssh2-sys
 #[test]
 fn nonblocking_before_exit_code() {
     let (_tcp, sess) = ::authed_session();
