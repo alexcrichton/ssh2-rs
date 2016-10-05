@@ -147,7 +147,6 @@ fn nonblocking_before_exit_code() {
     channel.close().unwrap();
     channel.wait_close().unwrap();
     assert_eq!(output, "foo\n");
-    assert!(::ssh2::Error::last_error(&sess).unwrap().code() == LIBSSH2_ERROR_EAGAIN);
     assert!(channel.exit_status().unwrap() == 0);
 }
 
