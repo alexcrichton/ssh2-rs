@@ -22,7 +22,7 @@ libc = "0.2"
 libssh2-sys = { path = "libssh2-sys", version = "0.1.40" }
 
 [target."cfg(unix)".dependencies]
-openssl-sys = "0.9"
+openssl-sys = "0.7"
 
 [dev-dependencies]
 tempdir = "0.3"
