@@ -10,7 +10,7 @@ Rust bindings to libssh2
 ```toml
 # Cargo.toml
 [dependencies]
-ssh2 = "0.2"
+ssh2 = "0.3"
 ```
 
 ## Building on OSX 10.10+
