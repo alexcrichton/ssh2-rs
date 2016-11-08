@@ -19,7 +19,7 @@ name = "all"
 [dependencies]
 bitflags = "0.7"
 libc = "0.2"
-libssh2-sys = { path = "libssh2-sys", version = "0.1.41" }
+libssh2-sys = { path = "libssh2-sys", version = "0.2" }
 
 [target."cfg(unix)".dependencies]
 openssl-sys = "0.9"
