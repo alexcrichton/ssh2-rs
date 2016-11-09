@@ -101,7 +101,9 @@ fn register_dep(dep: &str) {
         return
     }
     if let Some(s) = env::var_os(&format!("DEP_{}_INCLUDE", dep)) {
-        let path = Path::new(&s).join("../lib/pkgconfig");
+        let root = Path::new(&s).parent().unwrap();
+        env::set_var(&format!("DEP_{}_ROOT", dep), root);
+        let path = root.join("lib/pkgconfig");
         if path.exists() {
             prepend("PKG_CONFIG_PATH", path);
             return
