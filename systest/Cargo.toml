@@ -9,4 +9,4 @@ libssh2-sys = { path = "../libssh2-sys" }
 libc = "0.1"
 
 [build-dependencies]
-ctest = { git = "https://github.com/alexcrichton/ctest" }
+ctest = "0.1"
