@@ -36,7 +36,8 @@ addons:
       - libdw-dev
 env:
   global:
-    secure: UE1kMuctz/nGnlAN5b6dnCDAxY4B71FYBEauFVt/+T7RkhVXzEArf1zepjr+G2mtARqbWy8J93GxTD1ZFU0q8MmYkPRBLnL6ULCr2hmedabtDSuImXFeyBYHIXwRWNcFzsBtBTdBRfKx2YBTjYC0J3LkYaHoYcJEi8O8hW5w6q4=
+    secure: "Pv35wAFBLDqTGXot1aq7JtDAzwWXxTQahl3MeH9T1fdq2SqNdvXQazRJqDZcpeTO5EH+g2hLShiz9bije2746hzoIyb4GFt1II35a2hff2hBaxsaBb2BCPc7wEjW6u8QQ+PZXpauO2OQrlPwJUBpIActGp6NOI/Et4a3eFBOpx4="
+
 matrix:
   include:
     - os: osx
