@@ -19,7 +19,7 @@ name = "all"
 [dependencies]
 bitflags = "0.7"
 libc = "0.2"
-libssh2-sys = { path = "libssh2-sys", version = "0.2" }
+libssh2-sys = { path = "libssh2-sys", version = "0.2.4" }
 
 [dev-dependencies]
 tempdir = "0.3"
