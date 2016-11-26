@@ -533,4 +533,25 @@ fn smoke() {
     unsafe { libssh2_init(0) };
 }
 
+#[doc(hidden)]
 pub fn issue_14344_workaround() {}
+
+pub fn init() {
+    use std::sync::{Once, ONCE_INIT};
+
+    static INIT: Once = ONCE_INIT;
+    INIT.call_once(|| unsafe {
+        platform_init();
+        assert_eq!(libssh2_init(LIBSSH2_INIT_NO_CRYPTO), 0);
+        assert_eq!(libc::atexit(shutdown), 0);
+    });
+    extern fn shutdown() { unsafe { libssh2_exit(); } }
+
+    #[cfg(unix)]
+    fn platform_init() {
+        openssl_sys::init();
+    }
+
+    #[cfg(windows)]
+    fn platform_init() {}
+}

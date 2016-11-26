@@ -133,7 +133,6 @@ extern crate libc;
 #[macro_use] extern crate bitflags;
 
 use std::ffi::CStr;
-use std::sync::{Once, ONCE_INIT};
 
 pub use agent::{Agent, Identities, PublicKey};
 pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow, Stream};
@@ -164,22 +163,7 @@ mod util;
 ///
 /// This is optional, it is lazily invoked.
 pub fn init() {
-    static INIT: Once = ONCE_INIT;
-    INIT.call_once(|| unsafe {
-        platform_init();
-        assert_eq!(raw::libssh2_init(raw::LIBSSH2_INIT_NO_CRYPTO), 0);
-        assert_eq!(libc::atexit(shutdown), 0);
-    });
-    extern fn shutdown() { unsafe { raw::libssh2_exit(); } }
-
-    #[cfg(unix)]
-    fn platform_init() {
-        extern crate openssl_sys;
-        openssl_sys::init();
-    }
-
-    #[cfg(windows)]
-    fn platform_init() {}
+    raw::init();
 }
 
 unsafe fn opt_bytes<'a, T>(_: &'a T,
