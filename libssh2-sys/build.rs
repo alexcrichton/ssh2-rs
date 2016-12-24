@@ -1,4 +1,4 @@
-extern crate pkg_config;
+extern crate metadeps;
 extern crate cmake;
 
 use std::env;
@@ -11,10 +11,7 @@ fn main() {
     register_dep("Z");
     register_dep("OPENSSL");
 
-    if let Ok(lib) = pkg_config::find_library("libssh2") {
-        for path in &lib.include_paths {
-            println!("cargo:include={}", path.display());
-        }
+    if metadeps::probe().is_ok() {
         return
     }
 
