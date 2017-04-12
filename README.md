@@ -33,3 +33,9 @@ the header files are:
 export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
 export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
 ```
+
+This crate also needs to have `cmake` installed:
+
+```sh
+brew install cmake
+```
