@@ -20,7 +20,7 @@ pub trait SessionBinding<'sess>: Sized {
     unsafe fn from_raw_opt(sess: &'sess Session, raw: *mut Self::Raw)
                            -> Result<Self, Error> {
         if raw.is_null() {
-            Err(Error::last_error(sess).unwrap())
+            Err(Error::last_error(sess).unwrap_or_else(Error::unknown))
         } else {
             Ok(SessionBinding::from_raw(sess, raw))
         }

@@ -44,6 +44,11 @@ impl Error {
         Error::new(raw::LIBSSH2_ERROR_CHANNEL_EOF_SENT, "end of file")
     }
 
+    /// Generate an error for unknown failure
+    pub fn unknown() -> Error {
+        Error::new(libc::c_int::min_value(), "no other error listed")
+    }
+
     /// Construct an error from an error code from libssh2
     pub fn from_errno(code: libc::c_int) -> Error {
         let msg = match code {
