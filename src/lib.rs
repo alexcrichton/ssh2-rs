@@ -141,7 +141,7 @@ pub use knownhosts::{KnownHosts, Hosts, Host};
 pub use listener::Listener;
 pub use session::{Session, ScpFileStat};
 pub use sftp::{Sftp, OpenFlags, READ, WRITE, APPEND, CREATE, TRUNCATE};
-pub use sftp::{EXCLUSIVE, OpenType, File, FileStat};
+pub use sftp::{EXCLUSIVE, OpenType, File, FileStat, FileType};
 pub use sftp::{RenameFlags, ATOMIC, OVERWRITE, NATIVE};
 pub use DisconnectCode::{HostNotAllowedToConnect, ProtocolError};
 pub use DisconnectCode::{KeyExchangeFailed, Reserved, MacError, CompressionError};
