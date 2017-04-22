@@ -18,6 +18,21 @@ fn main() {
     register_dep("Z");
     register_dep("OPENSSL");
 
+    let target = env::var("TARGET").unwrap();
+    let host = env::var("HOST").unwrap();
+
+    if target != host {
+        let lib_dir = env::var_os("TARGET_LIBSSH2_LIB_DIR").map(PathBuf::from);
+        let include_dir = env::var_os("TARGET_LIBSSH2_INCLUDE_DIR").map(PathBuf::from);
+
+        if lib_dir.is_some() && include_dir.is_some() {
+            println!("cargo:rustc-link-search=native={}", lib_dir.unwrap().to_string_lossy());
+            println!("cargo:include={}", include_dir.unwrap().to_string_lossy());
+            println!("cargo:rustc-link-lib=dylib=ssh2");
+            return;
+        }
+    }
+
     if let Ok(lib) = pkg_config::find_library("libssh2") {
         for path in &lib.include_paths {
             println!("cargo:include={}", path.display());
@@ -31,8 +46,6 @@ fn main() {
     }
 
     let mut cfg = cmake::Config::new("libssh2");
-
-    let target = env::var("TARGET").unwrap();
 
     // Don't use OpenSSL on Windows, instead use the native Windows backend.
     if target.contains("windows") {
