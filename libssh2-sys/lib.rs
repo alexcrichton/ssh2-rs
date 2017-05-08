@@ -542,16 +542,24 @@ pub fn init() {
     static INIT: Once = ONCE_INIT;
     INIT.call_once(|| unsafe {
         platform_init();
-        assert_eq!(libssh2_init(LIBSSH2_INIT_NO_CRYPTO), 0);
         assert_eq!(libc::atexit(shutdown), 0);
     });
     extern fn shutdown() { unsafe { libssh2_exit(); } }
 
     #[cfg(unix)]
-    fn platform_init() {
+    unsafe fn platform_init() {
+        // On Unix we want to funnel through openssl_sys to initialize OpenSSL,
+        // so be sure to tell libssh2 to not do its own thing as we've already
+        // taken care of it.
         openssl_sys::init();
+        assert_eq!(libssh2_init(LIBSSH2_INIT_NO_CRYPTO), 0);
     }
 
     #[cfg(windows)]
-    fn platform_init() {}
+    unsafe fn platform_init() {
+        // On Windows we want to be sure to tell libssh2 to initialize
+        // everything, as we're not managing crypto elsewhere ourselves. Also to
+        // fix alexcrichton/git2-rs#202
+        assert_eq!(libssh2_init(0), 0);
+    }
 }
