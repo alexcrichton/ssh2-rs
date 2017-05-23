@@ -10,9 +10,23 @@ fn smoke() {
     channel.exec("true").unwrap();
     channel.wait_eof().unwrap();
     assert!(channel.eof());
-    assert_eq!(channel.exit_status().unwrap(), 0);
     channel.close().unwrap();
     channel.wait_close().unwrap();
+    assert_eq!(channel.exit_status().unwrap(), 0);
+    assert!(channel.eof());
+}
+
+#[test]
+fn bad_smoke() {
+    let (_tcp, sess) = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    channel.flush().unwrap();
+    channel.exec("false").unwrap();
+    channel.wait_eof().unwrap();
+    assert!(channel.eof());
+    channel.close().unwrap();
+    channel.wait_close().unwrap();
+    assert_eq!(channel.exit_status().unwrap(), 1);
     assert!(channel.eof());
 }
 
