@@ -1,6 +1,9 @@
 extern crate pkg_config;
 extern crate cmake;
 
+#[cfg(target_env = "msvc")]
+extern crate vcpkg;
+
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -8,6 +11,10 @@ use std::path::{PathBuf, Path};
 use std::process::Command;
 
 fn main() {
+    if try_vcpkg() {
+        return;
+    }
+
     register_dep("Z");
     register_dep("OPENSSL");
 
@@ -116,4 +123,31 @@ fn prepend(var: &str, val: PathBuf) {
     let mut v = vec![val];
     v.extend(env::split_paths(&prefix));
     env::set_var(var, &env::join_paths(v).unwrap());
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn try_vcpkg() -> bool { false }
+
+#[cfg(target_env = "msvc")]
+fn try_vcpkg() -> bool {
+    vcpkg::Config::new()
+        .emit_includes(true)
+        .probe("libssh2").map(|_| {
+
+        // found libssh2 which depends on openssl and zlib
+        vcpkg::Config::new()
+            .lib_name("libeay32")
+            .lib_name("ssleay32")
+            .probe("openssl").expect("configured libssh2 from vcpkg but could not \
+                                      find openssl libraries that it depends on");
+
+        vcpkg::Config::new()
+            .lib_names("zlib", "zlib1")
+            .probe("zlib").expect("configured libssh2 from vcpkg but could not \
+                                   find the zlib library that it depends on");
+
+        println!("cargo:rustc-link-lib=crypt32");
+        println!("cargo:rustc-link-lib=gdi32");
+        println!("cargo:rustc-link-lib=user32");
+    }).is_ok()
 }
