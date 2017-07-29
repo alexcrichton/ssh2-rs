@@ -62,6 +62,11 @@ fn main() {
         }
     }
 
+    // Homebrew deprecated OpenSSL and deliberately hides it from cmake, requiring such opt-in
+    if target.contains("darwin") && Path::new("/usr/local/opt/openssl/include/openssl/ssl.h").exists() {
+        cfg.define("OPENSSL_ROOT_DIR", "/usr/local/opt/openssl/");
+    }
+
     let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
                  .define("ENABLE_ZLIB_COMPRESSION", "ON")
                  .define("CMAKE_INSTALL_LIBDIR", "lib")
