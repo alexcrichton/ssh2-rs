@@ -1,5 +1,6 @@
 #![doc(html_root_url = "http://alexcrichton.com/ssh2-rs")]
 #![allow(bad_style)]
+#![allow(unused_extern_crates)]
 
 extern crate libc;
 
