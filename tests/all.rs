@@ -1,7 +1,6 @@
 #![deny(warnings)]
 
 extern crate ssh2;
-extern crate libc;
 extern crate tempdir;
 
 use std::env;
