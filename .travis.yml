@@ -1,5 +1,5 @@
 language: rust
-sudo: false
+sudo: required
 
 matrix:
   include:
@@ -26,7 +26,10 @@ before_script:
   - eval `ssh-agent -s`
   - ssh-add ~/.ssh/id_rsa
   - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-  - telnet localhost 22 &
+  - echo "Host localhost" >> ~/.ssh/config
+  - echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+  - chmod 600 ~/.ssh/authorized_keys
+  - ssh -v localhost echo hello
 
 script:
   - cargo build
