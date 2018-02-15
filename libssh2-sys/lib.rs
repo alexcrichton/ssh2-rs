@@ -397,6 +397,15 @@ extern {
                                                   privatekey: *const c_char,
                                                   passphrase: *const c_char)
                                                   -> c_int;
+    pub fn libssh2_userauth_publickey_frommemory(sess: *mut LIBSSH2_SESSION,
+                                                 username: *const c_char,
+                                                 username_len: size_t,
+                                                 publickeydata: *const c_char,
+                                                 publickeydata_len: size_t,
+                                                 privatekeydata: *const c_char,
+                                                 privatekeydata_len: size_t,
+                                                 passphrase: *const c_char)
+                                                 -> c_int;
     pub fn libssh2_userauth_password_ex(session: *mut LIBSSH2_SESSION,
                                         username: *const c_char,
                                         username_len: c_uint,
