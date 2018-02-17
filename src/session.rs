@@ -5,6 +5,8 @@ use std::path::Path;
 use std::slice;
 use std::str;
 use libc::{self, c_uint, c_int, c_void, c_long};
+#[cfg(unix)]
+use libc::size_t;
 
 use {raw, Error, DisconnectCode, ByApplication, HostKeyType};
 use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
@@ -214,6 +216,40 @@ impl Session {
                     username.len() as c_uint,
                     pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
                     privatekey.as_ptr(),
+                    passphrase.as_ref().map(|s| s.as_ptr())
+                              .unwrap_or(0 as *const _))
+        })
+    }
+
+    /// Attempt public key authentication using a PEM encoded private key from
+    /// memory. Public key is computed from private key if none passed.
+    /// This is available only for `unix` targets, as it relies on openssl.
+    /// It is therefore recommended to use `#[cfg(unix)]` or otherwise test for
+    /// the `unix` compliation target when using this function.
+    #[cfg(unix)]
+    pub fn userauth_pubkey_memory(&self,
+                                  username: &str,
+                                  pubkeydata: Option<&str>,
+                                  privatekeydata: &str,
+                                  passphrase: Option<&str>) -> Result<(), Error> {
+        let (pubkeydata, pubkeydata_len) = match pubkeydata {
+            Some(s) => (Some(try!(CString::new(s))), s.len()),
+            None => (None, 0),
+        };
+        let privatekeydata_len = privatekeydata.len();
+        let privatekeydata = try!(CString::new(privatekeydata));
+        let passphrase = match passphrase {
+            Some(s) => Some(try!(CString::new(s))),
+            None => None,
+        };
+        self.rc(unsafe {
+            raw::libssh2_userauth_publickey_frommemory(self.raw,
+                    username.as_ptr() as *const _,
+                    username.len() as size_t,
+                    pubkeydata.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
+                    pubkeydata_len as size_t,
+                    privatekeydata.as_ptr(),
+                    privatekeydata_len as size_t,
                     passphrase.as_ref().map(|s| s.as_ptr())
                               .unwrap_or(0 as *const _))
         })
