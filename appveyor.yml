@@ -1,14 +1,7 @@
 environment:
   matrix:
-  - TARGET: x86_64-pc-windows-gnu
-    MSYS_BITS: 64
-  - TARGET: i686-pc-windows-gnu
-    MSYS_BITS: 32
   - TARGET: x86_64-pc-windows-msvc
   - TARGET: i686-pc-windows-msvc
-  - TARGET: x86_64-pc-windows-msvc
-    RUSTFLAGS: -Ctarget-feature=+crt-static
-    VCPKG_DEFAULT_TRIPLET: x64-windows-static
 install:
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe"
   - rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
@@ -19,7 +12,7 @@ install:
   - if defined VCPKG_DEFAULT_TRIPLET git clone https://github.com/Microsoft/vcpkg c:\projects\vcpkg
   - if defined VCPKG_DEFAULT_TRIPLET c:\projects\vcpkg\bootstrap-vcpkg.bat
   - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
-  - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads  
+  - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads
   - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install libssh2
 
 build: false
