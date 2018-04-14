@@ -96,6 +96,28 @@ pub const LIBSSH2_ERROR_ENCRYPT: c_int = -44;
 pub const LIBSSH2_ERROR_BAD_SOCKET: c_int = -45;
 pub const LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
 
+pub const LIBSSH2_FX_EOF: c_int = 1;
+pub const LIBSSH2_FX_NO_SUCH_FILE: c_int = 2;
+pub const LIBSSH2_FX_PERMISSION_DENIED: c_int = 3;
+pub const LIBSSH2_FX_FAILURE: c_int = 4;
+pub const LIBSSH2_FX_BAD_MESSAGE: c_int = 5;
+pub const LIBSSH2_FX_NO_CONNECTION: c_int = 6;
+pub const LIBSSH2_FX_CONNECTION_LOST: c_int = 7;
+pub const LIBSSH2_FX_OP_UNSUPPORTED: c_int = 8;
+pub const LIBSSH2_FX_INVALID_HANDLE: c_int = 9;
+pub const LIBSSH2_FX_NO_SUCH_PATH: c_int = 10;
+pub const LIBSSH2_FX_FILE_ALREADY_EXISTS: c_int = 11;
+pub const LIBSSH2_FX_WRITE_PROTECT: c_int = 12;
+pub const LIBSSH2_FX_NO_MEDIA: c_int = 13;
+pub const LIBSSH2_FX_NO_SPACE_ON_FILESYSTEM: c_int = 14;
+pub const LIBSSH2_FX_QUOTA_EXCEEDED: c_int = 15;
+pub const LIBSSH2_FX_UNKNOWN_PRINCIPAL: c_int = 16;
+pub const LIBSSH2_FX_LOCK_CONFLICT: c_int = 17;
+pub const LIBSSH2_FX_DIR_NOT_EMPTY: c_int = 18;
+pub const LIBSSH2_FX_NOT_A_DIRECTORY: c_int = 19;
+pub const LIBSSH2_FX_INVALID_FILENAME: c_int = 20;
+pub const LIBSSH2_FX_LINK_LOOP: c_int = 21;
+
 pub const LIBSSH2_HOSTKEY_HASH_MD5: c_int = 1;
 pub const LIBSSH2_HOSTKEY_HASH_SHA1: c_int = 2;
 
