@@ -7,7 +7,7 @@ keywords = ["ssh"]
 readme = "README.md"
 repository = "https://github.com/alexcrichton/ssh2-rs"
 homepage = "https://github.com/alexcrichton/ssh2-rs"
-documentation = "http://alexcrichton.com/ssh2-rs"
+documentation = "https://docs.rs/ssh2-rs"
 description = """
 Bindings to libssh2 for interacting with SSH servers and executing remote
 commands, forwarding local ports, etc.
