@@ -18,11 +18,13 @@ fn main() {
     register_dep("Z");
     register_dep("OPENSSL");
 
-    if let Ok(lib) = pkg_config::find_library("libssh2") {
-        for path in &lib.include_paths {
-            println!("cargo:include={}", path.display());
+    if env::var("LIBSSH2_SYS_USE_PKG_CONFIG").is_ok() {
+        if let Ok(lib) = pkg_config::find_library("libssh2") {
+            for path in &lib.include_paths {
+                println!("cargo:include={}", path.display());
+            }
+            return
         }
-        return
     }
 
     if !Path::new("libssh2/.git").exists() {
