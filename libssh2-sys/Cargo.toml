@@ -13,7 +13,7 @@ name = "libssh2_sys"
 path = "lib.rs"
 
 [dependencies]
-libz-sys = ">= 0"
+libz-sys = "1"
 libc = "0.2"
 
 [target."cfg(unix)".dependencies]
