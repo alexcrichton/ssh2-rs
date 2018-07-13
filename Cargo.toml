@@ -13,9 +13,6 @@ Bindings to libssh2 for interacting with SSH servers and executing remote
 commands, forwarding local ports, etc.
 """
 
-[[test]]
-name = "all"
-
 [dependencies]
 bitflags = "0.7"
 libc = "0.2"
