@@ -7,6 +7,12 @@
 
 Rust bindings to libssh2
 
+## Usage
+
+Ensure that [`zlib`](https://zlib.net/) is installed (Debian: `sudo apt-get
+install zlib1g-dev`, OSX: `brew install zlib-devel`,
+[Windows](http://gnuwin32.sourceforge.net/packages/zlib.htm))
+
 ```toml
 # Cargo.toml
 [dependencies]
