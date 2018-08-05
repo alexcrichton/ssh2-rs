@@ -136,7 +136,10 @@ pub const LIBSSH2_KNOWNHOST_KEYENC_BASE64: c_int = 2 << 16;
 pub const LIBSSH2_KNOWNHOST_KEY_RSA1: c_int = 1 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_SSHRSA: c_int = 2 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_SSHDSS: c_int = 3 << 18;
-pub const LIBSSH2_KNOWNHOST_KEY_UNKNOWN: c_int = 7 << 18;
+pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_256: c_int = 4 << 18;
+pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_384: c_int = 5 << 18;
+pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_521: c_int = 6 << 18;
+pub const LIBSSH2_KNOWNHOST_KEY_UNKNOWN: c_int = 15 << 18;
 
 pub const LIBSSH2_FXF_READ: c_ulong = 0x00000001;
 pub const LIBSSH2_FXF_WRITE: c_ulong = 0x00000002;
