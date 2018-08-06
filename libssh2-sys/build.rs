@@ -49,12 +49,11 @@ fn main() {
     // If libz-sys was built it'll give us an include directory to learn how to
     // link to it, and for MinGW targets we just pass a dummy include dir to
     // ensure it's detected (apparently it isn't otherwise?)
-    match env::var_os("DEP_Z_INCLUDE") {
-        Some(path) => { cfg.define("ZLIB_INCLUDE_DIR", path); }
-        None if target.contains("windows-gnu") => {
-            cfg.define("ZLIB_INCLUDE_DIR", "/");
-        }
-        None => {}
+    if !target.contains("windows") && env::var_os("DEP_Z_INCLUDE").is_some() {
+        cfg.define("ENABLE_ZLIB_COMPRESSION", "ON")
+            .register_dep("Z");
+    } else {
+        cfg.define("ENABLE_ZLIB_COMPRESSION", "OFF");
     }
 
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
@@ -73,7 +72,6 @@ fn main() {
     }
 
     let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
-                 .define("ENABLE_ZLIB_COMPRESSION", "ON")
                  .define("CMAKE_INSTALL_LIBDIR", "lib")
                  .define("BUILD_EXAMPLES", "OFF")
                  .define("BUILD_TESTING", "OFF")
