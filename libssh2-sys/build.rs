@@ -87,6 +87,7 @@ fn main() {
         cfg.define("HAVE_SYS_SOCKET_H", None);
         cfg.define("HAVE_SYS_IOCTL_H", None);
         cfg.define("HAVE_SYS_TIME_H", None);
+        cfg.define("HAVE_SYS_UN_H", None);
         cfg.define("HAVE_O_NONBLOCK", None);
         cfg.define("LIBSSH2_OPENSSL", None);
         cfg.define("HAVE_LIBCRYPT32", None);
