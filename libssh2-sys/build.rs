@@ -1,12 +1,11 @@
 extern crate pkg_config;
-extern crate cmake;
+extern crate cc;
 
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
 
+use std::fs;
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::{PathBuf, Path};
 use std::process::Command;
 
@@ -14,9 +13,6 @@ fn main() {
     if try_vcpkg() {
         return;
     }
-
-    register_dep("Z");
-    register_dep("OPENSSL");
 
     // The system copy of libssh2 is not used by default because it
     // can lead to having two copies of libssl loaded at once.
@@ -35,102 +31,125 @@ fn main() {
                                    .status();
     }
 
-    let mut cfg = cmake::Config::new("libssh2");
-
     let target = env::var("TARGET").unwrap();
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let mut cfg = cc::Build::new();
 
-    // Don't use OpenSSL on Windows, instead use the native Windows backend.
+    let include = dst.join("include");
+    println!("cargo:include={}", include.display());
+    println!("cargo:root={}", dst.display());
+    let build = dst.join("build");
+    cfg.out_dir(&build);
+    fs::create_dir_all(&build).unwrap();
+    fs::create_dir_all(&include).unwrap();
+
+    fs::copy("libssh2/include/libssh2.h", include.join("libssh2.h")).unwrap();
+    fs::copy("libssh2/include/libssh2_publickey.h", include.join("libssh2_publickey.h")).unwrap();
+    fs::copy("libssh2/include/libssh2_sftp.h", include.join("libssh2_sftp.h")).unwrap();
+
+    cfg.file("libssh2/src/agent.c")
+        .file("libssh2/src/bcrypt_pbkdf.c")
+        .file("libssh2/src/blowfish.c")
+        .file("libssh2/src/channel.c")
+        .file("libssh2/src/comp.c")
+        .file("libssh2/src/crypt.c")
+        .file("libssh2/src/global.c")
+        .file("libssh2/src/hostkey.c")
+        .file("libssh2/src/keepalive.c")
+        .file("libssh2/src/kex.c")
+        .file("libssh2/src/knownhost.c")
+        .file("libssh2/src/mac.c")
+        .file("libssh2/src/misc.c")
+        .file("libssh2/src/packet.c")
+        .file("libssh2/src/pem.c")
+        .file("libssh2/src/publickey.c")
+        .file("libssh2/src/scp.c")
+        .file("libssh2/src/session.c")
+        .file("libssh2/src/sftp.c")
+        .file("libssh2/src/transport.c")
+        .file("libssh2/src/userauth.c")
+        .include(&include)
+        .include("libssh2/src");
+
+    cfg.define("HAVE_LONGLONG", None);
+
     if target.contains("windows") {
-        cfg.define("CRYPTO_BACKEND", "WinCNG");
+        cfg.include("libssh2/win32");
+        cfg.define("LIBSSH2_WINCNG", None);
+        cfg.file("libssh2/src/wincng.c");
     } else {
-        cfg.define("CRYPTO_BACKEND", "OpenSSL");
+        cfg.flag("-fvisibility=hidden");
+        cfg.define("HAVE_SNPRINTF", None);
+        cfg.define("HAVE_UNISTD_H", None);
+        cfg.define("HAVE_INTTYPES_H", None);
+        cfg.define("HAVE_STDLIB_H", None);
+        cfg.define("HAVE_SYS_SELECT_H", None);
+        cfg.define("HAVE_SYS_SOCKET_H", None);
+        cfg.define("HAVE_SYS_IOCTL_H", None);
+        cfg.define("HAVE_SYS_TIME_H", None);
+        cfg.define("HAVE_SYS_UN_H", None);
+        cfg.define("HAVE_O_NONBLOCK", None);
+        cfg.define("LIBSSH2_OPENSSL", None);
+        cfg.define("HAVE_LIBCRYPT32", None);
+        cfg.define("HAVE_EVP_AES_128_CTR", None);
+
+        cfg.file("libssh2/src/openssl.c");
+
+        // Create `libssh2_config.h`
+        let config = fs::read_to_string("libssh2/src/libssh2_config_cmake.h.in")
+            .unwrap();
+        let config = config.lines()
+            .filter(|l| !l.contains("#cmakedefine"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(build.join("libssh2_config.h"), &config).unwrap();
+        cfg.include(&build);
     }
 
-    // If libz-sys was built it'll give us an include directory to learn how to
-    // link to it, and for MinGW targets we just pass a dummy include dir to
-    // ensure it's detected (apparently it isn't otherwise?)
-    if !target.contains("windows") && env::var_os("DEP_Z_INCLUDE").is_some() {
-        cfg.define("ENABLE_ZLIB_COMPRESSION", "ON")
-            .register_dep("Z");
-    } else {
-        cfg.define("ENABLE_ZLIB_COMPRESSION", "OFF");
+    cfg.define("LIBSSH2_HAVE_ZLIB", None);
+    if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
+        cfg.include(path);
     }
 
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
         if let Some(path) = env::split_paths(&path).next() {
             if let Some(path) = path.to_str() {
                 if path.len() > 0 {
-                    cfg.define("OPENSSL_INCLUDE_DIR", path);
+                    cfg.include(path);
                 }
             }
         }
     }
 
-    // Homebrew deprecated OpenSSL and deliberately hides it from cmake, requiring such opt-in
-    if target.contains("darwin") && Path::new("/usr/local/opt/openssl/include/openssl/ssl.h").exists() {
-        cfg.define("OPENSSL_ROOT_DIR", "/usr/local/opt/openssl/");
-    }
+    let libssh2h = fs::read_to_string("libssh2/include/libssh2.h").unwrap();
+    let version_line = libssh2h.lines()
+        .find(|l| l.contains("LIBSSH2_VERSION"))
+        .unwrap();
+    let version = &version_line[version_line.find('"').unwrap() + 1..version_line.len() - 1];
 
-    let dst = cfg.define("BUILD_SHARED_LIBS", "OFF")
-                 .define("CMAKE_INSTALL_LIBDIR", "lib")
-                 .define("BUILD_EXAMPLES", "OFF")
-                 .define("BUILD_TESTING", "OFF")
-                 .register_dep("OPENSSL")
-                 .register_dep("Z")
-                 .build();
+    let pkgconfig = dst.join("lib/pkgconfig");
+    fs::create_dir_all(&pkgconfig).unwrap();
+    fs::write(
+        pkgconfig.join("libssh2.pc"),
+        fs::read_to_string("libssh2/libssh2.pc.in")
+            .unwrap()
+            .replace("@prefix@", dst.to_str().unwrap())
+            .replace("@exec_prefix@", "")
+            .replace("@libdir@", dst.join("lib").to_str().unwrap())
+            .replace("@includedir@", include.to_str().unwrap())
+            .replace("@LIBS@", "")
+            .replace("@LIBSREQUIRED@", "")
+            .replace("@LIBSSH2VER@", version),
+    ).unwrap();
 
-    // Unfortunately the pkg-config file generated for libssh2 indicates
-    // that it depends on zlib, but most systems don't actually have a
-    // zlib.pc, so pkg-config will say that libssh2 doesn't exist. We
-    // generally take care of the zlib dependency elsewhere, so we just
-    // remove that part from the pkg-config file
-    let mut pc = String::new();
-    let pkgconfig = dst.join("lib/pkgconfig/libssh2.pc");
-    if let Ok(mut f) = File::open(&pkgconfig) {
-        f.read_to_string(&mut pc).unwrap();;
-        drop(f);
-        let pc = pc.replace(",zlib", "");
-        let bytes = pc.as_bytes();
-        File::create(pkgconfig).unwrap().write_all(bytes).unwrap();
-    }
+    cfg.warnings(false);
+    cfg.compile("ssh2");
 
     if target.contains("windows") {
         println!("cargo:rustc-link-lib=bcrypt");
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=user32");
     }
-
-    // msvc generates libssh2.lib, everywhere else generates libssh2.a
-    if target.contains("msvc") {
-        println!("cargo:rustc-link-lib=static=libssh2");
-    } else {
-        println!("cargo:rustc-link-lib=static=ssh2");
-    }
-    println!("cargo:rustc-link-search=native={}/lib", dst.display());
-    println!("cargo:include={}/include", dst.display());
-}
-
-fn register_dep(dep: &str) {
-    if let Some(s) = env::var_os(&format!("DEP_{}_ROOT", dep)) {
-        prepend("PKG_CONFIG_PATH", Path::new(&s).join("lib/pkgconfig"));
-        return
-    }
-    if let Some(s) = env::var_os(&format!("DEP_{}_INCLUDE", dep)) {
-        let root = Path::new(&s).parent().unwrap();
-        env::set_var(&format!("DEP_{}_ROOT", dep), root);
-        let path = root.join("lib/pkgconfig");
-        if path.exists() {
-            prepend("PKG_CONFIG_PATH", path);
-            return
-        }
-    }
-}
-
-fn prepend(var: &str, val: PathBuf) {
-    let prefix = env::var(var).unwrap_or(String::new());
-    let mut v = vec![val];
-    v.extend(env::split_paths(&prefix));
-    env::set_var(var, &env::join_paths(v).unwrap());
 }
 
 #[cfg(not(target_env = "msvc"))]
