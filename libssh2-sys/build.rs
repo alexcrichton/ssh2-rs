@@ -78,6 +78,7 @@ fn main() {
         cfg.define("LIBSSH2_WINCNG", None);
         cfg.file("libssh2/src/wincng.c");
     } else {
+        cfg.flag("-fvisibility=hidden");
         cfg.define("HAVE_SNPRINTF", None);
         cfg.define("HAVE_UNISTD_H", None);
         cfg.define("HAVE_INTTYPES_H", None);
