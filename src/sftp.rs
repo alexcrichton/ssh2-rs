@@ -54,43 +54,42 @@ pub struct FileType {
 }
 
 bitflags! {
-    #[doc = "Options that can be used to configure how a file is opened"]
-    pub flags OpenFlags: c_ulong {
-        #[doc = "Open the file for reading."]
-        const READ = raw::LIBSSH2_FXF_READ,
-        #[doc = "Open the file for writing. If both this and Read are \
-                 specified, the file is opened for both reading and writing"]
-        const WRITE = raw::LIBSSH2_FXF_WRITE,
-        #[doc = "Force all writes to append data at the end of the file."]
-        const APPEND = raw::LIBSSH2_FXF_APPEND,
-        #[doc = "If this flag is specified, then a new file will be created if \
-                 one does not already exist (if Truncate is specified, the new \
-                 file will be truncated to zero length if it previously \
-                 exists) "]
-        const CREATE = raw::LIBSSH2_FXF_CREAT,
-        #[doc = "Forces an existing file with the same name to be truncated to \
-                 zero length when creating a file by specifying `Create`. \
-                 Using this flag implies the `Create` flag."]
-        const TRUNCATE = raw::LIBSSH2_FXF_TRUNC | CREATE.bits,
-        #[doc = "Causes the request to fail if the named file already exists. \
-                 Using this flag implies the `Create` flag."]
-        const EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | CREATE.bits
+    /// Options that can be used to configure how a file is opened
+    pub struct OpenFlags: c_ulong {
+        /// Open the file for reading.
+        const READ = raw::LIBSSH2_FXF_READ;
+        /// Open the file for writing. If both this and `Read` are specified,
+        /// the file is opened for both reading and writing.
+        const WRITE = raw::LIBSSH2_FXF_WRITE;
+        /// Force all writes to append data at the end of the file.
+        const APPEND = raw::LIBSSH2_FXF_APPEND;
+        /// If this flag is specified, then a new file will be created if one
+        /// does not already exist (if `Truncate` is specified, the new file
+        /// will be truncated to zero length if it previously exists).
+        const CREATE = raw::LIBSSH2_FXF_CREAT;
+        /// Forces an existing file with the same name to be truncated to zero
+        /// length when creating a file by specifying `Create`. Using this flag
+        /// implies the `Create` flag.
+        const TRUNCATE = raw::LIBSSH2_FXF_TRUNC | Self::CREATE.bits;
+        /// Causes the request to fail if the named file already exists. Using
+        /// this flag implies the `Create` flag.
+        const EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | Self::CREATE.bits;
     }
 }
 
 bitflags! {
-    #[doc = "Options to `Sftp::rename`"]
-    pub flags RenameFlags: c_long {
-        #[doc = "In a rename operation, overwrite the destination if it \
-                 already exists. If this flag is not present then it is an \
-                 error if the destination already exists"]
-        const OVERWRITE = raw::LIBSSH2_SFTP_RENAME_OVERWRITE,
-        #[doc = "Inform the remote that an atomic rename operation is \
-                 desired if available"]
-        const ATOMIC = raw::LIBSSH2_SFTP_RENAME_ATOMIC,
-        #[doc = "Inform the remote end that the native system calls for \
-                 renaming should be used"]
-        const NATIVE = raw::LIBSSH2_SFTP_RENAME_NATIVE
+    /// Options to `Sftp::rename`.
+    pub struct RenameFlags: c_long {
+        /// In a rename operation, overwrite the destination if it already
+        /// exists. If this flag is not present then it is an error if the
+        /// destination already exists.
+        const OVERWRITE = raw::LIBSSH2_SFTP_RENAME_OVERWRITE;
+        /// Inform the remote that an atomic rename operation is desired if
+        /// available.
+        const ATOMIC = raw::LIBSSH2_SFTP_RENAME_ATOMIC;
+        /// Inform the remote end that the native system calls for renaming
+        /// should be used.
+        const NATIVE = raw::LIBSSH2_SFTP_RENAME_NATIVE;
     }
 }
 
@@ -125,17 +124,17 @@ impl<'sess> Sftp<'sess> {
 
     /// Helper to open a file in the `Read` mode.
     pub fn open(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, READ, 0o644, OpenType::File)
+        self.open_mode(filename, OpenFlags::READ, 0o644, OpenType::File)
     }
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, WRITE | TRUNCATE, 0o644, OpenType::File)
+        self.open_mode(filename, OpenFlags::WRITE | OpenFlags::TRUNCATE, 0o644, OpenType::File)
     }
 
     /// Helper to open a directory for reading its contents.
     pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
-        self.open_mode(dirname, READ, 0, OpenType::Dir)
+        self.open_mode(dirname, OpenFlags::READ, 0, OpenType::Dir)
     }
 
     /// Convenience function to read the files in a directory.
@@ -292,7 +291,9 @@ impl<'sess> Sftp<'sess> {
     /// If no flags are specified then all flags are used.
     pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>)
                   -> Result<(), Error> {
-        let flags = flags.unwrap_or(ATOMIC | OVERWRITE | NATIVE);
+        let flags = flags.unwrap_or(
+            RenameFlags::ATOMIC | RenameFlags::OVERWRITE | RenameFlags::NATIVE
+        );
         let src = try!(util::path2bytes(src));
         let dst = try!(util::path2bytes(dst));
         self.rc(unsafe {
