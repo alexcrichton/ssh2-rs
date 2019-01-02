@@ -12,14 +12,17 @@ matrix:
     - rust: beta
     - rust: nightly
 
-    - rust: nightly
-      before_script:
-        - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+    - name: "master doc to gh-pages"
+      rust: nightly
       script:
         - cargo doc --no-deps
         - cargo doc --no-deps --manifest-path libssh2-sys/Cargo.toml
-      after_success:
-        - travis-cargo --only nightly doc-upload
+      deploy:
+        provider: script
+        script: curl -LsSf https://git.io/fhJ8n | rustc - && (cd target/doc && ../../rust_out)
+        skip_cleanup: true
+        on:
+          branch: master
 
 before_script:
   - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
@@ -37,20 +40,6 @@ script:
   - rustdoc --test README.md -L target
   - cargo run --manifest-path systest/Cargo.toml
 
-env:
-  global:
-    secure: "Pv35wAFBLDqTGXot1aq7JtDAzwWXxTQahl3MeH9T1fdq2SqNdvXQazRJqDZcpeTO5EH+g2hLShiz9bije2746hzoIyb4GFt1II35a2hff2hBaxsaBb2BCPc7wEjW6u8QQ+PZXpauO2OQrlPwJUBpIActGp6NOI/Et4a3eFBOpx4="
-
 notifications:
   email:
     on_success: never
-
-addons:
-  apt:
-    sources:
-      - kalakris-cmake
-    packages:
-      - cmake
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
