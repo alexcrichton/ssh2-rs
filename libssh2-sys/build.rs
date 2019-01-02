@@ -105,6 +105,8 @@ fn main() {
         fs::write(build.join("libssh2_config.h"), &config).unwrap();
         cfg.include(&build);
     }
+    /* Enable newer diffie-hellman-group-exchange-sha1 syntax */
+    cfg.define("LIBSSH2_DH_GEX_NEW", None);
 
     cfg.define("LIBSSH2_HAVE_ZLIB", None);
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
