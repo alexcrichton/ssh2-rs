@@ -105,6 +105,11 @@ fn main() {
         fs::write(build.join("libssh2_config.h"), &config).unwrap();
         cfg.include(&build);
     }
+
+    if target.contains("haiku") {
+        cfg.define("HAVE_POLL", None);
+    }
+
     /* Enable newer diffie-hellman-group-exchange-sha1 syntax */
     cfg.define("LIBSSH2_DH_GEX_NEW", None);
 
