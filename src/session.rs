@@ -314,7 +314,7 @@ impl Session {
                                                  len as c_uint);
             if ret.is_null() {
                 Err(match Error::last_error(self) {
-                    None => ssh2:Error::new(0, "None auth succeeded")
+                    None => Error::new(0, "None auth succeeded")
                     ,Some(e) => e
                 })
             } else {
