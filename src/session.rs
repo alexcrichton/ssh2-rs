@@ -313,7 +313,10 @@ impl Session {
             let ret = raw::libssh2_userauth_list(self.raw, username.as_ptr(),
                                                  len as c_uint);
             if ret.is_null() {
-                Err(Error::last_error(self).unwrap())
+                Err(match Error::last_error(self) {
+                    None => ssh2:Error::new(0, "None auth succeeded")
+                    ,Some(e) => e
+                })
             } else {
                 Ok(str::from_utf8(::opt_bytes(self, ret).unwrap()).unwrap())
             }
