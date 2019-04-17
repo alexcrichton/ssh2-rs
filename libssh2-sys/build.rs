@@ -92,6 +92,7 @@ fn main() {
         cfg.define("LIBSSH2_OPENSSL", None);
         cfg.define("HAVE_LIBCRYPT32", None);
         cfg.define("HAVE_EVP_AES_128_CTR", None);
+        cfg.define("HAVE_POLL", None);
 
         cfg.file("libssh2/src/openssl.c");
 
@@ -104,10 +105,6 @@ fn main() {
             .join("\n");
         fs::write(build.join("libssh2_config.h"), &config).unwrap();
         cfg.include(&build);
-    }
-
-    if target.contains("haiku") {
-        cfg.define("HAVE_POLL", None);
     }
 
     /* Enable newer diffie-hellman-group-exchange-sha1 syntax */
