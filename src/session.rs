@@ -36,14 +36,14 @@ impl Session {
     /// mode, compression, sigpipe, the banner, etc. To associate this session
     /// with a TCP connection, use the `handshake` method to pass in an
     /// already-established TCP socket.
-    pub fn new() -> Option<Session> {
+    pub fn new() -> Result<Session, Error> {
         ::init();
         unsafe {
             let ret = raw::libssh2_session_init_ex(None, None, None, 0 as *mut _);
             if ret.is_null() {
-                None
+                Err(Error::unknown())
             } else {
-                Some(Binding::from_raw(ret))
+                Ok(Binding::from_raw(ret))
             }
         }
     }
