@@ -3,8 +3,8 @@ use std::marker;
 use std::slice;
 use std::str;
 
-use {raw, Session, Error};
 use util::{Binding, SessionBinding};
+use {raw, Error, Session};
 
 /// A structure representing a connection to an SSH agent.
 ///
@@ -47,18 +47,21 @@ impl<'sess> Agent<'sess> {
 
     /// Get an iterator over the identities of this agent.
     pub fn identities(&self) -> Identities {
-        Identities { prev: 0 as *mut _, agent: self }
+        Identities {
+            prev: 0 as *mut _,
+            agent: self,
+        }
     }
 
     /// Attempt public key authentication with the help of ssh-agent.
-    pub fn userauth(&self, username: &str, identity: &PublicKey)
-                    -> Result<(), Error>{
+    pub fn userauth(&self, username: &str, identity: &PublicKey) -> Result<(), Error> {
         let username = try!(CString::new(username));
         unsafe {
-            self.sess.rc(raw::libssh2_agent_userauth(self.raw,
-                                                     username.as_ptr(),
-                                                     identity.raw))
-
+            self.sess.rc(raw::libssh2_agent_userauth(
+                self.raw,
+                username.as_ptr(),
+                identity.raw,
+            ))
         }
     }
 }
@@ -66,11 +69,15 @@ impl<'sess> Agent<'sess> {
 impl<'sess> SessionBinding<'sess> for Agent<'sess> {
     type Raw = raw::LIBSSH2_AGENT;
 
-    unsafe fn from_raw(sess: &'sess Session,
-                       raw: *mut raw::LIBSSH2_AGENT) -> Agent<'sess> {
-        Agent { raw: raw, sess: sess }
+    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_AGENT) -> Agent<'sess> {
+        Agent {
+            raw: raw,
+            sess: sess,
+        }
     }
-    fn raw(&self) -> *mut raw::LIBSSH2_AGENT { self.raw }
+    fn raw(&self) -> *mut raw::LIBSSH2_AGENT {
+        self.raw
+    }
 }
 
 impl<'a> Drop for Agent<'a> {
@@ -84,10 +91,11 @@ impl<'agent> Iterator for Identities<'agent> {
     fn next(&mut self) -> Option<Result<PublicKey<'agent>, Error>> {
         unsafe {
             let mut next = 0 as *mut _;
-            match raw::libssh2_agent_get_identity(self.agent.raw,
-                                                  &mut next,
-                                                  self.prev) {
-                0 => { self.prev = next; Some(Ok(Binding::from_raw(next))) }
+            match raw::libssh2_agent_get_identity(self.agent.raw, &mut next, self.prev) {
+                0 => {
+                    self.prev = next;
+                    Some(Ok(Binding::from_raw(next)))
+                }
                 1 => None,
                 rc => Some(Err(self.agent.sess.rc(rc).err().unwrap())),
             }
@@ -98,28 +106,26 @@ impl<'agent> Iterator for Identities<'agent> {
 impl<'agent> PublicKey<'agent> {
     /// Return the data of this public key.
     pub fn blob(&self) -> &[u8] {
-        unsafe {
-            slice::from_raw_parts_mut((*self.raw).blob,
-                                      (*self.raw).blob_len as usize)
-        }
+        unsafe { slice::from_raw_parts_mut((*self.raw).blob, (*self.raw).blob_len as usize) }
     }
 
     /// Returns the comment in a printable format
     pub fn comment(&self) -> &str {
-        unsafe {
-            str::from_utf8(::opt_bytes(self, (*self.raw).comment).unwrap())
-                .unwrap()
-        }
+        unsafe { str::from_utf8(::opt_bytes(self, (*self.raw).comment).unwrap()).unwrap() }
     }
 }
 
 impl<'agent> Binding for PublicKey<'agent> {
     type Raw = *mut raw::libssh2_agent_publickey;
 
-    unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey)
-                       -> PublicKey<'agent> {
-        PublicKey { raw: raw, _marker: marker::PhantomData }
+    unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey) -> PublicKey<'agent> {
+        PublicKey {
+            raw: raw,
+            _marker: marker::PhantomData,
+        }
     }
 
-    fn raw(&self) -> *mut raw::libssh2_agent_publickey { self.raw }
+    fn raw(&self) -> *mut raw::libssh2_agent_publickey {
+        self.raw
+    }
 }

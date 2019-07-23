@@ -1,16 +1,16 @@
+#[cfg(unix)]
+use libc::size_t;
+use libc::{self, c_int, c_long, c_uint, c_void};
 use std::ffi::CString;
 use std::mem;
 use std::net::TcpStream;
 use std::path::Path;
 use std::slice;
 use std::str;
-use libc::{self, c_uint, c_int, c_void, c_long};
-#[cfg(unix)]
-use libc::size_t;
 
-use {raw, Error, DisconnectCode, ByApplication, HostKeyType};
-use {MethodType, Agent, Channel, Listener, HashType, KnownHosts, Sftp};
 use util::{self, Binding, SessionBinding};
+use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
+use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 
 /// An SSH session, typically representing one TCP connection.
 ///
@@ -39,9 +39,12 @@ impl Session {
     pub fn new() -> Option<Session> {
         ::init();
         unsafe {
-            let ret = raw::libssh2_session_init_ex(None, None, None,
-                                                   0 as *mut _);
-            if ret.is_null() {None} else {Some(Binding::from_raw(ret))}
+            let ret = raw::libssh2_session_init_ex(None, None, None, 0 as *mut _);
+            if ret.is_null() {
+                None
+            } else {
+                Some(Binding::from_raw(ret))
+            }
         }
     }
 
@@ -53,9 +56,7 @@ impl Session {
     /// default.
     pub fn set_banner(&self, banner: &str) -> Result<(), Error> {
         let banner = try!(CString::new(banner));
-        unsafe {
-            self.rc(raw::libssh2_session_banner_set(self.raw, banner.as_ptr()))
-        }
+        unsafe { self.rc(raw::libssh2_session_banner_set(self.raw, banner.as_ptr())) }
     }
 
     /// Flag indicating whether SIGPIPE signals will be allowed or blocked.
@@ -66,9 +67,11 @@ impl Session {
     /// layer.
     pub fn set_allow_sigpipe(&self, block: bool) {
         let res = unsafe {
-            self.rc(raw::libssh2_session_flag(self.raw,
-                                              raw::LIBSSH2_FLAG_SIGPIPE as c_int,
-                                              block as c_int))
+            self.rc(raw::libssh2_session_flag(
+                self.raw,
+                raw::LIBSSH2_FLAG_SIGPIPE as c_int,
+                block as c_int,
+            ))
         };
         res.unwrap();
     }
@@ -81,9 +84,11 @@ impl Session {
     /// libssh2 will not attempt to use compression.
     pub fn set_compress(&self, compress: bool) {
         let res = unsafe {
-            self.rc(raw::libssh2_session_flag(self.raw,
-                                              raw::LIBSSH2_FLAG_COMPRESS as c_int,
-                                              compress as c_int))
+            self.rc(raw::libssh2_session_flag(
+                self.raw,
+                raw::LIBSSH2_FLAG_COMPRESS as c_int,
+                compress as c_int,
+            ))
         };
         res.unwrap();
     }
@@ -98,9 +103,7 @@ impl Session {
     /// a blocking session will wait for room. A non-blocking session will
     /// return immediately without writing anything.
     pub fn set_blocking(&self, blocking: bool) {
-        unsafe {
-            raw::libssh2_session_set_blocking(self.raw, blocking as c_int)
-        }
+        unsafe { raw::libssh2_session_set_blocking(self.raw, blocking as c_int) }
     }
 
     /// Returns whether the session was previously set to nonblocking.
@@ -144,15 +147,13 @@ impl Session {
         }
 
         #[cfg(windows)]
-        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream)
-                            -> libc::c_int {
+        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream) -> libc::c_int {
             use std::os::windows::prelude::*;
             raw::libssh2_session_handshake(raw, stream.as_raw_socket())
         }
 
         #[cfg(unix)]
-        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream)
-                            -> libc::c_int {
+        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream) -> libc::c_int {
             use std::os::unix::prelude::*;
             raw::libssh2_session_handshake(raw, stream.as_raw_fd())
         }
@@ -164,15 +165,16 @@ impl Session {
     /// authentication actually have it disabled and use Keyboard Interactive
     /// authentication (routed via PAM or another authentication backed)
     /// instead.
-    pub fn userauth_password(&self, username: &str, password: &str)
-                             -> Result<(), Error> {
+    pub fn userauth_password(&self, username: &str, password: &str) -> Result<(), Error> {
         self.rc(unsafe {
-            raw::libssh2_userauth_password_ex(self.raw,
-                                              username.as_ptr() as *const _,
-                                              username.len() as c_uint,
-                                              password.as_ptr() as *const _,
-                                              password.len() as c_uint,
-                                              None)
+            raw::libssh2_userauth_password_ex(
+                self.raw,
+                username.as_ptr() as *const _,
+                username.len() as c_uint,
+                password.as_ptr() as *const _,
+                password.len() as c_uint,
+                None,
+            )
         })
     }
 
@@ -188,19 +190,25 @@ impl Session {
         try!(agent.list_identities());
         let identity = match agent.identities().next() {
             Some(identity) => try!(identity),
-            None => return Err(Error::new(raw::LIBSSH2_ERROR_INVAL as c_int,
-                                          "no identities found in the ssh agent"))
+            None => {
+                return Err(Error::new(
+                    raw::LIBSSH2_ERROR_INVAL as c_int,
+                    "no identities found in the ssh agent",
+                ))
+            }
         };
         agent.userauth(username, &identity)
     }
 
     /// Attempt public key authentication using a PEM encoded private key file
     /// stored on disk.
-    pub fn userauth_pubkey_file(&self,
-                                username: &str,
-                                pubkey: Option<&Path>,
-                                privatekey: &Path,
-                                passphrase: Option<&str>) -> Result<(), Error> {
+    pub fn userauth_pubkey_file(
+        &self,
+        username: &str,
+        pubkey: Option<&Path>,
+        privatekey: &Path,
+        passphrase: Option<&str>,
+    ) -> Result<(), Error> {
         let pubkey = match pubkey {
             Some(s) => Some(try!(CString::new(try!(util::path2bytes(s))))),
             None => None,
@@ -211,13 +219,17 @@ impl Session {
             None => None,
         };
         self.rc(unsafe {
-            raw::libssh2_userauth_publickey_fromfile_ex(self.raw,
-                    username.as_ptr() as *const _,
-                    username.len() as c_uint,
-                    pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
-                    privatekey.as_ptr(),
-                    passphrase.as_ref().map(|s| s.as_ptr())
-                              .unwrap_or(0 as *const _))
+            raw::libssh2_userauth_publickey_fromfile_ex(
+                self.raw,
+                username.as_ptr() as *const _,
+                username.len() as c_uint,
+                pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
+                privatekey.as_ptr(),
+                passphrase
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(0 as *const _),
+            )
         })
     }
 
@@ -227,11 +239,13 @@ impl Session {
     /// It is therefore recommended to use `#[cfg(unix)]` or otherwise test for
     /// the `unix` compliation target when using this function.
     #[cfg(unix)]
-    pub fn userauth_pubkey_memory(&self,
-                                  username: &str,
-                                  pubkeydata: Option<&str>,
-                                  privatekeydata: &str,
-                                  passphrase: Option<&str>) -> Result<(), Error> {
+    pub fn userauth_pubkey_memory(
+        &self,
+        username: &str,
+        pubkeydata: Option<&str>,
+        privatekeydata: &str,
+        passphrase: Option<&str>,
+    ) -> Result<(), Error> {
         let (pubkeydata, pubkeydata_len) = match pubkeydata {
             Some(s) => (Some(try!(CString::new(s))), s.len()),
             None => (None, 0),
@@ -243,28 +257,36 @@ impl Session {
             None => None,
         };
         self.rc(unsafe {
-            raw::libssh2_userauth_publickey_frommemory(self.raw,
-                    username.as_ptr() as *const _,
-                    username.len() as size_t,
-                    pubkeydata.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
-                    pubkeydata_len as size_t,
-                    privatekeydata.as_ptr(),
-                    privatekeydata_len as size_t,
-                    passphrase.as_ref().map(|s| s.as_ptr())
-                              .unwrap_or(0 as *const _))
+            raw::libssh2_userauth_publickey_frommemory(
+                self.raw,
+                username.as_ptr() as *const _,
+                username.len() as size_t,
+                pubkeydata
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(0 as *const _),
+                pubkeydata_len as size_t,
+                privatekeydata.as_ptr(),
+                privatekeydata_len as size_t,
+                passphrase
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(0 as *const _),
+            )
         })
     }
 
     // Umm... I wish this were documented in libssh2?
     #[allow(missing_docs)]
-    pub fn userauth_hostbased_file(&self,
-                                   username: &str,
-                                   publickey: &Path,
-                                   privatekey: &Path,
-                                   passphrase: Option<&str>,
-                                   hostname: &str,
-                                   local_username: Option<&str>)
-                                   -> Result<(), Error> {
+    pub fn userauth_hostbased_file(
+        &self,
+        username: &str,
+        publickey: &Path,
+        privatekey: &Path,
+        passphrase: Option<&str>,
+        hostname: &str,
+        local_username: Option<&str>,
+    ) -> Result<(), Error> {
         let publickey = try!(CString::new(try!(util::path2bytes(publickey))));
         let privatekey = try!(CString::new(try!(util::path2bytes(privatekey))));
         let passphrase = match passphrase {
@@ -276,17 +298,21 @@ impl Session {
             None => username,
         };
         self.rc(unsafe {
-            raw::libssh2_userauth_hostbased_fromfile_ex(self.raw,
-                    username.as_ptr() as *const _,
-                    username.len() as c_uint,
-                    publickey.as_ptr(),
-                    privatekey.as_ptr(),
-                    passphrase.as_ref().map(|s| s.as_ptr())
-                              .unwrap_or(0 as *const _),
-                    hostname.as_ptr() as *const _,
-                    hostname.len() as c_uint,
-                    local_username.as_ptr() as *const _,
-                    local_username.len() as c_uint)
+            raw::libssh2_userauth_hostbased_fromfile_ex(
+                self.raw,
+                username.as_ptr() as *const _,
+                username.len() as c_uint,
+                publickey.as_ptr(),
+                privatekey.as_ptr(),
+                passphrase
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(0 as *const _),
+                hostname.as_ptr() as *const _,
+                hostname.len() as c_uint,
+                local_username.as_ptr() as *const _,
+                local_username.len() as c_uint,
+            )
         })
     }
 
@@ -310,8 +336,7 @@ impl Session {
         let len = username.len();
         let username = try!(CString::new(username));
         unsafe {
-            let ret = raw::libssh2_userauth_list(self.raw, username.as_ptr(),
-                                                 len as c_uint);
+            let ret = raw::libssh2_userauth_list(self.raw, username.as_ptr(), len as c_uint);
             if ret.is_null() {
                 Err(Error::last_error(self).unwrap())
             } else {
@@ -327,14 +352,14 @@ impl Session {
     /// listed last. If a method is listed which is not supported by libssh2 it
     /// will be ignored and not sent to the remote host during protocol
     /// negotiation.
-    pub fn method_pref(&self,
-                       method_type: MethodType,
-                       prefs: &str) -> Result<(), Error> {
+    pub fn method_pref(&self, method_type: MethodType, prefs: &str) -> Result<(), Error> {
         let prefs = try!(CString::new(prefs));
         unsafe {
-            self.rc(raw::libssh2_session_method_pref(self.raw,
-                                                     method_type as c_int,
-                                                     prefs.as_ptr()))
+            self.rc(raw::libssh2_session_method_pref(
+                self.raw,
+                method_type as c_int,
+                prefs.as_ptr(),
+            ))
         }
     }
 
@@ -344,23 +369,22 @@ impl Session {
     /// parameter. May return `None` if the session has not yet been started.
     pub fn methods(&self, method_type: MethodType) -> Option<&str> {
         unsafe {
-            let ptr = raw::libssh2_session_methods(self.raw,
-                                                   method_type as c_int);
+            let ptr = raw::libssh2_session_methods(self.raw, method_type as c_int);
             ::opt_bytes(self, ptr).and_then(|s| str::from_utf8(s).ok())
         }
     }
 
     /// Get list of supported algorithms.
-    pub fn supported_algs(&self, method_type: MethodType)
-                          -> Result<Vec<&'static str>, Error> {
+    pub fn supported_algs(&self, method_type: MethodType) -> Result<Vec<&'static str>, Error> {
         static STATIC: () = ();
         let method_type = method_type as c_int;
         let mut ret = Vec::new();
         unsafe {
             let mut ptr = 0 as *mut _;
-            let rc = raw::libssh2_session_supported_algs(self.raw, method_type,
-                                                         &mut ptr);
-            if rc <= 0 { try!(self.rc(rc)) }
+            let rc = raw::libssh2_session_supported_algs(self.raw, method_type, &mut ptr);
+            if rc <= 0 {
+                try!(self.rc(rc))
+            }
             for i in 0..(rc as isize) {
                 let s = ::opt_bytes(&STATIC, *ptr.offset(i)).unwrap();;
                 let s = str::from_utf8(s).unwrap();
@@ -375,9 +399,7 @@ impl Session {
     ///
     /// The returned agent will still need to be connected manually before use.
     pub fn agent(&self) -> Result<Agent, Error> {
-        unsafe {
-            SessionBinding::from_raw_opt(self, raw::libssh2_agent_init(self.raw))
-        }
+        unsafe { SessionBinding::from_raw_opt(self, raw::libssh2_agent_init(self.raw)) }
     }
 
     /// Init a collection of known hosts for this session.
@@ -396,9 +418,12 @@ impl Session {
     /// This method is commonly used to create a channel to execute commands
     /// over or create a new login shell.
     pub fn channel_session(&self) -> Result<Channel, Error> {
-        self.channel_open("session",
-                          raw::LIBSSH2_CHANNEL_WINDOW_DEFAULT as u32,
-                          raw::LIBSSH2_CHANNEL_PACKET_DEFAULT as u32, None)
+        self.channel_open(
+            "session",
+            raw::LIBSSH2_CHANNEL_WINDOW_DEFAULT as u32,
+            raw::LIBSSH2_CHANNEL_PACKET_DEFAULT as u32,
+            None,
+        )
     }
 
     /// Tunnel a TCP connection through an SSH session.
@@ -413,18 +438,23 @@ impl Session {
     ///
     /// The `Channel` returned represents a connection between this host and the
     /// specified remote host.
-    pub fn channel_direct_tcpip(&self, host: &str, port: u16,
-                                src: Option<(&str, u16)>)
-                                -> Result<Channel, Error> {
+    pub fn channel_direct_tcpip(
+        &self,
+        host: &str,
+        port: u16,
+        src: Option<(&str, u16)>,
+    ) -> Result<Channel, Error> {
         let (shost, sport) = src.unwrap_or(("127.0.0.1", 22));
         let host = try!(CString::new(host));
         let shost = try!(CString::new(shost));
         unsafe {
-            let ret = raw::libssh2_channel_direct_tcpip_ex(self.raw,
-                                                           host.as_ptr(),
-                                                           port as c_int,
-                                                           shost.as_ptr(),
-                                                           sport as c_int);
+            let ret = raw::libssh2_channel_direct_tcpip_ex(
+                self.raw,
+                host.as_ptr(),
+                port as c_int,
+                shost.as_ptr(),
+                sport as c_int,
+            );
             SessionBinding::from_raw_opt(self, ret)
         }
     }
@@ -434,20 +464,21 @@ impl Session {
     ///
     /// New connections will be queued by the library until accepted by the
     /// `accept` method on the returned `Listener`.
-    pub fn channel_forward_listen(&self,
-                                  remote_port: u16,
-                                  host: Option<&str>,
-                                  queue_maxsize: Option<u32>)
-                                  -> Result<(Listener, u16), Error> {
+    pub fn channel_forward_listen(
+        &self,
+        remote_port: u16,
+        host: Option<&str>,
+        queue_maxsize: Option<u32>,
+    ) -> Result<(Listener, u16), Error> {
         let mut bound_port = 0;
         unsafe {
             let ret = raw::libssh2_channel_forward_listen_ex(
-                            self.raw,
-                            host.map(|s| s.as_ptr()).unwrap_or(0 as *const _)
-                                as *mut _,
-                            remote_port as c_int,
-                            &mut bound_port,
-                            queue_maxsize.unwrap_or(0) as c_int);
+                self.raw,
+                host.map(|s| s.as_ptr()).unwrap_or(0 as *const _) as *mut _,
+                remote_port as c_int,
+                &mut bound_port,
+                queue_maxsize.unwrap_or(0) as c_int,
+            );
             SessionBinding::from_raw_opt(self, ret).map(|l| (l, bound_port as u16))
         }
     }
@@ -457,8 +488,7 @@ impl Session {
     /// The path specified is a path on the remote host which will attempt to be
     /// sent over the returned channel. Some stat information is also returned
     /// about the remote file to prepare for receiving the file.
-    pub fn scp_recv(&self, path: &Path)
-                    -> Result<(Channel, ScpFileStat), Error> {
+    pub fn scp_recv(&self, path: &Path) -> Result<(Channel, ScpFileStat), Error> {
         let path = try!(CString::new(try!(util::path2bytes(path))));
         unsafe {
             let mut sb: libc::stat = mem::zeroed();
@@ -483,18 +513,24 @@ impl Session {
     ///
     /// The size of the file, `size`, must be known ahead of time before
     /// transmission.
-    pub fn scp_send(&self, remote_path: &Path, mode: i32,
-                    size: u64, times: Option<(u64, u64)>)
-                    -> Result<Channel, Error> {
+    pub fn scp_send(
+        &self,
+        remote_path: &Path,
+        mode: i32,
+        size: u64,
+        times: Option<(u64, u64)>,
+    ) -> Result<Channel, Error> {
         let path = try!(CString::new(try!(util::path2bytes(remote_path))));
         let (mtime, atime) = times.unwrap_or((0, 0));
         unsafe {
-            let ret = raw::libssh2_scp_send64(self.raw,
-                                              path.as_ptr(),
-                                              mode as c_int,
-                                              size as i64,
-                                              mtime as libc::time_t,
-                                              atime as libc::time_t);
+            let ret = raw::libssh2_scp_send64(
+                self.raw,
+                path.as_ptr(),
+                mode as c_int,
+                size as i64,
+                mtime as libc::time_t,
+                atime as libc::time_t,
+            );
             SessionBinding::from_raw_opt(self, ret)
         }
     }
@@ -516,20 +552,27 @@ impl Session {
     ///
     /// This is typically not called directly but rather through
     /// `channel_session`, `channel_direct_tcpip`, or `channel_forward_listen`.
-    pub fn channel_open(&self, channel_type: &str,
-                        window_size: u32, packet_size: u32,
-                        message: Option<&str>) -> Result<Channel, Error> {
+    pub fn channel_open(
+        &self,
+        channel_type: &str,
+        window_size: u32,
+        packet_size: u32,
+        message: Option<&str>,
+    ) -> Result<Channel, Error> {
         let message_len = message.map(|s| s.len()).unwrap_or(0);
         unsafe {
-            let ret = raw::libssh2_channel_open_ex(self.raw,
-                                         channel_type.as_ptr() as *const _,
-                                         channel_type.len() as c_uint,
-                                         window_size as c_uint,
-                                         packet_size as c_uint,
-                                         message.as_ref().map(|s| s.as_ptr())
-                                                .unwrap_or(0 as *const _)
-                                                as *const _,
-                                         message_len as c_uint);
+            let ret = raw::libssh2_channel_open_ex(
+                self.raw,
+                channel_type.as_ptr() as *const _,
+                channel_type.len() as c_uint,
+                window_size as c_uint,
+                packet_size as c_uint,
+                message
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(0 as *const _) as *const _,
+                message_len as c_uint,
+            );
             SessionBinding::from_raw_opt(self, ret)
         }
     }
@@ -560,7 +603,9 @@ impl Session {
         let mut kind = 0;
         unsafe {
             let ret = raw::libssh2_session_hostkey(self.raw, &mut len, &mut kind);
-            if ret.is_null() { return None }
+            if ret.is_null() {
+                return None;
+            }
             let data = slice::from_raw_parts(ret as *const u8, len as usize);
             let kind = match kind {
                 raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
@@ -606,10 +651,7 @@ impl Session {
     /// I/O, use 0 (the default) to disable keepalives. To avoid some busy-loop
     /// corner-cases, if you specify an interval of 1 it will be treated as 2.
     pub fn set_keepalive(&self, want_reply: bool, interval: u32) {
-        unsafe {
-            raw::libssh2_keepalive_config(self.raw, want_reply as c_int,
-                                          interval as c_uint)
-        }
+        unsafe { raw::libssh2_keepalive_config(self.raw, want_reply as c_int, interval as c_uint) }
     }
 
     /// Send a keepalive message if needed.
@@ -629,18 +671,22 @@ impl Session {
     /// along with a reason symbol and a verbose description.
     ///
     /// Note that this does *not* close the underlying socket.
-    pub fn disconnect(&self,
-                      reason: Option<DisconnectCode>,
-                      description: &str,
-                      lang: Option<&str>) -> Result<(), Error> {
+    pub fn disconnect(
+        &self,
+        reason: Option<DisconnectCode>,
+        description: &str,
+        lang: Option<&str>,
+    ) -> Result<(), Error> {
         let reason = reason.unwrap_or(ByApplication) as c_int;
         let description = try!(CString::new(description));
         let lang = try!(CString::new(lang.unwrap_or("")));
         unsafe {
-            self.rc(raw::libssh2_session_disconnect_ex(self.raw,
-                                                       reason,
-                                                       description.as_ptr(),
-                                                       lang.as_ptr()))
+            self.rc(raw::libssh2_session_disconnect_ex(
+                self.raw,
+                reason,
+                description.as_ptr(),
+                lang.as_ptr(),
+            ))
         }
     }
 
@@ -663,7 +709,9 @@ impl Binding for Session {
     unsafe fn from_raw(raw: *mut raw::LIBSSH2_SESSION) -> Session {
         Session { raw: raw }
     }
-    fn raw(&self) -> *mut raw::LIBSSH2_SESSION { self.raw }
+    fn raw(&self) -> *mut raw::LIBSSH2_SESSION {
+        self.raw
+    }
 }
 
 impl Drop for Session {
@@ -676,9 +724,13 @@ impl Drop for Session {
 
 impl ScpFileStat {
     /// Returns the size of the remote file.
-    pub fn size(&self) -> u64 { self.stat.st_size as u64 }
+    pub fn size(&self) -> u64 {
+        self.stat.st_size as u64
+    }
     /// Returns the listed mode of the remote file.
-    pub fn mode(&self) -> i32 { self.stat.st_mode as i32 }
+    pub fn mode(&self) -> i32 {
+        self.stat.st_mode as i32
+    }
     /// Returns whether the remote file is a directory.
     pub fn is_dir(&self) -> bool {
         self.mode() & (libc::S_IFMT as i32) == (libc::S_IFDIR as i32)

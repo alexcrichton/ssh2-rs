@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
 
-use ssh2::{Session, MethodType, HashType};
+use ssh2::{HashType, MethodType, Session};
 
 #[test]
 fn smoke() {
@@ -15,7 +15,8 @@ fn smoke() {
     assert_eq!(sess.timeout(), 0);
     sess.set_compress(true);
     assert!(sess.host_key().is_none());
-    sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1").unwrap();
+    sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1")
+        .unwrap();
     assert!(sess.methods(MethodType::Kex).is_none());
     sess.set_blocking(true);
     sess.set_timeout(0);
@@ -61,7 +62,10 @@ fn scp_recv() {
     ch.read_to_string(&mut data).unwrap();
     let p = PathBuf::from(env::var("HOME").unwrap()).join(".ssh/authorized_keys");
     let mut expected = String::new();
-    File::open(&p).unwrap().read_to_string(&mut expected).unwrap();
+    File::open(&p)
+        .unwrap()
+        .read_to_string(&mut expected)
+        .unwrap();
     assert!(data == expected);
 }
 
@@ -69,10 +73,15 @@ fn scp_recv() {
 fn scp_send() {
     let td = TempDir::new("test").unwrap();
     let (_tcp, sess) = ::authed_session();
-    let mut ch = sess.scp_send(&td.path().join("foo"), 0o644, 6, None).unwrap();
+    let mut ch = sess
+        .scp_send(&td.path().join("foo"), 0o644, 6, None)
+        .unwrap();
     ch.write_all(b"foobar").unwrap();
     drop(ch);
     let mut actual = Vec::new();
-    File::open(&td.path().join("foo")).unwrap().read_to_end(&mut actual).unwrap();
+    File::open(&td.path().join("foo"))
+        .unwrap()
+        .read_to_end(&mut actual)
+        .unwrap();
     assert_eq!(actual, b"foobar");
 }

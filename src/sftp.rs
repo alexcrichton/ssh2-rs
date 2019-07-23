@@ -1,12 +1,12 @@
+use libc::{c_int, c_long, c_uint, c_ulong, size_t};
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::marker;
 use std::mem;
 use std::path::{Path, PathBuf};
-use libc::{c_int, c_ulong, c_long, c_uint, size_t};
 
-use {raw, Session, Error, Channel};
 use util::{self, SessionBinding};
+use {raw, Channel, Error, Session};
 
 /// A handle to a remote filesystem over SFTP.
 ///
@@ -104,16 +104,23 @@ pub enum OpenType {
 
 impl<'sess> Sftp<'sess> {
     /// Open a handle to a file.
-    pub fn open_mode(&self, filename: &Path, flags: OpenFlags,
-                     mode: i32, open_type: OpenType) -> Result<File, Error> {
+    pub fn open_mode(
+        &self,
+        filename: &Path,
+        flags: OpenFlags,
+        mode: i32,
+        open_type: OpenType,
+    ) -> Result<File, Error> {
         let filename = try!(util::path2bytes(filename));
         unsafe {
-            let ret = raw::libssh2_sftp_open_ex(self.raw,
-                                                filename.as_ptr() as *const _,
-                                                filename.len() as c_uint,
-                                                flags.bits() as c_ulong,
-                                                mode as c_long,
-                                                open_type as c_int);
+            let ret = raw::libssh2_sftp_open_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+                flags.bits() as c_ulong,
+                mode as c_long,
+                open_type as c_int,
+            );
             if ret.is_null() {
                 Err(self.last_error())
             } else {
@@ -129,7 +136,12 @@ impl<'sess> Sftp<'sess> {
 
     /// Helper to create a file in write-only mode with truncation.
     pub fn create(&self, filename: &Path) -> Result<File, Error> {
-        self.open_mode(filename, OpenFlags::WRITE | OpenFlags::TRUNCATE, 0o644, OpenType::File)
+        self.open_mode(
+            filename,
+            OpenFlags::WRITE | OpenFlags::TRUNCATE,
+            0o644,
+            OpenType::File,
+        )
     }
 
     /// Helper to open a directory for reading its contents.
@@ -141,15 +153,15 @@ impl<'sess> Sftp<'sess> {
     ///
     /// The returned paths are all joined with `dirname` when returned, and the
     /// paths `.` and `..` are filtered out of the returned list.
-    pub fn readdir(&self, dirname: &Path)
-                   -> Result<Vec<(PathBuf, FileStat)>, Error> {
+    pub fn readdir(&self, dirname: &Path) -> Result<Vec<(PathBuf, FileStat)>, Error> {
         let mut dir = try!(self.opendir(dirname));
         let mut ret = Vec::new();
         loop {
             match dir.readdir() {
                 Ok((filename, stat)) => {
-                    if &*filename == Path::new(".") ||
-                       &*filename == Path::new("..") { continue }
+                    if &*filename == Path::new(".") || &*filename == Path::new("..") {
+                        continue;
+                    }
 
                     ret.push((dirname.join(&filename), stat))
                 }
@@ -161,14 +173,15 @@ impl<'sess> Sftp<'sess> {
     }
 
     /// Create a directory on the remote file system.
-    pub fn mkdir(&self, filename: &Path, mode: i32)
-                 -> Result<(), Error> {
+    pub fn mkdir(&self, filename: &Path, mode: i32) -> Result<(), Error> {
         let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
-            raw::libssh2_sftp_mkdir_ex(self.raw,
-                                       filename.as_ptr() as *const _,
-                                       filename.len() as c_uint,
-                                       mode as c_long)
+            raw::libssh2_sftp_mkdir_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+                mode as c_long,
+            )
         })
     }
 
@@ -176,9 +189,11 @@ impl<'sess> Sftp<'sess> {
     pub fn rmdir(&self, filename: &Path) -> Result<(), Error> {
         let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
-            raw::libssh2_sftp_rmdir_ex(self.raw,
-                                       filename.as_ptr() as *const _,
-                                       filename.len() as c_uint)
+            raw::libssh2_sftp_rmdir_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+            )
         })
     }
 
@@ -187,11 +202,13 @@ impl<'sess> Sftp<'sess> {
         let filename = try!(util::path2bytes(filename));
         unsafe {
             let mut ret = mem::zeroed();
-            let rc = raw::libssh2_sftp_stat_ex(self.raw,
-                                               filename.as_ptr() as *const _,
-                                               filename.len() as c_uint,
-                                               raw::LIBSSH2_SFTP_STAT,
-                                               &mut ret);
+            let rc = raw::libssh2_sftp_stat_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+                raw::LIBSSH2_SFTP_STAT,
+                &mut ret,
+            );
             try!(self.rc(rc));
             Ok(FileStat::from_raw(&ret))
         }
@@ -202,11 +219,13 @@ impl<'sess> Sftp<'sess> {
         let filename = try!(util::path2bytes(filename));
         unsafe {
             let mut ret = mem::zeroed();
-            let rc = raw::libssh2_sftp_stat_ex(self.raw,
-                                               filename.as_ptr() as *const _,
-                                               filename.len() as c_uint,
-                                               raw::LIBSSH2_SFTP_LSTAT,
-                                               &mut ret);
+            let rc = raw::libssh2_sftp_stat_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+                raw::LIBSSH2_SFTP_LSTAT,
+                &mut ret,
+            );
             try!(self.rc(rc));
             Ok(FileStat::from_raw(&ret))
         }
@@ -217,11 +236,13 @@ impl<'sess> Sftp<'sess> {
         let filename = try!(util::path2bytes(filename));
         self.rc(unsafe {
             let mut raw = stat.raw();
-            raw::libssh2_sftp_stat_ex(self.raw,
-                                      filename.as_ptr() as *const _,
-                                      filename.len() as c_uint,
-                                      raw::LIBSSH2_SFTP_SETSTAT,
-                                      &mut raw)
+            raw::libssh2_sftp_stat_ex(
+                self.raw,
+                filename.as_ptr() as *const _,
+                filename.len() as c_uint,
+                raw::LIBSSH2_SFTP_SETSTAT,
+                &mut raw,
+            )
         })
     }
 
@@ -230,12 +251,14 @@ impl<'sess> Sftp<'sess> {
         let path = try!(util::path2bytes(path));
         let target = try!(util::path2bytes(target));
         self.rc(unsafe {
-            raw::libssh2_sftp_symlink_ex(self.raw,
-                                         path.as_ptr() as *const _,
-                                         path.len() as c_uint,
-                                         target.as_ptr() as *mut _,
-                                         target.len() as c_uint,
-                                         raw::LIBSSH2_SFTP_SYMLINK)
+            raw::libssh2_sftp_symlink_ex(
+                self.raw,
+                path.as_ptr() as *const _,
+                path.len() as c_uint,
+                target.as_ptr() as *mut _,
+                target.len() as c_uint,
+                raw::LIBSSH2_SFTP_SYMLINK,
+            )
         })
     }
 
@@ -255,18 +278,20 @@ impl<'sess> Sftp<'sess> {
         let mut rc;
         loop {
             rc = unsafe {
-                raw::libssh2_sftp_symlink_ex(self.raw,
-                                             path.as_ptr() as *const _,
-                                             path.len() as c_uint,
-                                             ret.as_ptr() as *mut _,
-                                             ret.capacity() as c_uint,
-                                             op)
+                raw::libssh2_sftp_symlink_ex(
+                    self.raw,
+                    path.as_ptr() as *const _,
+                    path.len() as c_uint,
+                    ret.as_ptr() as *mut _,
+                    ret.capacity() as c_uint,
+                    op,
+                )
             };
             if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
                 let cap = ret.capacity();
                 ret.reserve(cap);
             } else {
-                break
+                break;
             }
         }
         if rc < 0 {
@@ -289,20 +314,20 @@ impl<'sess> Sftp<'sess> {
     /// operation and/or using native system calls when possible.
     ///
     /// If no flags are specified then all flags are used.
-    pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>)
-                  -> Result<(), Error> {
-        let flags = flags.unwrap_or(
-            RenameFlags::ATOMIC | RenameFlags::OVERWRITE | RenameFlags::NATIVE
-        );
+    pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>) -> Result<(), Error> {
+        let flags =
+            flags.unwrap_or(RenameFlags::ATOMIC | RenameFlags::OVERWRITE | RenameFlags::NATIVE);
         let src = try!(util::path2bytes(src));
         let dst = try!(util::path2bytes(dst));
         self.rc(unsafe {
-            raw::libssh2_sftp_rename_ex(self.raw,
-                                        src.as_ptr() as *const _,
-                                        src.len() as c_uint,
-                                        dst.as_ptr() as *const _,
-                                        dst.len() as c_uint,
-                                        flags.bits())
+            raw::libssh2_sftp_rename_ex(
+                self.raw,
+                src.as_ptr() as *const _,
+                src.len() as c_uint,
+                dst.as_ptr() as *const _,
+                dst.len() as c_uint,
+                flags.bits(),
+            )
         })
     }
 
@@ -310,9 +335,7 @@ impl<'sess> Sftp<'sess> {
     pub fn unlink(&self, file: &Path) -> Result<(), Error> {
         let file = try!(util::path2bytes(file));
         self.rc(unsafe {
-            raw::libssh2_sftp_unlink_ex(self.raw,
-                                        file.as_ptr() as *const _,
-                                        file.len() as c_uint)
+            raw::libssh2_sftp_unlink_ex(self.raw, file.as_ptr() as *const _, file.len() as c_uint)
         })
     }
 
@@ -324,20 +347,27 @@ impl<'sess> Sftp<'sess> {
 
     /// Translates a return code into a Rust-`Result`
     pub fn rc(&self, rc: c_int) -> Result<(), Error> {
-        if rc == 0 {Ok(())} else {Err(self.last_error())}
+        if rc == 0 {
+            Ok(())
+        } else {
+            Err(self.last_error())
+        }
     }
 }
 
 impl<'sess> SessionBinding<'sess> for Sftp<'sess> {
     type Raw = raw::LIBSSH2_SFTP;
 
-    unsafe fn from_raw(_sess: &'sess Session,
-                       raw: *mut raw::LIBSSH2_SFTP) -> Sftp<'sess> {
-        Sftp { raw: raw, _marker: marker::PhantomData }
+    unsafe fn from_raw(_sess: &'sess Session, raw: *mut raw::LIBSSH2_SFTP) -> Sftp<'sess> {
+        Sftp {
+            raw: raw,
+            _marker: marker::PhantomData,
+        }
     }
-    fn raw(&self) -> *mut raw::LIBSSH2_SFTP { self.raw }
+    fn raw(&self) -> *mut raw::LIBSSH2_SFTP {
+        self.raw
+    }
 }
-
 
 impl<'sess> Drop for Sftp<'sess> {
     fn drop(&mut self) {
@@ -350,8 +380,10 @@ impl<'sftp> File<'sftp> {
     /// given session.
     ///
     /// This consumes ownership of `raw`.
-    unsafe fn from_raw(sftp: &'sftp Sftp<'sftp>,
-                       raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
+    unsafe fn from_raw(
+        sftp: &'sftp Sftp<'sftp>,
+        raw: *mut raw::LIBSSH2_SFTP_HANDLE,
+    ) -> File<'sftp> {
         File {
             raw: raw,
             sftp: sftp,
@@ -370,7 +402,9 @@ impl<'sftp> File<'sftp> {
     pub fn stat(&mut self) -> Result<FileStat, Error> {
         unsafe {
             let mut ret = mem::zeroed();
-            try!(self.sftp.rc(raw::libssh2_sftp_fstat_ex(self.raw, &mut ret, 0)));
+            try!(self
+                .sftp
+                .rc(raw::libssh2_sftp_fstat_ex(self.raw, &mut ret, 0)));
             Ok(FileStat::from_raw(&ret))
         }
     }
@@ -400,25 +434,30 @@ impl<'sftp> File<'sftp> {
         let mut rc;
         loop {
             rc = unsafe {
-                raw::libssh2_sftp_readdir_ex(self.raw,
-                                             buf.as_mut_ptr() as *mut _,
-                                             buf.capacity() as size_t,
-                                             0 as *mut _, 0,
-                                             &mut stat)
+                raw::libssh2_sftp_readdir_ex(
+                    self.raw,
+                    buf.as_mut_ptr() as *mut _,
+                    buf.capacity() as size_t,
+                    0 as *mut _,
+                    0,
+                    &mut stat,
+                )
             };
             if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
                 let cap = buf.capacity();
                 buf.reserve(cap);
             } else {
-                break
+                break;
             }
         }
         if rc < 0 {
-            return Err(self.sftp.last_error())
+            return Err(self.sftp.last_error());
         } else if rc == 0 {
-            return Err(Error::new(raw::LIBSSH2_ERROR_FILE, "no more files"))
+            return Err(Error::new(raw::LIBSSH2_ERROR_FILE, "no more files"));
         } else {
-            unsafe { buf.set_len(rc as usize); }
+            unsafe {
+                buf.set_len(rc as usize);
+            }
         }
         Ok((mkpath(buf), FileStat::from_raw(&stat)))
     }
@@ -435,13 +474,11 @@ impl<'sftp> File<'sftp> {
 impl<'sftp> Read for File<'sftp> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         unsafe {
-            let rc = raw::libssh2_sftp_read(self.raw,
-                                            buf.as_mut_ptr() as *mut _,
-                                            buf.len() as size_t);
+            let rc =
+                raw::libssh2_sftp_read(self.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
             match rc {
-                n if n < 0 => Err(io::Error::new(ErrorKind::Other,
-                                                 self.sftp.last_error())),
-                n => Ok(n as usize)
+                n if n < 0 => Err(io::Error::new(ErrorKind::Other, self.sftp.last_error())),
+                n => Ok(n as usize),
             }
         }
     }
@@ -450,9 +487,7 @@ impl<'sftp> Read for File<'sftp> {
 impl<'sftp> Write for File<'sftp> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let rc = unsafe {
-            raw::libssh2_sftp_write(self.raw,
-                                    buf.as_ptr() as *const _,
-                                    buf.len() as size_t)
+            raw::libssh2_sftp_write(self.raw, buf.as_ptr() as *const _, buf.len() as size_t)
         };
         if rc < 0 {
             Err(io::Error::new(ErrorKind::Other, self.sftp.last_error()))
@@ -460,7 +495,9 @@ impl<'sftp> Write for File<'sftp> {
             Ok(rc as usize)
         }
     }
-    fn flush(&mut self) -> io::Result<()> { Ok(()) }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 impl<'sftp> Seek for File<'sftp> {
@@ -484,15 +521,10 @@ impl<'sftp> Seek for File<'sftp> {
             SeekFrom::End(offset) => match self.stat() {
                 Ok(s) => match s.size {
                     Some(size) => (size as i64 + offset) as u64,
-                    None => {
-                        return Err(io::Error::new(ErrorKind::Other,
-                                                  "no file size available"))
-                    }
+                    None => return Err(io::Error::new(ErrorKind::Other, "no file size available")),
                 },
-                Err(e) => {
-                    return Err(io::Error::new(ErrorKind::Other, e))
-                }
-            }
+                Err(e) => return Err(io::Error::new(ErrorKind::Other, e)),
+            },
         };
         unsafe { raw::libssh2_sftp_seek64(self.raw, next) }
         Ok(next)
@@ -508,50 +540,58 @@ impl<'sftp> Drop for File<'sftp> {
 impl FileStat {
     /// Returns the file type for this filestat.
     pub fn file_type(&self) -> FileType {
-        FileType { perm: self.perm.unwrap_or(0) as c_ulong }
+        FileType {
+            perm: self.perm.unwrap_or(0) as c_ulong,
+        }
     }
 
     /// Returns whether this metadata is for a directory.
-    pub fn is_dir(&self) -> bool { self.file_type().is_dir() }
+    pub fn is_dir(&self) -> bool {
+        self.file_type().is_dir()
+    }
 
     /// Returns whether this metadata is for a regular file.
-    pub fn is_file(&self) -> bool { self.file_type().is_file() }
+    pub fn is_file(&self) -> bool {
+        self.file_type().is_file()
+    }
 
     /// Creates a new instance of a stat from a raw instance.
     pub fn from_raw(raw: &raw::LIBSSH2_SFTP_ATTRIBUTES) -> FileStat {
-        fn val<T: Copy>(raw: &raw::LIBSSH2_SFTP_ATTRIBUTES, t: &T,
-                        flag: c_ulong) -> Option<T> {
-            if raw.flags & flag != 0 {Some(*t)} else {None}
+        fn val<T: Copy>(raw: &raw::LIBSSH2_SFTP_ATTRIBUTES, t: &T, flag: c_ulong) -> Option<T> {
+            if raw.flags & flag != 0 {
+                Some(*t)
+            } else {
+                None
+            }
         }
 
         FileStat {
             size: val(raw, &raw.filesize, raw::LIBSSH2_SFTP_ATTR_SIZE),
-            uid: val(raw, &raw.uid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
-                    .map(|s| s as u32),
-            gid: val(raw, &raw.gid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
-                    .map(|s| s as u32),
-            perm: val(raw, &raw.permissions, raw::LIBSSH2_SFTP_ATTR_PERMISSIONS)
-                     .map(|s| s as u32),
-            mtime: val(raw, &raw.mtime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME)
-                      .map(|s| s as u64),
-            atime: val(raw, &raw.atime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME)
-                      .map(|s| s as u64),
+            uid: val(raw, &raw.uid, raw::LIBSSH2_SFTP_ATTR_UIDGID).map(|s| s as u32),
+            gid: val(raw, &raw.gid, raw::LIBSSH2_SFTP_ATTR_UIDGID).map(|s| s as u32),
+            perm: val(raw, &raw.permissions, raw::LIBSSH2_SFTP_ATTR_PERMISSIONS).map(|s| s as u32),
+            mtime: val(raw, &raw.mtime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME).map(|s| s as u64),
+            atime: val(raw, &raw.atime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME).map(|s| s as u64),
         }
     }
 
     /// Convert this stat structure to its raw representation.
     pub fn raw(&self) -> raw::LIBSSH2_SFTP_ATTRIBUTES {
         fn flag<T>(o: &Option<T>, flag: c_ulong) -> c_ulong {
-            if o.is_some() {flag} else {0}
+            if o.is_some() {
+                flag
+            } else {
+                0
+            }
         }
 
         raw::LIBSSH2_SFTP_ATTRIBUTES {
-            flags: flag(&self.size, raw::LIBSSH2_SFTP_ATTR_SIZE) |
-                   flag(&self.uid, raw::LIBSSH2_SFTP_ATTR_UIDGID) |
-                   flag(&self.gid, raw::LIBSSH2_SFTP_ATTR_UIDGID) |
-                   flag(&self.perm, raw::LIBSSH2_SFTP_ATTR_PERMISSIONS) |
-                   flag(&self.atime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME) |
-                   flag(&self.mtime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME),
+            flags: flag(&self.size, raw::LIBSSH2_SFTP_ATTR_SIZE)
+                | flag(&self.uid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
+                | flag(&self.gid, raw::LIBSSH2_SFTP_ATTR_UIDGID)
+                | flag(&self.perm, raw::LIBSSH2_SFTP_ATTR_PERMISSIONS)
+                | flag(&self.atime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME)
+                | flag(&self.mtime, raw::LIBSSH2_SFTP_ATTR_ACMODTIME),
             filesize: self.size.unwrap_or(0),
             uid: self.uid.unwrap_or(0) as c_ulong,
             gid: self.gid.unwrap_or(0) as c_ulong,
@@ -564,13 +604,19 @@ impl FileStat {
 
 impl FileType {
     /// Test whether this file type represents a directory.
-    pub fn is_dir(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFDIR) }
+    pub fn is_dir(&self) -> bool {
+        self.is(raw::LIBSSH2_SFTP_S_IFDIR)
+    }
 
     /// Test whether this file type represents a regular file.
-    pub fn is_file(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFREG) }
+    pub fn is_file(&self) -> bool {
+        self.is(raw::LIBSSH2_SFTP_S_IFREG)
+    }
 
     /// Test whether this file type represents a symbolic link.
-    pub fn is_symlink(&self) -> bool { self.is(raw::LIBSSH2_SFTP_S_IFLNK) }
+    pub fn is_symlink(&self) -> bool {
+        self.is(raw::LIBSSH2_SFTP_S_IFLNK)
+    }
 
     fn is(&self, perm: c_ulong) -> bool {
         (self.perm & raw::LIBSSH2_SFTP_S_IFMT) == perm
@@ -579,8 +625,8 @@ impl FileType {
 
 #[cfg(unix)]
 fn mkpath(v: Vec<u8>) -> PathBuf {
-    use std::os::unix::prelude::*;
     use std::ffi::OsStr;
+    use std::os::unix::prelude::*;
     PathBuf::from(OsStr::from_bytes(&v))
 }
 #[cfg(windows)]
