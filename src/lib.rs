@@ -129,26 +129,27 @@
 #![deny(missing_docs, unused_results)]
 #![cfg_attr(test, deny(warnings))]
 
-extern crate libssh2_sys as raw;
 extern crate libc;
-#[macro_use] extern crate bitflags;
+extern crate libssh2_sys as raw;
+#[macro_use]
+extern crate bitflags;
 
 use std::ffi::CStr;
 
 pub use agent::{Agent, Identities, PublicKey};
-pub use channel::{Channel, ExitSignal, ReadWindow, WriteWindow, Stream};
+pub use channel::{Channel, ExitSignal, ReadWindow, Stream, WriteWindow};
 pub use error::Error;
-pub use knownhosts::{KnownHosts, Hosts, Host};
+pub use knownhosts::{Host, Hosts, KnownHosts};
 pub use listener::Listener;
-pub use session::{Session, ScpFileStat};
-pub use sftp::{Sftp, OpenFlags, RenameFlags};
-pub use sftp::{OpenType, File, FileStat, FileType};
+pub use session::{ScpFileStat, Session};
+pub use sftp::{File, FileStat, FileType, OpenType};
+pub use sftp::{OpenFlags, RenameFlags, Sftp};
+pub use DisconnectCode::{AuthCancelledByUser, TooManyConnections};
+pub use DisconnectCode::{ByApplication, ConnectionLost, HostKeyNotVerifiable};
+pub use DisconnectCode::{CompressionError, KeyExchangeFailed, MacError, Reserved};
 pub use DisconnectCode::{HostNotAllowedToConnect, ProtocolError};
-pub use DisconnectCode::{KeyExchangeFailed, Reserved, MacError, CompressionError};
-pub use DisconnectCode::{ServiceNotAvailable, ProtocolVersionNotSupported};
-pub use DisconnectCode::{HostKeyNotVerifiable, ConnectionLost, ByApplication};
-pub use DisconnectCode::{TooManyConnections, AuthCancelledByUser};
-pub use DisconnectCode::{NoMoreAuthMethodsAvailable, IllegalUserName};
+pub use DisconnectCode::{IllegalUserName, NoMoreAuthMethodsAvailable};
+pub use DisconnectCode::{ProtocolVersionNotSupported, ServiceNotAvailable};
 
 mod agent;
 mod channel;
@@ -166,8 +167,7 @@ pub fn init() {
     raw::init();
 }
 
-unsafe fn opt_bytes<'a, T>(_: &'a T,
-                           c: *const libc::c_char) -> Option<&'a [u8]> {
+unsafe fn opt_bytes<'a, T>(_: &'a T, c: *const libc::c_char) -> Option<&'a [u8]> {
     if c.is_null() {
         None
     } else {
@@ -178,23 +178,20 @@ unsafe fn opt_bytes<'a, T>(_: &'a T,
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum DisconnectCode {
-    HostNotAllowedToConnect =
-        raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as isize,
+    HostNotAllowedToConnect = raw::SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT as isize,
     ProtocolError = raw::SSH_DISCONNECT_PROTOCOL_ERROR as isize,
     KeyExchangeFailed = raw::SSH_DISCONNECT_KEY_EXCHANGE_FAILED as isize,
     Reserved = raw::SSH_DISCONNECT_RESERVED as isize,
     MacError = raw::SSH_DISCONNECT_MAC_ERROR as isize,
     CompressionError = raw::SSH_DISCONNECT_COMPRESSION_ERROR as isize,
     ServiceNotAvailable = raw::SSH_DISCONNECT_SERVICE_NOT_AVAILABLE as isize,
-    ProtocolVersionNotSupported =
-        raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as isize,
+    ProtocolVersionNotSupported = raw::SSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED as isize,
     HostKeyNotVerifiable = raw::SSH_DISCONNECT_HOST_KEY_NOT_VERIFIABLE as isize,
     ConnectionLost = raw::SSH_DISCONNECT_CONNECTION_LOST as isize,
     ByApplication = raw::SSH_DISCONNECT_BY_APPLICATION as isize,
     TooManyConnections = raw::SSH_DISCONNECT_TOO_MANY_CONNECTIONS as isize,
     AuthCancelledByUser = raw::SSH_DISCONNECT_AUTH_CANCELLED_BY_USER as isize,
-    NoMoreAuthMethodsAvailable =
-        raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as isize,
+    NoMoreAuthMethodsAvailable = raw::SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE as isize,
     IllegalUserName = raw::SSH_DISCONNECT_ILLEGAL_USER_NAME as isize,
 }
 

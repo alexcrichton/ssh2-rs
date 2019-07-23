@@ -1,5 +1,5 @@
 use std::io::prelude::*;
-use std::net::{TcpStream, TcpListener};
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 #[test]
@@ -84,7 +84,7 @@ fn setenv() {
 fn direct() {
     let a = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = a.local_addr().unwrap();
-    let t = thread::spawn(move|| {
+    let t = thread::spawn(move || {
         let mut s = a.accept().unwrap().0;
         let mut b = [0, 0, 0];
         s.read(&mut b).unwrap();
@@ -92,8 +92,9 @@ fn direct() {
         s.write_all(&[4, 5, 6]).unwrap();
     });
     let (_tcp, sess) = ::authed_session();
-    let mut channel = sess.channel_direct_tcpip("127.0.0.1",
-                                                addr.port(), None).unwrap();
+    let mut channel = sess
+        .channel_direct_tcpip("127.0.0.1", addr.port(), None)
+        .unwrap();
     channel.write_all(&[1, 2, 3]).unwrap();
     let mut r = [0, 0, 0];
     channel.read(&mut r).unwrap();
@@ -104,9 +105,8 @@ fn direct() {
 #[test]
 fn forward() {
     let (_tcp, sess) = ::authed_session();
-    let (mut listen, port) = sess.channel_forward_listen(39249, None, None)
-                                 .unwrap();
-    let t = thread::spawn(move|| {
+    let (mut listen, port) = sess.channel_forward_listen(39249, None, None).unwrap();
+    let t = thread::spawn(move || {
         let mut s = TcpStream::connect(&("127.0.0.1", port)).unwrap();
         let mut b = [0, 0, 0];
         s.read(&mut b).unwrap();
@@ -149,8 +149,8 @@ fn nonblocking_before_exit_code() {
     sess.set_blocking(false);
     assert!(channel.read_to_string(&mut output).is_err());
     {
-        use std::time::Duration;
         use std::thread;
+        use std::time::Duration;
         thread::sleep(Duration::from_millis(1500));
     }
     sess.set_blocking(true);

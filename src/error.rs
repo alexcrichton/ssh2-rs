@@ -1,11 +1,11 @@
+use libc;
 use std::error;
 use std::ffi::NulError;
 use std::fmt;
 use std::str;
-use libc;
 
-use {raw, Session};
 use util::Binding;
+use {raw, Session};
 
 /// Representation of an error that can occur within libssh2
 #[derive(Debug)]
@@ -23,9 +23,10 @@ impl Error {
         static STATIC: () = ();
         unsafe {
             let mut msg = 0 as *mut _;
-            let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg,
-                                                     0 as *mut _, 0);
-            if rc == 0 { return None }
+            let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg, 0 as *mut _, 0);
+            if rc == 0 {
+                return None;
+            }
             let s = ::opt_bytes(&STATIC, msg).unwrap();
             Some(Error::new(rc, str::from_utf8(s).unwrap()))
         }
@@ -118,16 +119,20 @@ impl Error {
             raw::LIBSSH2_FX_NOT_A_DIRECTORY => "not a directory",
             raw::LIBSSH2_FX_INVALID_FILENAME => "invalid filename",
             raw::LIBSSH2_FX_LINK_LOOP => "link loop",
-            _ => "unknown error"
+            _ => "unknown error",
         };
         Error::new(code, msg)
     }
 
     /// Get the message corresponding to this error
-    pub fn message(&self) -> &str { self.msg }
+    pub fn message(&self) -> &str {
+        self.msg
+    }
 
     /// Return the code for this error
-    pub fn code(&self) -> libc::c_int { self.code }
+    pub fn code(&self) -> libc::c_int {
+        self.code
+    }
 }
 
 impl fmt::Display for Error {
@@ -137,13 +142,17 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {
-    fn description(&self) -> &str { self.message() }
+    fn description(&self) -> &str {
+        self.message()
+    }
 }
 
 impl From<NulError> for Error {
     fn from(_: NulError) -> Error {
-        Error::new(raw::LIBSSH2_ERROR_INVAL,
-                   "provided data contained a nul byte and could not be used \
-                    as as string")
+        Error::new(
+            raw::LIBSSH2_ERROR_INVAL,
+            "provided data contained a nul byte and could not be used \
+             as as string",
+        )
     }
 }

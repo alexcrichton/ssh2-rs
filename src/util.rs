@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::path::Path;
 
-use {raw, Session, Error};
+use {raw, Error, Session};
 
 #[doc(hidden)]
 pub trait Binding: Sized {
@@ -18,8 +18,7 @@ pub trait SessionBinding<'sess>: Sized {
     unsafe fn from_raw(sess: &'sess Session, raw: *mut Self::Raw) -> Self;
     fn raw(&self) -> *mut Self::Raw;
 
-    unsafe fn from_raw_opt(sess: &'sess Session, raw: *mut Self::Raw)
-                           -> Result<Self, Error> {
+    unsafe fn from_raw_opt(sess: &'sess Session, raw: *mut Self::Raw) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error(sess).unwrap_or_else(Error::unknown))
         } else {
@@ -30,8 +29,8 @@ pub trait SessionBinding<'sess>: Sized {
 
 #[cfg(unix)]
 pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
-    use std::os::unix::prelude::*;
     use std::ffi::OsStr;
+    use std::os::unix::prelude::*;
     let s: &OsStr = p.as_ref();
     check(Cow::Borrowed(s.as_bytes()))
 }
@@ -39,8 +38,12 @@ pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
 pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
     p.to_str()
         .map(|s| s.as_bytes())
-        .ok_or_else(|| Error::new(raw::LIBSSH2_ERROR_INVAL,
-                                  "only unicode paths on windows may be used"))
+        .ok_or_else(|| {
+            Error::new(
+                raw::LIBSSH2_ERROR_INVAL,
+                "only unicode paths on windows may be used",
+            )
+        })
         .map(|bytes| {
             if bytes.contains(&b'\\') {
                 // Normalize to Unix-style path separators
@@ -60,8 +63,10 @@ pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
 
 fn check(b: Cow<[u8]>) -> Result<Cow<[u8]>, Error> {
     if b.iter().any(|b| *b == 0) {
-        Err(Error::new(raw::LIBSSH2_ERROR_INVAL,
-                       "path provided contains a 0 byte"))
+        Err(Error::new(
+            raw::LIBSSH2_ERROR_INVAL,
+            "path provided contains a 0 byte",
+        ))
     } else {
         Ok(b)
     }

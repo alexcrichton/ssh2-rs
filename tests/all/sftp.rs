@@ -1,5 +1,5 @@
-use std::io::prelude::*;
 use std::fs::{self, File};
+use std::io::prelude::*;
 use tempdir::TempDir;
 
 #[test]
@@ -19,13 +19,20 @@ fn ops() {
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
     sftp.mkdir(&td.path().join("bar2"), 0o755).unwrap();
-    assert!(fs::metadata(&td.path().join("bar2")).map(|m| m.is_dir())
-               .unwrap_or(false));
+    assert!(fs::metadata(&td.path().join("bar2"))
+        .map(|m| m.is_dir())
+        .unwrap_or(false));
     sftp.rmdir(&td.path().join("bar2")).unwrap();
 
-    sftp.create(&td.path().join("foo5")).unwrap().write_all(b"foo").unwrap();
+    sftp.create(&td.path().join("foo5"))
+        .unwrap()
+        .write_all(b"foo")
+        .unwrap();
     let mut v = Vec::new();
-    File::open(&td.path().join("foo5")).unwrap().read_to_end(&mut v).unwrap();
+    File::open(&td.path().join("foo5"))
+        .unwrap()
+        .read_to_end(&mut v)
+        .unwrap();
     assert_eq!(v, b"foo");
 
     assert_eq!(sftp.stat(&td.path().join("foo")).unwrap().size, Some(0));
@@ -33,8 +40,8 @@ fn ops() {
     foo.read_to_end(&mut v).unwrap();
     assert_eq!(v, Vec::new());
 
-    sftp.symlink(&td.path().join("foo"),
-                 &td.path().join("foo2")).unwrap();
+    sftp.symlink(&td.path().join("foo"), &td.path().join("foo2"))
+        .unwrap();
     let readlink = sftp.readlink(&td.path().join("foo2")).unwrap();
     assert!(readlink == td.path().join("foo"));
     let realpath = sftp.realpath(&td.path().join("foo2")).unwrap();

@@ -7,9 +7,9 @@ use std::env;
 use std::net::TcpStream;
 
 mod agent;
-mod session;
 mod channel;
 mod knownhosts;
+mod session;
 mod sftp;
 
 pub fn socket() -> TcpStream {

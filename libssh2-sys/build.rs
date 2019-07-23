@@ -1,12 +1,12 @@
-extern crate pkg_config;
 extern crate cc;
+extern crate pkg_config;
 
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
 
-use std::fs;
 use std::env;
-use std::path::{PathBuf, Path};
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
@@ -22,13 +22,14 @@ fn main() {
             for path in &lib.include_paths {
                 println!("cargo:include={}", path.display());
             }
-            return
+            return;
         }
     }
 
     if !Path::new("libssh2/.git").exists() {
-        let _ = Command::new("git").args(&["submodule", "update", "--init"])
-                                   .status();
+        let _ = Command::new("git")
+            .args(&["submodule", "update", "--init"])
+            .status();
     }
 
     let target = env::var("TARGET").unwrap();
@@ -44,8 +45,16 @@ fn main() {
     fs::create_dir_all(&include).unwrap();
 
     fs::copy("libssh2/include/libssh2.h", include.join("libssh2.h")).unwrap();
-    fs::copy("libssh2/include/libssh2_publickey.h", include.join("libssh2_publickey.h")).unwrap();
-    fs::copy("libssh2/include/libssh2_sftp.h", include.join("libssh2_sftp.h")).unwrap();
+    fs::copy(
+        "libssh2/include/libssh2_publickey.h",
+        include.join("libssh2_publickey.h"),
+    )
+    .unwrap();
+    fs::copy(
+        "libssh2/include/libssh2_sftp.h",
+        include.join("libssh2_sftp.h"),
+    )
+    .unwrap();
 
     cfg.file("libssh2/src/agent.c")
         .file("libssh2/src/bcrypt_pbkdf.c")
@@ -97,9 +106,9 @@ fn main() {
         cfg.file("libssh2/src/openssl.c");
 
         // Create `libssh2_config.h`
-        let config = fs::read_to_string("libssh2/src/libssh2_config_cmake.h.in")
-            .unwrap();
-        let config = config.lines()
+        let config = fs::read_to_string("libssh2/src/libssh2_config_cmake.h.in").unwrap();
+        let config = config
+            .lines()
             .filter(|l| !l.contains("#cmakedefine"))
             .collect::<Vec<_>>()
             .join("\n");
@@ -126,7 +135,8 @@ fn main() {
     }
 
     let libssh2h = fs::read_to_string("libssh2/include/libssh2.h").unwrap();
-    let version_line = libssh2h.lines()
+    let version_line = libssh2h
+        .lines()
         .find(|l| l.contains("LIBSSH2_VERSION"))
         .unwrap();
     let version = &version_line[version_line.find('"').unwrap() + 1..version_line.len() - 1];
@@ -144,7 +154,8 @@ fn main() {
             .replace("@LIBS@", "")
             .replace("@LIBSREQUIRED@", "")
             .replace("@LIBSSH2VER@", version),
-    ).unwrap();
+    )
+    .unwrap();
 
     cfg.warnings(false);
     cfg.compile("ssh2");
@@ -157,28 +168,37 @@ fn main() {
 }
 
 #[cfg(not(target_env = "msvc"))]
-fn try_vcpkg() -> bool { false }
+fn try_vcpkg() -> bool {
+    false
+}
 
 #[cfg(target_env = "msvc")]
 fn try_vcpkg() -> bool {
     vcpkg::Config::new()
         .emit_includes(true)
-        .probe("libssh2").map(|_| {
+        .probe("libssh2")
+        .map(|_| {
+            // found libssh2 which depends on openssl and zlib
+            vcpkg::Config::new()
+                .lib_name("libeay32")
+                .lib_name("ssleay32")
+                .probe("openssl")
+                .expect(
+                    "configured libssh2 from vcpkg but could not \
+                     find openssl libraries that it depends on",
+                );
 
-        // found libssh2 which depends on openssl and zlib
-        vcpkg::Config::new()
-            .lib_name("libeay32")
-            .lib_name("ssleay32")
-            .probe("openssl").expect("configured libssh2 from vcpkg but could not \
-                                      find openssl libraries that it depends on");
+            vcpkg::Config::new()
+                .lib_names("zlib", "zlib1")
+                .probe("zlib")
+                .expect(
+                    "configured libssh2 from vcpkg but could not \
+                     find the zlib library that it depends on",
+                );
 
-        vcpkg::Config::new()
-            .lib_names("zlib", "zlib1")
-            .probe("zlib").expect("configured libssh2 from vcpkg but could not \
-                                   find the zlib library that it depends on");
-
-        println!("cargo:rustc-link-lib=crypt32");
-        println!("cargo:rustc-link-lib=gdi32");
-        println!("cargo:rustc-link-lib=user32");
-    }).is_ok()
+            println!("cargo:rustc-link-lib=crypt32");
+            println!("cargo:rustc-link-lib=gdi32");
+            println!("cargo:rustc-link-lib=user32");
+        })
+        .is_ok()
 }

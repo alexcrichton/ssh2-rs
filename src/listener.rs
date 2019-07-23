@@ -1,5 +1,5 @@
-use {raw, Session, Error, Channel};
 use util::SessionBinding;
+use {raw, Channel, Error, Session};
 
 /// A listener represents a forwarding port from the remote server.
 ///
@@ -23,14 +23,15 @@ impl<'sess> Listener<'sess> {
 impl<'sess> SessionBinding<'sess> for Listener<'sess> {
     type Raw = raw::LIBSSH2_LISTENER;
 
-    unsafe fn from_raw(sess: &'sess Session,
-                       raw: *mut raw::LIBSSH2_LISTENER) -> Listener<'sess> {
+    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_LISTENER) -> Listener<'sess> {
         Listener {
             raw: raw,
             sess: sess,
         }
     }
-    fn raw(&self) -> *mut raw::LIBSSH2_LISTENER { self.raw }
+    fn raw(&self) -> *mut raw::LIBSSH2_LISTENER {
+        self.raw
+    }
 }
 
 impl<'sess> Drop for Listener<'sess> {
@@ -40,4 +41,3 @@ impl<'sess> Drop for Listener<'sess> {
         }
     }
 }
-
