@@ -139,6 +139,16 @@ impl Error {
     }
 }
 
+impl From<Error> for std::io::Error {
+    fn from(err: Error) -> std::io::Error {
+        let kind = match err.code {
+            raw::LIBSSH2_ERROR_EAGAIN => std::io::ErrorKind::WouldBlock,
+            _ => std::io::ErrorKind::Other,
+        };
+        std::io::Error::new(kind, err.msg)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}] {}", self.code, self.msg)
