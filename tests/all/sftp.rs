@@ -4,7 +4,7 @@ use tempdir::TempDir;
 
 #[test]
 fn smoke() {
-    let (_tcp, sess) = ::authed_session();
+    let sess = ::authed_session();
     sess.sftp().unwrap();
 }
 
@@ -14,7 +14,7 @@ fn ops() {
     File::create(&td.path().join("foo")).unwrap();
     fs::create_dir(&td.path().join("bar")).unwrap();
 
-    let (_tcp, sess) = ::authed_session();
+    let sess = ::authed_session();
     let sftp = sess.sftp().unwrap();
     sftp.opendir(&td.path().join("bar")).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();

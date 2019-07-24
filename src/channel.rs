@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::slice;
 
-use util::{Binding, SessionBinding};
+use util::SessionBinding;
 use {raw, Error, Session};
 
 /// A channel represents a portion of an SSH connection on which data can be
