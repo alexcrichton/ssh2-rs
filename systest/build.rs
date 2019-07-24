@@ -24,7 +24,11 @@ fn main() {
                 s.to_string()
             }
         })
-        .skip_type(|t| t.ends_with("FUNC"))
-        .skip_fn(|f| f == "libssh2_userauth_password_ex" || f == "libssh2_session_init_ex");
+        .skip_type(|t| t.ends_with("FUNC") || t.contains("KBDINT"))
+        .skip_fn(|f| {
+            f == "libssh2_userauth_password_ex"
+                || f == "libssh2_session_init_ex"
+                || f == "libssh2_userauth_keyboard_interactive_ex"
+        });
     cfg.generate("../libssh2-sys/lib.rs", "all.rs");
 }

@@ -266,6 +266,30 @@ pub type LIBSSH2_PASSWD_CHANGEREQ_FUNC = extern "C" fn(
     abstrakt: *mut *mut c_void,
 );
 
+pub type LIBSSH2_USERAUTH_KBDINT_RESPONSE_FUNC = extern "C" fn(
+    username: *const c_char,
+    username_len: c_int,
+    instruction: *const c_char,
+    instruction_len: c_int,
+    num_prompts: c_int,
+    prompts: *const LIBSSH2_USERAUTH_KBDINT_PROMPT,
+    responses: *mut LIBSSH2_USERAUTH_KBDINT_RESPONSE,
+    abstrakt: *mut *mut c_void,
+);
+
+#[repr(C)]
+pub struct LIBSSH2_USERAUTH_KBDINT_PROMPT {
+    pub text: *mut c_char,
+    pub length: c_uint,
+    pub echo: c_uchar,
+}
+
+#[repr(C)]
+pub struct LIBSSH2_USERAUTH_KBDINT_RESPONSE {
+    pub text: *mut c_char,
+    pub length: c_uint,
+}
+
 #[cfg(unix)]
 pub type libssh2_socket_t = c_int;
 #[cfg(all(windows, target_arch = "x86"))]
@@ -287,6 +311,7 @@ extern "C" {
         realloc: Option<LIBSSH2_REALLOC_FUNC>,
         abstrakt: *mut c_void,
     ) -> *mut LIBSSH2_SESSION;
+    pub fn libssh2_session_abstract(session: *mut LIBSSH2_SESSION) -> *mut *mut c_void;
     pub fn libssh2_session_free(sess: *mut LIBSSH2_SESSION) -> c_int;
     pub fn libssh2_session_banner_get(sess: *mut LIBSSH2_SESSION) -> *const c_char;
     pub fn libssh2_session_banner_set(sess: *mut LIBSSH2_SESSION, banner: *const c_char) -> c_int;
@@ -498,6 +523,12 @@ extern "C" {
         password: *const c_char,
         password_len: c_uint,
         password_change_cb: Option<LIBSSH2_PASSWD_CHANGEREQ_FUNC>,
+    ) -> c_int;
+    pub fn libssh2_userauth_keyboard_interactive_ex(
+        session: *mut LIBSSH2_SESSION,
+        username: *const c_char,
+        username_len: c_uint,
+        callback: Option<LIBSSH2_USERAUTH_KBDINT_RESPONSE_FUNC>,
     ) -> c_int;
 
     // knownhost
