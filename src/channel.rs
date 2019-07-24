@@ -294,7 +294,10 @@ impl<'sess> Channel<'sess> {
         self.read_limit = Some(limit);
     }
 
-    /// Check if the remote host has sent an EOF status for the selected stream.
+    /// Check if the remote host has sent an EOF status for the channel.
+    /// Take care: the EOF status is for the entire channel which can be confusing
+    /// because the reading from the channel reads only the stdout stream.
+    /// unread, buffered, stderr data will cause eof() to return false.
     pub fn eof(&self) -> bool {
         self.read_limit == Some(0) ||
             unsafe { raw::libssh2_channel_eof(self.raw) != 0 }
@@ -311,6 +314,10 @@ impl<'sess> Channel<'sess> {
     }
 
     /// Wait for the remote end to send EOF.
+    /// Note that unread buffered stdout and stderr will cause this function
+    /// to return `Ok(())` without waiting.
+    /// You should call the eof() function after calling this to check the
+    /// status of the channel.
     pub fn wait_eof(&mut self) -> Result<(), Error> {
         unsafe { self.sess.rc(raw::libssh2_channel_wait_eof(self.raw)) }
     }
