@@ -361,14 +361,18 @@ impl Session {
     /// return an error. This case may be distinguished from a failing case by
     /// examining the return value of the `authenticated` method.
     ///
-    /// The return value is a comma-separated string of supported auth schemes.
+    /// The return value is a comma-separated string of supported auth schemes,
+    /// and may be an empty string.
     pub fn auth_methods(&self, username: &str) -> Result<&str, Error> {
         let len = username.len();
         let username = try!(CString::new(username));
         unsafe {
             let ret = raw::libssh2_userauth_list(self.inner.raw, username.as_ptr(), len as c_uint);
             if ret.is_null() {
-                Err(Error::last_error(self).unwrap())
+                match Error::last_error(self) {
+                    Some(err) => Err(err),
+                    None => Ok(""),
+                }
             } else {
                 Ok(str::from_utf8(::opt_bytes(self, ret).unwrap()).unwrap())
             }
