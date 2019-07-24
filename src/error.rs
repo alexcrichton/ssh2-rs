@@ -2,6 +2,7 @@ use libc;
 use std::error;
 use std::ffi::NulError;
 use std::fmt;
+use std::io;
 use std::str;
 
 use {raw, Session};
@@ -139,13 +140,13 @@ impl Error {
     }
 }
 
-impl From<Error> for std::io::Error {
-    fn from(err: Error) -> std::io::Error {
+impl From<Error> for io::Error {
+    fn from(err: Error) -> io::Error {
         let kind = match err.code {
-            raw::LIBSSH2_ERROR_EAGAIN => std::io::ErrorKind::WouldBlock,
-            _ => std::io::ErrorKind::Other,
+            raw::LIBSSH2_ERROR_EAGAIN => io::ErrorKind::WouldBlock,
+            _ => io::ErrorKind::Other,
         };
-        std::io::Error::new(kind, err.msg)
+        io::Error::new(kind, err.msg)
     }
 }
 
