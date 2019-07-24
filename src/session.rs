@@ -462,7 +462,7 @@ impl Session {
         let path = try!(CString::new(try!(util::path2bytes(path))));
         unsafe {
             let mut sb: libc::stat = mem::zeroed();
-            let ret = raw::libssh2_scp_recv(self.raw, path.as_ptr(), &mut sb);
+            let ret = raw::libssh2_scp_recv2(self.raw, path.as_ptr(), &mut sb);
             let mut c: Channel = try!(SessionBinding::from_raw_opt(self, ret));
 
             // Hm, apparently when we scp_recv() a file the actual channel

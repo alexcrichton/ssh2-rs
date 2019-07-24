@@ -494,6 +494,9 @@ extern {
     pub fn libssh2_scp_recv(sess: *mut LIBSSH2_SESSION,
                             path: *const c_char,
                             sb: *mut libc::stat) -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_scp_recv2(sess: *mut LIBSSH2_SESSION,
+                            path: *const c_char,
+                            sb: *mut libc::stat) -> *mut LIBSSH2_CHANNEL;
     pub fn libssh2_scp_send64(sess: *mut LIBSSH2_SESSION,
                               path: *const c_char,
                               mode: c_int,
