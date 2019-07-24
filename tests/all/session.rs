@@ -30,7 +30,7 @@ fn smoke_handshake() {
     let user = env::var("USER").unwrap();
     let socket = ::socket();
     let mut sess = Session::new().unwrap();
-    sess.handshake(&socket).unwrap();
+    sess.handshake(socket).unwrap();
     sess.host_key().unwrap();
     let methods = sess.auth_methods(&user).unwrap();
     assert!(methods.contains("publickey"), "{}", methods);
@@ -49,14 +49,14 @@ fn smoke_handshake() {
 
 #[test]
 fn keepalive() {
-    let (_tcp, sess) = ::authed_session();
+    let sess = ::authed_session();
     sess.set_keepalive(false, 10);
     sess.keepalive_send().unwrap();
 }
 
 #[test]
 fn scp_recv() {
-    let (_tcp, sess) = ::authed_session();
+    let sess = ::authed_session();
     let (mut ch, _) = sess.scp_recv(Path::new(".ssh/authorized_keys")).unwrap();
     let mut data = String::new();
     ch.read_to_string(&mut data).unwrap();
@@ -72,7 +72,7 @@ fn scp_recv() {
 #[test]
 fn scp_send() {
     let td = TempDir::new("test").unwrap();
-    let (_tcp, sess) = ::authed_session();
+    let sess = ::authed_session();
     let mut ch = sess
         .scp_send(&td.path().join("foo"), 0o644, 6, None)
         .unwrap();

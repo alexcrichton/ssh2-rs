@@ -4,7 +4,6 @@ use std::ffi::NulError;
 use std::fmt;
 use std::str;
 
-use util::Binding;
 use {raw, Session};
 
 /// Representation of an error that can occur within libssh2
