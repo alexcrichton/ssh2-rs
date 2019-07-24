@@ -1,3 +1,4 @@
 .*.sw*
 /target/
 /Cargo.lock
+/tests/sshd
