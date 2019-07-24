@@ -12,6 +12,9 @@ description = "Native bindings to the libssh2 library"
 name = "libssh2_sys"
 path = "lib.rs"
 
+[features]
+vendored-openssl = ["openssl-sys/vendored"]
+
 [dependencies]
 libz-sys = "1.0.21"
 libc = "0.2"

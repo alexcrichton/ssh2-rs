@@ -36,6 +36,7 @@ before_script:
 
 script:
   - cargo build
+  - cargo test --features vendored-openssl
   - cargo test
   - rustdoc --test README.md -L target
   - cargo run --manifest-path systest/Cargo.toml
