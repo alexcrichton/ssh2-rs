@@ -38,7 +38,7 @@
 //! // Connect to the local SSH server
 //! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
 //! let mut sess = Session::new().unwrap();
-//! sess.handshake(&tcp).unwrap();
+//! sess.handshake(tcp).unwrap();
 //!
 //! // Try to authenticate with the first identity in the agent.
 //! sess.userauth_agent("username").unwrap();
@@ -56,7 +56,7 @@
 //! // Connect to the local SSH server
 //! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
 //! let mut sess = Session::new().unwrap();
-//! sess.handshake(&tcp).unwrap();
+//! sess.handshake(tcp).unwrap();
 //!
 //! sess.userauth_password("username", "password").unwrap();
 //! assert!(sess.authenticated());
@@ -72,7 +72,7 @@
 //! // Connect to the local SSH server
 //! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
 //! let mut sess = Session::new().unwrap();
-//! sess.handshake(&tcp).unwrap();
+//! sess.handshake(tcp).unwrap();
 //! sess.userauth_agent("username").unwrap();
 //!
 //! let mut channel = sess.channel_session().unwrap();
@@ -95,7 +95,7 @@
 //! // Connect to the local SSH server
 //! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
 //! let mut sess = Session::new().unwrap();
-//! sess.handshake(&tcp).unwrap();
+//! sess.handshake(tcp).unwrap();
 //! sess.userauth_agent("username").unwrap();
 //!
 //! let mut remote_file = sess.scp_send(Path::new("remote"),
@@ -114,7 +114,7 @@
 //! // Connect to the local SSH server
 //! let tcp = TcpStream::connect("127.0.0.1:22").unwrap();
 //! let mut sess = Session::new().unwrap();
-//! sess.handshake(&tcp).unwrap();
+//! sess.handshake(tcp).unwrap();
 //! sess.userauth_agent("username").unwrap();
 //!
 //! let (mut remote_file, stat) = sess.scp_recv(Path::new("remote")).unwrap();
