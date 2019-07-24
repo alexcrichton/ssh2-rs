@@ -1,7 +1,7 @@
 use libc::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void, size_t};
 use std::cmp;
+use std::io;
 use std::io::prelude::*;
-use std::io::{self, ErrorKind};
 use std::rc::Rc;
 use std::slice;
 
@@ -421,7 +421,7 @@ impl<'channel> Read for Stream<'channel> {
                 }
                 Ok(n)
             }
-            Err(e) => Err(io::Error::new(ErrorKind::Other, e)),
+            Err(e) => Err(e.into()),
         }
     }
 }
@@ -437,7 +437,7 @@ impl<'channel> Write for Stream<'channel> {
             );
             self.channel.sess.rc(rc as c_int).map(|()| rc as usize)
         }
-        .map_err(|e| io::Error::new(ErrorKind::Other, e))
+        .map_err(Into::into)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -445,6 +445,6 @@ impl<'channel> Write for Stream<'channel> {
             let rc = raw::libssh2_channel_flush_ex(self.channel.raw, self.id as c_int);
             self.channel.sess.rc(rc)
         }
-        .map_err(|e| io::Error::new(ErrorKind::Other, e))
+        .map_err(Into::into)
     }
 }
