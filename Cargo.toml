@@ -13,6 +13,9 @@ Bindings to libssh2 for interacting with SSH servers and executing remote
 commands, forwarding local ports, etc.
 """
 
+[features]
+vendored-openssl = ["libssh2-sys/vendored-openssl"]
+
 [dependencies]
 bitflags = "1.0.4"
 libc = "0.2"
