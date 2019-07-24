@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::slice;
 use std::str;
 
-use util::{self, SessionBinding};
+use util;
 use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
 use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 
@@ -439,7 +439,7 @@ impl Session {
     pub fn known_hosts(&self) -> Result<KnownHosts, Error> {
         unsafe {
             let ptr = raw::libssh2_knownhost_init(self.inner.raw);
-            SessionBinding::from_raw_opt(self, ptr)
+            KnownHosts::from_raw_opt(ptr, &self.inner)
         }
     }
 

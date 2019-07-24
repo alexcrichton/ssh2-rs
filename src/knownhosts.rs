@@ -2,10 +2,11 @@ use libc::{c_int, size_t};
 use std::ffi::CString;
 use std::marker;
 use std::path::Path;
+use std::rc::Rc;
 use std::str;
 
-use util::{self, Binding, SessionBinding};
-use {raw, CheckResult, Error, KnownHostFileKind, Session};
+use util::{self, Binding};
+use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
 
 /// A set of known hosts which can be used to verify the identity of a remote
 /// server.
@@ -43,15 +44,15 @@ use {raw, CheckResult, Error, KnownHostFileKind, Session};
 ///     known_hosts.write_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 /// }
 /// ```
-pub struct KnownHosts<'sess> {
+pub struct KnownHosts {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-    sess: &'sess Session,
+    sess: Rc<SessionInner>,
 }
 
 /// Iterator over the hosts in a `KnownHosts` structure.
 pub struct Hosts<'kh> {
     prev: *mut raw::libssh2_knownhost,
-    hosts: &'kh KnownHosts<'kh>,
+    hosts: &'kh KnownHosts,
 }
 
 /// Structure representing a known host as part of a `KnownHosts` structure.
@@ -60,7 +61,21 @@ pub struct Host<'kh> {
     _marker: marker::PhantomData<&'kh str>,
 }
 
-impl<'sess> KnownHosts<'sess> {
+impl KnownHosts {
+    pub(crate) fn from_raw_opt(
+        raw: *mut raw::LIBSSH2_KNOWNHOSTS,
+        sess: &Rc<SessionInner>,
+    ) -> Result<Self, Error> {
+        if raw.is_null() {
+            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+        } else {
+            Ok(Self {
+                raw,
+                sess: Rc::clone(sess),
+            })
+        }
+    }
+
     /// Reads a collection of known hosts from a specified file and adds them to
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind) -> Result<u32, Error> {
@@ -207,24 +222,7 @@ impl<'sess> KnownHosts<'sess> {
     }
 }
 
-impl<'sess> SessionBinding<'sess> for KnownHosts<'sess> {
-    type Raw = raw::LIBSSH2_KNOWNHOSTS;
-
-    unsafe fn from_raw(
-        sess: &'sess Session,
-        raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-    ) -> KnownHosts<'sess> {
-        KnownHosts {
-            raw: raw,
-            sess: sess,
-        }
-    }
-    fn raw(&self) -> *mut raw::LIBSSH2_KNOWNHOSTS {
-        self.raw
-    }
-}
-
-impl<'sess> Drop for KnownHosts<'sess> {
+impl Drop for KnownHosts {
     fn drop(&mut self) {
         unsafe { raw::libssh2_knownhost_free(self.raw) }
     }
