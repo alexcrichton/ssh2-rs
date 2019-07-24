@@ -1,6 +1,21 @@
+use ssh2::Channel;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
+
+/// Consume all available stdout and stderr data.
+/// It is important to read both if you are using
+/// channel.eof() to make assertions that the stream
+/// is complete
+fn consume_stdio(channel: &mut Channel) -> (String, String) {
+    let mut stdout = String::new();
+    channel.read_to_string(&mut stdout).unwrap();
+
+    let mut stderr = String::new();
+    channel.stderr().read_to_string(&mut stderr).unwrap();
+
+    (stdout, stderr)
+}
 
 #[test]
 fn smoke() {
@@ -8,8 +23,11 @@ fn smoke() {
     let mut channel = sess.channel_session().unwrap();
     channel.flush().unwrap();
     channel.exec("true").unwrap();
+    consume_stdio(&mut channel);
+
     channel.wait_eof().unwrap();
     assert!(channel.eof());
+
     channel.close().unwrap();
     channel.wait_close().unwrap();
     assert_eq!(channel.exit_status().unwrap(), 0);
@@ -22,8 +40,11 @@ fn bad_smoke() {
     let mut channel = sess.channel_session().unwrap();
     channel.flush().unwrap();
     channel.exec("false").unwrap();
+    consume_stdio(&mut channel);
+
     channel.wait_eof().unwrap();
     assert!(channel.eof());
+
     channel.close().unwrap();
     channel.wait_close().unwrap();
     assert_eq!(channel.exit_status().unwrap(), 1);
@@ -35,8 +56,8 @@ fn reading_data() {
     let sess = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
     channel.exec("echo foo").unwrap();
-    let mut output = String::new();
-    channel.read_to_string(&mut output).unwrap();
+
+    let (output, _) = consume_stdio(&mut channel);
     assert_eq!(output, "foo\n");
 }
 
@@ -46,8 +67,8 @@ fn writing_data() {
     let mut channel = sess.channel_session().unwrap();
     channel.exec("read foo && echo $foo").unwrap();
     channel.write_all(b"foo\n").unwrap();
-    let mut output = String::new();
-    channel.read_to_string(&mut output).unwrap();
+
+    let (output, _) = consume_stdio(&mut channel);
     assert_eq!(output, "foo\n");
 }
 
