@@ -1,6 +1,7 @@
 #[cfg(unix)]
 use libc::size_t;
-use libc::{self, c_int, c_long, c_uint, c_void};
+use libc::{self, c_char, c_int, c_long, c_uint, c_void};
+use std::borrow::Cow;
 use std::cell::{Ref, RefCell};
 use std::ffi::CString;
 use std::mem;
@@ -13,6 +14,54 @@ use std::str;
 use util;
 use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
 use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
+
+/// Called by libssh2 to respond to some number of challenges as part of
+/// keyboard interactive authentication.
+pub trait KeyboardInteractivePrompt {
+    /// `username` is the user name to be authenticated. It may not be the
+    /// same as the username passed to `Session::userauth_keyboard_interactive`,
+    /// and may be empty.
+    /// `instructions` is some informational text to be displayed to the user.
+    /// `prompts` is a series of prompts (or challenges) that must be responded
+    /// to.
+    /// The return value should be a Vec that holds one response for each prompt.
+    fn prompt<'a>(
+        &mut self,
+        username: &str,
+        instructions: &str,
+        prompts: &[Prompt<'a>],
+    ) -> Vec<String>;
+}
+
+/// A prompt/challenge returned as part of keyboard-interactive authentication
+#[derive(Debug)]
+pub struct Prompt<'a> {
+    /// The label to show when prompting the user
+    pub text: Cow<'a, str>,
+    /// If true, the response that the user inputs should be displayed
+    /// as they type.  If false then treat it as a password entry and
+    /// do not display what is typed in response to this prompt.
+    pub echo: bool,
+}
+
+/// This is a little helper function that is perhaps slightly overkill for the
+/// current needs.
+/// It saves the current sess->abstract pointer and replaces it with a
+/// different values for the duration of the call to the supplied lambda.
+/// When the lambda returns, the original abstract value is restored
+/// and the result of the lambda is returned.
+unsafe fn with_abstract<R, F: FnOnce() -> R>(
+    sess: *mut raw::LIBSSH2_SESSION,
+    new_value: *mut c_void,
+    f: F,
+) -> R {
+    let abstrakt = raw::libssh2_session_abstract(sess);
+    let old_value = *abstrakt;
+    *abstrakt = new_value;
+    let res = f();
+    *abstrakt = old_value;
+    res
+}
 
 pub(crate) struct SessionInner {
     pub(crate) raw: *mut raw::LIBSSH2_SESSION,
@@ -214,6 +263,112 @@ impl Session {
                 None,
             )
         })
+    }
+
+    /// Attempt keyboard interactive authentication.
+    ///
+    /// You must supply a callback function to
+    pub fn userauth_keyboard_interactive<P: KeyboardInteractivePrompt>(
+        &self,
+        username: &str,
+        prompter: &mut P,
+    ) -> Result<(), Error> {
+        // hold on to your hats, this is a bit involved.
+        // The keyboard interactive callback is a bit tricksy, and we want to wrap the
+        // raw C types with something a bit safer and more ergonomic.
+        // Since the interface is defined in terms of a simple function pointer, wrapping
+        // is a bit awkward.
+        //
+        // The session struct has an abstrakt pointer reserved for
+        // the user of the embedding application, and that pointer is passed to the
+        // prompt callback. We can use this to store a pointer to some state so that
+        // we can manage the conversion.
+        //
+        // The prompts and responses are defined to be UTF-8, but we use from_utf8_lossy
+        // to avoid panics in case the server isn't conformant for whatever reason.
+        extern "C" fn prompt<P: KeyboardInteractivePrompt>(
+            username: *const c_char,
+            username_len: c_int,
+            instruction: *const c_char,
+            instruction_len: c_int,
+            num_prompts: c_int,
+            prompts: *const raw::LIBSSH2_USERAUTH_KBDINT_PROMPT,
+            responses: *mut raw::LIBSSH2_USERAUTH_KBDINT_RESPONSE,
+            abstrakt: *mut *mut c_void,
+        ) {
+            let prompter = unsafe { &mut **(abstrakt as *mut *mut P) };
+
+            let username =
+                unsafe { slice::from_raw_parts(username as *const u8, username_len as usize) };
+            let username = String::from_utf8_lossy(username);
+
+            let instruction = unsafe {
+                slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
+            };
+            let instruction = String::from_utf8_lossy(instruction);
+
+            let prompts = unsafe { slice::from_raw_parts(prompts, num_prompts as usize) };
+            let responses =
+                unsafe { slice::from_raw_parts_mut(responses, num_prompts as usize) };
+
+            let prompts: Vec<Prompt> = prompts
+                .iter()
+                .map(|item| {
+                    let data = unsafe {
+                        slice::from_raw_parts(item.text as *const u8, item.length as usize)
+                    };
+                    Prompt {
+                        text: String::from_utf8_lossy(data),
+                        echo: item.echo != 0,
+                    }
+                })
+                .collect();
+
+            // libssh2 wants to be able to free(3) the response strings, so allocate
+            // storage and copy the responses into appropriately owned memory.
+            // We can't simply call strdup(3) here because the rust string types
+            // are not NUL terminated.
+            fn strdup_string(s: &str) -> *mut c_char {
+                let len = s.len();
+                let ptr = unsafe { libc::malloc(len + 1) as *mut c_char };
+                if !ptr.is_null() {
+                    unsafe {
+                        ::std::ptr::copy_nonoverlapping(
+                            s.as_bytes().as_ptr() as *const c_char,
+                            ptr,
+                            len,
+                        );
+                        *ptr.offset(len as isize) = 0;
+                    }
+                }
+                ptr
+            }
+
+            for (i, response) in (*prompter)
+                .prompt(&username, &instruction, &prompts)
+                .into_iter()
+                .enumerate()
+            {
+                let ptr = strdup_string(&response);
+                if !ptr.is_null() {
+                    responses[i].length = response.len() as c_uint;
+                } else {
+                    responses[i].length = 0;
+                }
+                responses[i].text = ptr;
+            }
+        }
+
+        unsafe {
+            with_abstract(self.inner.raw, prompter as *mut P as *mut c_void, || {
+                self.rc(raw::libssh2_userauth_keyboard_interactive_ex(
+                    self.inner.raw,
+                    username.as_ptr() as *const _,
+                    username.len() as c_uint,
+                    Some(prompt::<P>),
+                ))
+            })
+        }
     }
 
     /// Attempt to perform SSH agent authentication.

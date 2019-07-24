@@ -46,6 +46,7 @@ UsePAM yes
 X11Forwarding yes
 PrintMotd yes
 PermitTunnel yes
+KbdInteractiveAuthentication yes
 AllowTcpForwarding yes
 MaxStartups 500
 # Relax modes when the repo is under eg: /var/tmp
