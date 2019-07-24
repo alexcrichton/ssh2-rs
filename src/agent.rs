@@ -1,23 +1,24 @@
 use std::ffi::CString;
 use std::marker;
+use std::rc::Rc;
 use std::slice;
 use std::str;
 
-use util::{Binding, SessionBinding};
-use {raw, Error, Session};
+use util::Binding;
+use {raw, Error, SessionInner};
 
 /// A structure representing a connection to an SSH agent.
 ///
 /// Agents can be used to authenticate a session.
-pub struct Agent<'sess> {
+pub struct Agent {
     raw: *mut raw::LIBSSH2_AGENT,
-    sess: &'sess Session,
+    sess: Rc<SessionInner>,
 }
 
 /// An iterator over the identities found in an SSH agent.
 pub struct Identities<'agent> {
     prev: *mut raw::libssh2_agent_publickey,
-    agent: &'agent Agent<'agent>,
+    agent: &'agent Agent,
 }
 
 /// A public key which is extracted from an SSH agent.
@@ -26,7 +27,21 @@ pub struct PublicKey<'agent> {
     _marker: marker::PhantomData<&'agent [u8]>,
 }
 
-impl<'sess> Agent<'sess> {
+impl Agent {
+    pub(crate) fn from_raw_opt(
+        raw: *mut raw::LIBSSH2_AGENT,
+        sess: &Rc<SessionInner>,
+    ) -> Result<Self, Error> {
+        if raw.is_null() {
+            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+        } else {
+            Ok(Self {
+                raw,
+                sess: Rc::clone(sess),
+            })
+        }
+    }
+
     /// Connect to an ssh-agent running on the system.
     pub fn connect(&mut self) -> Result<(), Error> {
         unsafe { self.sess.rc(raw::libssh2_agent_connect(self.raw)) }
@@ -66,21 +81,7 @@ impl<'sess> Agent<'sess> {
     }
 }
 
-impl<'sess> SessionBinding<'sess> for Agent<'sess> {
-    type Raw = raw::LIBSSH2_AGENT;
-
-    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_AGENT) -> Agent<'sess> {
-        Agent {
-            raw: raw,
-            sess: sess,
-        }
-    }
-    fn raw(&self) -> *mut raw::LIBSSH2_AGENT {
-        self.raw
-    }
-}
-
-impl<'a> Drop for Agent<'a> {
+impl Drop for Agent {
     fn drop(&mut self) {
         unsafe { raw::libssh2_agent_free(self.raw) }
     }

@@ -429,7 +429,7 @@ impl Session {
     ///
     /// The returned agent will still need to be connected manually before use.
     pub fn agent(&self) -> Result<Agent, Error> {
-        unsafe { SessionBinding::from_raw_opt(self, raw::libssh2_agent_init(self.inner.raw)) }
+        unsafe { Agent::from_raw_opt(raw::libssh2_agent_init(self.inner.raw), &self.inner) }
     }
 
     /// Init a collection of known hosts for this session.
