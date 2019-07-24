@@ -1,19 +1,19 @@
 use libc::{c_int, c_long, c_uint, c_ulong, size_t};
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
-use std::marker;
 use std::mem;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
-use util::{self, SessionBinding};
-use {raw, Channel, Error, Session};
+use util;
+use {raw, Error, SessionInner};
 
 /// A handle to a remote filesystem over SFTP.
 ///
 /// Instances are created through the `sftp` method on a `Session`.
-pub struct Sftp<'sess> {
+pub struct Sftp {
     raw: *mut raw::LIBSSH2_SFTP,
-    _marker: marker::PhantomData<Channel<'sess>>,
+    _sess: Rc<SessionInner>,
 }
 
 /// A file handle to an SFTP connection.
@@ -25,7 +25,7 @@ pub struct Sftp<'sess> {
 /// of `Sftp`.
 pub struct File<'sftp> {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
-    sftp: &'sftp Sftp<'sftp>,
+    sftp: &'sftp Sftp,
 }
 
 /// Metadata information about a remote file.
@@ -102,7 +102,21 @@ pub enum OpenType {
     Dir = raw::LIBSSH2_SFTP_OPENDIR as isize,
 }
 
-impl<'sess> Sftp<'sess> {
+impl Sftp {
+    pub(crate) fn from_raw_opt(
+        raw: *mut raw::LIBSSH2_SFTP,
+        sess: &Rc<SessionInner>,
+    ) -> Result<Self, Error> {
+        if raw.is_null() {
+            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+        } else {
+            Ok(Self {
+                raw,
+                _sess: Rc::clone(sess),
+            })
+        }
+    }
+
     /// Open a handle to a file.
     pub fn open_mode(
         &self,
@@ -355,21 +369,7 @@ impl<'sess> Sftp<'sess> {
     }
 }
 
-impl<'sess> SessionBinding<'sess> for Sftp<'sess> {
-    type Raw = raw::LIBSSH2_SFTP;
-
-    unsafe fn from_raw(_sess: &'sess Session, raw: *mut raw::LIBSSH2_SFTP) -> Sftp<'sess> {
-        Sftp {
-            raw: raw,
-            _marker: marker::PhantomData,
-        }
-    }
-    fn raw(&self) -> *mut raw::LIBSSH2_SFTP {
-        self.raw
-    }
-}
-
-impl<'sess> Drop for Sftp<'sess> {
+impl Drop for Sftp {
     fn drop(&mut self) {
         unsafe { assert_eq!(raw::libssh2_sftp_shutdown(self.raw), 0) }
     }
@@ -380,10 +380,7 @@ impl<'sftp> File<'sftp> {
     /// given session.
     ///
     /// This consumes ownership of `raw`.
-    unsafe fn from_raw(
-        sftp: &'sftp Sftp<'sftp>,
-        raw: *mut raw::LIBSSH2_SFTP_HANDLE,
-    ) -> File<'sftp> {
+    unsafe fn from_raw(sftp: &'sftp Sftp, raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
         File {
             raw: raw,
             sftp: sftp,

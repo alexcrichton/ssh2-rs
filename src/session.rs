@@ -14,8 +14,8 @@ use util::{self, SessionBinding};
 use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
 use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 
-struct SessionInner {
-    raw: *mut raw::LIBSSH2_SESSION,
+pub(crate) struct SessionInner {
+    pub(crate) raw: *mut raw::LIBSSH2_SESSION,
     tcp: RefCell<Option<TcpStream>>,
 }
 
@@ -485,7 +485,7 @@ impl Session {
                 shost.as_ptr(),
                 sport as c_int,
             );
-            SessionBinding::from_raw_opt(self, ret)
+            Channel::from_raw_opt(ret, &self.inner)
         }
     }
 
@@ -509,7 +509,7 @@ impl Session {
                 &mut bound_port,
                 queue_maxsize.unwrap_or(0) as c_int,
             );
-            SessionBinding::from_raw_opt(self, ret).map(|l| (l, bound_port as u16))
+            Listener::from_raw_opt(ret, &self.inner).map(|l| (l, bound_port as u16))
         }
     }
 
@@ -523,7 +523,7 @@ impl Session {
         unsafe {
             let mut sb: libc::stat = mem::zeroed();
             let ret = raw::libssh2_scp_recv(self.inner.raw, path.as_ptr(), &mut sb);
-            let mut c: Channel = try!(SessionBinding::from_raw_opt(self, ret));
+            let mut c = Channel::from_raw_opt(ret, &self.inner)?;
 
             // Hm, apparently when we scp_recv() a file the actual channel
             // itself does not respond well to read_to_end(), and it also sends
@@ -561,7 +561,7 @@ impl Session {
                 mtime as libc::time_t,
                 atime as libc::time_t,
             );
-            SessionBinding::from_raw_opt(self, ret)
+            Channel::from_raw_opt(ret, &self.inner)
         }
     }
 
@@ -574,7 +574,7 @@ impl Session {
     pub fn sftp(&self) -> Result<Sftp, Error> {
         unsafe {
             let ret = raw::libssh2_sftp_init(self.inner.raw);
-            SessionBinding::from_raw_opt(self, ret)
+            Sftp::from_raw_opt(ret, &self.inner)
         }
     }
 
@@ -603,7 +603,7 @@ impl Session {
                     .unwrap_or(0 as *const _) as *const _,
                 message_len as c_uint,
             );
-            SessionBinding::from_raw_opt(self, ret)
+            Channel::from_raw_opt(ret, &self.inner)
         }
     }
 
@@ -728,6 +728,20 @@ impl Session {
             Ok(())
         } else {
             match Error::last_error(self) {
+                Some(e) => Err(e),
+                None => Ok(()),
+            }
+        }
+    }
+}
+
+impl SessionInner {
+    /// Translate a return code into a Rust-`Result`.
+    pub fn rc(&self, rc: c_int) -> Result<(), Error> {
+        if rc >= 0 {
+            Ok(())
+        } else {
+            match Error::last_error_raw(self.raw) {
                 Some(e) => Err(e),
                 None => Ok(()),
             }
