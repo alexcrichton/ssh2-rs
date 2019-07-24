@@ -24,19 +24,9 @@ matrix:
         on:
           branch: master
 
-before_script:
-  - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
-  - eval `ssh-agent -s`
-  - ssh-add ~/.ssh/id_rsa
-  - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-  - echo "Host localhost" >> ~/.ssh/config
-  - echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-  - chmod 600 ~/.ssh/authorized_keys
-  - ssh -v localhost echo hello
-
 script:
   - cargo build
-  - cargo test
+  - tests/run_integration_tests.sh
   - rustdoc --test README.md -L target
   - cargo run --manifest-path systest/Cargo.toml
 

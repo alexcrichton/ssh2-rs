@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tempdir::TempDir;
 
 use ssh2::{Session, MethodType, HashType};
@@ -56,10 +56,14 @@ fn keepalive() {
 #[test]
 fn scp_recv() {
     let (_tcp, sess) = ::authed_session();
-    let (mut ch, _) = sess.scp_recv(Path::new(".ssh/authorized_keys")).unwrap();
+
+    // Download our own source file; it's the only path that
+    // we know for sure exists on this system.
+    let p = Path::new(file!()).canonicalize().unwrap();
+
+    let (mut ch, _) = sess.scp_recv(&p).unwrap();
     let mut data = String::new();
     ch.read_to_string(&mut data).unwrap();
-    let p = PathBuf::from(env::var("HOME").unwrap()).join(".ssh/authorized_keys");
     let mut expected = String::new();
     File::open(&p).unwrap().read_to_string(&mut expected).unwrap();
     assert!(data == expected);

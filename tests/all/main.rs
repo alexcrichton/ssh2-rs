@@ -13,7 +13,10 @@ mod knownhosts;
 mod sftp;
 
 pub fn socket() -> TcpStream {
-    TcpStream::connect("127.0.0.1:22").unwrap()
+    let port = env::var("RUST_SSH2_FIXTURE_PORT")
+        .map(|s| s.parse().unwrap())
+        .unwrap_or(22);
+    TcpStream::connect(&format!("127.0.0.1:{}", port)).unwrap()
 }
 
 pub fn authed_session() -> (TcpStream, ssh2::Session) {
