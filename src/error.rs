@@ -15,20 +15,25 @@ pub struct Error {
 }
 
 impl Error {
-    /// Generate the last error that occurred for a `Session`.
-    ///
-    /// Returns `None` if there was no last error.
-    pub fn last_error(sess: &Session) -> Option<Error> {
+    #[doc(hidden)]
+    pub fn last_error_raw(raw: *mut raw::LIBSSH2_SESSION) -> Option<Error> {
         static STATIC: () = ();
         unsafe {
             let mut msg = 0 as *mut _;
-            let rc = raw::libssh2_session_last_error(sess.raw(), &mut msg, 0 as *mut _, 0);
+            let rc = raw::libssh2_session_last_error(raw, &mut msg, 0 as *mut _, 0);
             if rc == 0 {
                 return None;
             }
             let s = ::opt_bytes(&STATIC, msg).unwrap();
             Some(Error::new(rc, str::from_utf8(s).unwrap()))
         }
+    }
+
+    /// Generate the last error that occurred for a `Session`.
+    ///
+    /// Returns `None` if there was no last error.
+    pub fn last_error(sess: &Session) -> Option<Error> {
+        Self::last_error_raw(sess.raw())
     }
 
     /// Create a new error for the given code and message

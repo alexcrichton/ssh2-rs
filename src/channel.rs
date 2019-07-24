@@ -2,10 +2,10 @@ use libc::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void, size_t};
 use std::cmp;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind};
+use std::rc::Rc;
 use std::slice;
 
-use util::SessionBinding;
-use {raw, Error, Session};
+use {raw, Error, SessionInner};
 
 /// A channel represents a portion of an SSH connection on which data can be
 /// read and written.
@@ -15,16 +15,33 @@ use {raw, Error, Session};
 /// implements the `Reader` and `Writer` traits to send and receive data.
 /// Whether or not I/O operations are blocking is mandated by the `blocking`
 /// flag on a channel's corresponding `Session`.
-pub struct Channel<'sess> {
+pub struct Channel {
     raw: *mut raw::LIBSSH2_CHANNEL,
-    sess: &'sess Session,
+    sess: Rc<SessionInner>,
     read_limit: Option<u64>,
+}
+
+impl Channel {
+    pub(crate) fn from_raw_opt(
+        raw: *mut raw::LIBSSH2_CHANNEL,
+        sess: &Rc<SessionInner>,
+    ) -> Result<Self, Error> {
+        if raw.is_null() {
+            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+        } else {
+            Ok(Self {
+                raw,
+                sess: Rc::clone(sess),
+                read_limit: None,
+            })
+        }
+    }
 }
 
 /// A channel can have a number of streams, each identified by an id, each of
 /// which implements the `Read` and `Write` traits.
-pub struct Stream<'channel, 'sess: 'channel> {
-    channel: &'channel mut Channel<'sess>,
+pub struct Stream<'channel> {
+    channel: &'channel mut Channel,
     id: i32,
 }
 
@@ -61,7 +78,7 @@ pub struct WriteWindow {
     pub window_size_initial: u32,
 }
 
-impl<'sess> Channel<'sess> {
+impl Channel {
     /// Set an environment variable in the remote channel's process space.
     ///
     /// Note that this does not make sense for all channel types and may be
@@ -187,7 +204,7 @@ impl<'sess> Channel<'sess> {
     /// Get a handle to the stderr stream of this channel.
     ///
     /// The returned handle implements the `Read` and `Write` traits.
-    pub fn stderr<'a>(&'a mut self) -> Stream<'a, 'sess> {
+    pub fn stderr<'a>(&'a mut self) -> Stream<'a> {
         self.stream(::EXTENDED_DATA_STDERR)
     }
 
@@ -200,7 +217,7 @@ impl<'sess> Channel<'sess> {
     ///
     /// * FLUSH_EXTENDED_DATA - Flush all extended data substreams
     /// * FLUSH_ALL - Flush all substreams
-    pub fn stream<'a>(&'a mut self, stream_id: i32) -> Stream<'a, 'sess> {
+    pub fn stream<'a>(&'a mut self, stream_id: i32) -> Stream<'a> {
         Stream {
             channel: self,
             id: stream_id,
@@ -252,7 +269,7 @@ impl<'sess> Channel<'sess> {
             }
             let slice = slice::from_raw_parts(ptr as *const u8, len as usize);
             let ret = slice.to_vec();
-            raw::libssh2_free(chan.sess.raw(), ptr as *mut c_void);
+            raw::libssh2_free(chan.sess.raw, ptr as *mut c_void);
             String::from_utf8(ret).ok()
         }
     }
@@ -351,22 +368,7 @@ impl<'sess> Channel<'sess> {
     }
 }
 
-impl<'sess> SessionBinding<'sess> for Channel<'sess> {
-    type Raw = raw::LIBSSH2_CHANNEL;
-
-    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_CHANNEL) -> Channel<'sess> {
-        Channel {
-            raw: raw,
-            sess: sess,
-            read_limit: None,
-        }
-    }
-    fn raw(&self) -> *mut raw::LIBSSH2_CHANNEL {
-        self.raw
-    }
-}
-
-impl<'sess> Write for Channel<'sess> {
+impl Write for Channel {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.stream(0).write(buf)
     }
@@ -376,13 +378,13 @@ impl<'sess> Write for Channel<'sess> {
     }
 }
 
-impl<'sess> Read for Channel<'sess> {
+impl Read for Channel {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.stream(0).read(buf)
     }
 }
 
-impl<'sess> Drop for Channel<'sess> {
+impl Drop for Channel {
     fn drop(&mut self) {
         unsafe {
             let _ = raw::libssh2_channel_free(self.raw);
@@ -390,7 +392,7 @@ impl<'sess> Drop for Channel<'sess> {
     }
 }
 
-impl<'channel, 'sess> Read for Stream<'channel, 'sess> {
+impl<'channel> Read for Stream<'channel> {
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
         if self.channel.eof() {
             return Ok(0);
@@ -424,7 +426,7 @@ impl<'channel, 'sess> Read for Stream<'channel, 'sess> {
     }
 }
 
-impl<'channel, 'sess> Write for Stream<'channel, 'sess> {
+impl<'channel> Write for Stream<'channel> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         unsafe {
             let rc = raw::libssh2_channel_write_ex(

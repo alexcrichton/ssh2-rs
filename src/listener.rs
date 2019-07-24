@@ -1,40 +1,40 @@
-use util::SessionBinding;
-use {raw, Channel, Error, Session};
+use std::rc::Rc;
+use {raw, Channel, Error, SessionInner};
 
 /// A listener represents a forwarding port from the remote server.
 ///
 /// New channels can be accepted from a listener which represent connections on
 /// the remote server's port.
-pub struct Listener<'sess> {
+pub struct Listener {
     raw: *mut raw::LIBSSH2_LISTENER,
-    sess: &'sess Session,
+    sess: Rc<SessionInner>,
 }
 
-impl<'sess> Listener<'sess> {
+impl Listener {
     /// Accept a queued connection from this listener.
-    pub fn accept(&mut self) -> Result<Channel<'sess>, Error> {
+    pub fn accept(&mut self) -> Result<Channel, Error> {
         unsafe {
-            let ret = raw::libssh2_channel_forward_accept(self.raw);
-            SessionBinding::from_raw_opt(self.sess, ret)
+            let chan = raw::libssh2_channel_forward_accept(self.raw);
+            Channel::from_raw_opt(chan, &self.sess)
+        }
+    }
+
+    pub(crate) fn from_raw_opt(
+        raw: *mut raw::LIBSSH2_LISTENER,
+        sess: &Rc<SessionInner>,
+    ) -> Result<Self, Error> {
+        if raw.is_null() {
+            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+        } else {
+            Ok(Self {
+                raw,
+                sess: Rc::clone(sess),
+            })
         }
     }
 }
 
-impl<'sess> SessionBinding<'sess> for Listener<'sess> {
-    type Raw = raw::LIBSSH2_LISTENER;
-
-    unsafe fn from_raw(sess: &'sess Session, raw: *mut raw::LIBSSH2_LISTENER) -> Listener<'sess> {
-        Listener {
-            raw: raw,
-            sess: sess,
-        }
-    }
-    fn raw(&self) -> *mut raw::LIBSSH2_LISTENER {
-        self.raw
-    }
-}
-
-impl<'sess> Drop for Listener<'sess> {
+impl Drop for Listener {
     fn drop(&mut self) {
         unsafe {
             let _ = raw::libssh2_channel_forward_cancel(self.raw);
