@@ -19,7 +19,7 @@ vendored-openssl = ["libssh2-sys/vendored-openssl"]
 [dependencies]
 bitflags = "1.0.4"
 libc = "0.2"
-libssh2-sys = { path = "libssh2-sys", version = "0.2.4" }
+libssh2-sys = { path = "libssh2-sys", version = "0.2.12" }
 
 [dev-dependencies]
 tempdir = "0.3"
