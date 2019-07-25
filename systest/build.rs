@@ -18,6 +18,7 @@ fn main() {
         .skip_type(|t| t.ends_with("FUNC"))
         .skip_fn(|f| {
             f == "libssh2_userauth_password_ex" ||
+                f == "libssh2_scp_recv2" ||
                 f == "libssh2_session_init_ex"
         });
     cfg.generate("../libssh2-sys/lib.rs", "all.rs");
