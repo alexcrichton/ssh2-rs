@@ -199,11 +199,15 @@ pub enum DisconnectCode {
 }
 
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum HostKeyType {
     Unknown = raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN as isize,
     Rsa = raw::LIBSSH2_HOSTKEY_TYPE_RSA as isize,
     Dss = raw::LIBSSH2_HOSTKEY_TYPE_DSS as isize,
+    Ecdsa256 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_256 as isize,
+    Ecdsa384 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_384 as isize,
+    Ecdsa521 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_521 as isize,
+    Ed255219 = raw::LIBSSH2_HOSTKEY_TYPE_ED25519 as isize,
 }
 
 #[allow(missing_docs)]
@@ -230,20 +234,21 @@ pub static FLUSH_ALL: i32 = -2;
 pub static EXTENDED_DATA_STDERR: i32 = 1;
 
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum HashType {
     Md5 = raw::LIBSSH2_HOSTKEY_HASH_MD5 as isize,
-    Sha1 = raw:: LIBSSH2_HOSTKEY_HASH_SHA1 as isize,
+    Sha1 = raw::LIBSSH2_HOSTKEY_HASH_SHA1 as isize,
+    Sha256 = raw::LIBSSH2_HOSTKEY_HASH_SHA256 as isize,
 }
 
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum KnownHostFileKind {
     OpenSSH = raw::LIBSSH2_KNOWNHOST_FILE_OPENSSH as isize,
 }
 
 /// Possible results of a call to `KnownHosts::check`
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum CheckResult {
     /// Hosts and keys match
     Match = raw::LIBSSH2_KNOWNHOST_CHECK_MATCH as isize,
@@ -256,9 +261,28 @@ pub enum CheckResult {
 }
 
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum KnownHostKeyFormat {
+    Unknown = raw::LIBSSH2_KNOWNHOST_KEY_UNKNOWN as isize,
     Rsa1 = raw::LIBSSH2_KNOWNHOST_KEY_RSA1 as isize,
     SshRsa = raw::LIBSSH2_KNOWNHOST_KEY_SSHRSA as isize,
     SshDss = raw::LIBSSH2_KNOWNHOST_KEY_SSHDSS as isize,
+    Ecdsa256 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_256 as isize,
+    Ecdsa384 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_384 as isize,
+    Ecdsa521 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_521 as isize,
+    Ed255219 = raw::LIBSSH2_KNOWNHOST_KEY_ED25519 as isize,
+}
+
+impl From<HostKeyType> for KnownHostKeyFormat {
+    fn from(host_type: HostKeyType) -> KnownHostKeyFormat {
+        match host_type {
+            HostKeyType::Unknown => KnownHostKeyFormat::Unknown,
+            HostKeyType::Rsa => KnownHostKeyFormat::SshRsa,
+            HostKeyType::Dss => KnownHostKeyFormat::SshDss,
+            HostKeyType::Ecdsa256 => KnownHostKeyFormat::Ecdsa256,
+            HostKeyType::Ecdsa384 => KnownHostKeyFormat::Ecdsa384,
+            HostKeyType::Ecdsa521 => KnownHostKeyFormat::Ecdsa521,
+            HostKeyType::Ed255219 => KnownHostKeyFormat::Ed255219,
+        }
+    }
 }

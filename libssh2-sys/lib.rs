@@ -33,6 +33,10 @@ pub const LIBSSH2_FLAG_COMPRESS: c_int = 2;
 pub const LIBSSH2_HOSTKEY_TYPE_UNKNOWN: c_int = 0;
 pub const LIBSSH2_HOSTKEY_TYPE_RSA: c_int = 1;
 pub const LIBSSH2_HOSTKEY_TYPE_DSS: c_int = 2;
+pub const LIBSSH2_HOSTKEY_TYPE_ECDSA_256: c_int = 3;
+pub const LIBSSH2_HOSTKEY_TYPE_ECDSA_384: c_int = 4;
+pub const LIBSSH2_HOSTKEY_TYPE_ECDSA_521: c_int = 5;
+pub const LIBSSH2_HOSTKEY_TYPE_ED25519: c_int = 6;
 
 pub const LIBSSH2_METHOD_KEX: c_int = 0;
 pub const LIBSSH2_METHOD_HOSTKEY: c_int = 1;
@@ -120,6 +124,7 @@ pub const LIBSSH2_FX_LINK_LOOP: c_int = 21;
 
 pub const LIBSSH2_HOSTKEY_HASH_MD5: c_int = 1;
 pub const LIBSSH2_HOSTKEY_HASH_SHA1: c_int = 2;
+pub const LIBSSH2_HOSTKEY_HASH_SHA256: c_int = 3;
 
 pub const LIBSSH2_KNOWNHOST_FILE_OPENSSH: c_int = 1;
 
@@ -139,6 +144,7 @@ pub const LIBSSH2_KNOWNHOST_KEY_SSHDSS: c_int = 3 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_256: c_int = 4 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_384: c_int = 5 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_ECDSA_521: c_int = 6 << 18;
+pub const LIBSSH2_KNOWNHOST_KEY_ED25519: c_int = 7 << 18;
 pub const LIBSSH2_KNOWNHOST_KEY_UNKNOWN: c_int = 15 << 18;
 
 pub const LIBSSH2_FXF_READ: c_ulong = 0x00000001;

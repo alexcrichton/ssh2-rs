@@ -39,11 +39,7 @@ use util::{self, Binding, SessionBinding};
 ///
 ///     println!("adding {} to the known hosts", host);
 ///
-///     known_hosts.add(host, key, host, match key_type {
-///         HostKeyType::Rsa => KnownHostKeyFormat::SshRsa,
-///         HostKeyType::Dss => KnownHostKeyFormat::SshDss,
-///         HostKeyType::Unknown => panic!("unknown type of key!"),
-///     }).unwrap();
+///     known_hosts.add(host, key, host, key_type.into()).unwrap();
 ///     known_hosts.write_file(&file, KnownHostFileKind::OpenSSH).unwrap();
 /// }
 /// ```
