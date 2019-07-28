@@ -565,6 +565,11 @@ impl Session {
             let kind = match kind {
                 raw::LIBSSH2_HOSTKEY_TYPE_RSA => HostKeyType::Rsa,
                 raw::LIBSSH2_HOSTKEY_TYPE_DSS => HostKeyType::Dss,
+                raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_256 => HostKeyType::Ecdsa256,
+                raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_384 => HostKeyType::Ecdsa384,
+                raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_521 => HostKeyType::Ecdsa521,
+                raw::LIBSSH2_HOSTKEY_TYPE_ED25519 => HostKeyType::Ed255219,
+                raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN => HostKeyType::Unknown,
                 _ => HostKeyType::Unknown,
             };
             Some((data, kind))
@@ -579,6 +584,7 @@ impl Session {
         let len = match hash {
             HashType::Md5 => 16,
             HashType::Sha1 => 20,
+            HashType::Sha256 => 32,
         };
         unsafe {
             let ret = raw::libssh2_hostkey_hash(self.raw, hash as c_int);
