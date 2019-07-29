@@ -192,6 +192,24 @@ pub enum LIBSSH2_SFTP_HANDLE {}
 pub type libssh2_int64_t = i64;
 pub type libssh2_uint64_t = u64;
 
+// libssh2_struct_stat is a typedef for libc::stat on all platforms, however,
+// Windows has a bunch of legacy around struct stat that makes things more
+// complicated to validate with systest.
+// The most reasonable looking solution to this is a newtype that derefs
+// to libc::stat.
+// We cannot use `pub struct libssh2_struct_stat(pub libc::stat)` because
+// that triggers a `no tuple structs in FFI` error.
+#[repr(C)]
+pub struct libssh2_struct_stat(libc::stat);
+
+impl std::ops::Deref for libssh2_struct_stat {
+    type Target = libc::stat;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[repr(C)]
 pub struct libssh2_agent_publickey {
     pub magic: c_uint,
@@ -548,11 +566,19 @@ extern "C" {
     pub fn libssh2_knownhost_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_KNOWNHOSTS;
 
     // scp
+    #[deprecated(note = "dangerously unsafe on windows, use libssh2_scp_recv2 instead")]
     pub fn libssh2_scp_recv(
         sess: *mut LIBSSH2_SESSION,
         path: *const c_char,
         sb: *mut libc::stat,
     ) -> *mut LIBSSH2_CHANNEL;
+
+    pub fn libssh2_scp_recv2(
+        sess: *mut LIBSSH2_SESSION,
+        path: *const c_char,
+        sb: *mut libssh2_struct_stat,
+    ) -> *mut LIBSSH2_CHANNEL;
+
     pub fn libssh2_scp_send64(
         sess: *mut LIBSSH2_SESSION,
         path: *const c_char,

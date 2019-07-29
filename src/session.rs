@@ -533,8 +533,8 @@ impl Session {
     pub fn scp_recv(&self, path: &Path) -> Result<(Channel, ScpFileStat), Error> {
         let path = try!(CString::new(try!(util::path2bytes(path))));
         unsafe {
-            let mut sb: libc::stat = mem::zeroed();
-            let ret = raw::libssh2_scp_recv(self.inner.raw, path.as_ptr(), &mut sb);
+            let mut sb: raw::libssh2_struct_stat = mem::zeroed();
+            let ret = raw::libssh2_scp_recv2(self.inner.raw, path.as_ptr(), &mut sb);
             let mut c = Channel::from_raw_opt(ret, &self.inner)?;
 
             // Hm, apparently when we scp_recv() a file the actual channel
@@ -543,7 +543,7 @@ impl Session {
             // artificially limit the channel to a certain amount of bytes that
             // can be read.
             c.limit_read(sb.st_size as u64);
-            Ok((c, ScpFileStat { stat: sb }))
+            Ok((c, ScpFileStat { stat: *sb }))
         }
     }
 
