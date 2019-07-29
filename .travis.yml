@@ -3,7 +3,7 @@ sudo: required
 
 matrix:
   include:
-    - rust: 1.26.0
+    - rust: 1.36.0
     - rust: stable
     - os: osx
       before_install:
