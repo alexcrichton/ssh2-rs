@@ -177,7 +177,15 @@ impl Session {
         }
 
         unsafe {
-            self.rc(handshake(self.inner.raw, &stream))?;
+            let res = handshake(self.inner.raw, &stream);
+            self.rc(res)?;
+            if res < 0 {
+                // There are some kex related errors that don't set the
+                // last error on the session object and that will not cause
+                // the `rc` function to emit an error.
+                // Let's ensure that we indicate an error in this situation.
+                return Err(Error::new(res, "Error during handshake"));
+            }
             *self.inner.tcp.borrow_mut() = Some(stream);
             Ok(())
         }
