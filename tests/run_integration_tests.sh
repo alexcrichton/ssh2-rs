@@ -60,4 +60,4 @@ sleep 2
 
 # Run the tests against it
 cargo test --all
-cargo test --features vendored-openssl
+cargo test --features vendored-openssl -- --nocapture
