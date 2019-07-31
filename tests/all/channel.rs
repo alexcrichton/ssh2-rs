@@ -14,6 +14,9 @@ fn consume_stdio(channel: &mut Channel) -> (String, String) {
     let mut stderr = String::new();
     channel.stderr().read_to_string(&mut stderr).unwrap();
 
+    eprintln!("stdout: {}", stdout);
+    eprintln!("stderr: {}", stderr);
+
     (stdout, stderr)
 }
 
@@ -88,9 +91,14 @@ fn eof() {
 fn shell() {
     let sess = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
+    eprintln!("requesting pty");
     channel.request_pty("xterm", None, None).unwrap();
+    eprintln!("shell");
     channel.shell().unwrap();
+    eprintln!("close");
     channel.close().unwrap();
+    eprintln!("done");
+    consume_stdio(&mut channel);
 }
 
 #[test]
