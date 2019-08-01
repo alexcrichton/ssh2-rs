@@ -23,7 +23,8 @@ pub fn authed_session() -> ssh2::Session {
     let user = env::var("USER").unwrap();
     let socket = socket();
     let mut sess = ssh2::Session::new().unwrap();
-    sess.handshake(socket).unwrap();
+    sess.set_tcp_stream(socket);
+    sess.handshake().unwrap();
     assert!(!sess.authenticated());
 
     {

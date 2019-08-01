@@ -30,7 +30,8 @@ fn smoke_handshake() {
     let user = env::var("USER").unwrap();
     let socket = ::socket();
     let mut sess = Session::new().unwrap();
-    sess.handshake(socket).unwrap();
+    sess.set_tcp_stream(socket);
+    sess.handshake().unwrap();
     sess.host_key().unwrap();
     let methods = sess.auth_methods(&user).unwrap();
     assert!(methods.contains("publickey"), "{}", methods);
@@ -52,7 +53,8 @@ fn keyboard_interactive() {
     let user = env::var("USER").unwrap();
     let socket = ::socket();
     let mut sess = Session::new().unwrap();
-    sess.handshake(socket).unwrap();
+    sess.set_tcp_stream(socket);
+    sess.handshake().unwrap();
     sess.host_key().unwrap();
     let methods = sess.auth_methods(&user).unwrap();
     assert!(methods.contains("keyboard-interactive"), "{}", methods);
