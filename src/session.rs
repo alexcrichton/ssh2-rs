@@ -310,67 +310,71 @@ impl Session {
             responses: *mut raw::LIBSSH2_USERAUTH_KBDINT_RESPONSE,
             abstrakt: *mut *mut c_void,
         ) {
-            let prompter = unsafe { &mut **(abstrakt as *mut *mut P) };
+            use std::panic::{catch_unwind, AssertUnwindSafe};
+            catch_unwind(AssertUnwindSafe(|| {
+                let prompter = unsafe { &mut **(abstrakt as *mut *mut P) };
 
-            let username =
-                unsafe { slice::from_raw_parts(username as *const u8, username_len as usize) };
-            let username = String::from_utf8_lossy(username);
+                let username =
+                    unsafe { slice::from_raw_parts(username as *const u8, username_len as usize) };
+                let username = String::from_utf8_lossy(username);
 
-            let instruction = unsafe {
-                slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
-            };
-            let instruction = String::from_utf8_lossy(instruction);
+                let instruction = unsafe {
+                    slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
+                };
+                let instruction = String::from_utf8_lossy(instruction);
 
-            let prompts = unsafe { slice::from_raw_parts(prompts, num_prompts as usize) };
-            let responses = unsafe { slice::from_raw_parts_mut(responses, num_prompts as usize) };
+                let prompts = unsafe { slice::from_raw_parts(prompts, num_prompts as usize) };
+                let responses =
+                    unsafe { slice::from_raw_parts_mut(responses, num_prompts as usize) };
 
-            let prompts: Vec<Prompt> = prompts
-                .iter()
-                .map(|item| {
-                    let data = unsafe {
-                        slice::from_raw_parts(item.text as *const u8, item.length as usize)
-                    };
-                    Prompt {
-                        text: String::from_utf8_lossy(data),
-                        echo: item.echo != 0,
+                let prompts: Vec<Prompt> = prompts
+                    .iter()
+                    .map(|item| {
+                        let data = unsafe {
+                            slice::from_raw_parts(item.text as *const u8, item.length as usize)
+                        };
+                        Prompt {
+                            text: String::from_utf8_lossy(data),
+                            echo: item.echo != 0,
+                        }
+                    })
+                    .collect();
+
+                // libssh2 wants to be able to free(3) the response strings, so allocate
+                // storage and copy the responses into appropriately owned memory.
+                // We can't simply call strdup(3) here because the rust string types
+                // are not NUL terminated.
+                fn strdup_string(s: &str) -> *mut c_char {
+                    let len = s.len();
+                    let ptr = unsafe { libc::malloc(len + 1) as *mut c_char };
+                    if !ptr.is_null() {
+                        unsafe {
+                            ::std::ptr::copy_nonoverlapping(
+                                s.as_bytes().as_ptr() as *const c_char,
+                                ptr,
+                                len,
+                            );
+                            *ptr.offset(len as isize) = 0;
+                        }
                     }
-                })
-                .collect();
+                    ptr
+                }
 
-            // libssh2 wants to be able to free(3) the response strings, so allocate
-            // storage and copy the responses into appropriately owned memory.
-            // We can't simply call strdup(3) here because the rust string types
-            // are not NUL terminated.
-            fn strdup_string(s: &str) -> *mut c_char {
-                let len = s.len();
-                let ptr = unsafe { libc::malloc(len + 1) as *mut c_char };
-                if !ptr.is_null() {
-                    unsafe {
-                        ::std::ptr::copy_nonoverlapping(
-                            s.as_bytes().as_ptr() as *const c_char,
-                            ptr,
-                            len,
-                        );
-                        *ptr.offset(len as isize) = 0;
+                for (i, response) in (*prompter)
+                    .prompt(&username, &instruction, &prompts)
+                    .into_iter()
+                    .take(prompts.len())
+                    .enumerate()
+                {
+                    let ptr = strdup_string(&response);
+                    if !ptr.is_null() {
+                        responses[i].length = response.len() as c_uint;
+                    } else {
+                        responses[i].length = 0;
                     }
+                    responses[i].text = ptr;
                 }
-                ptr
-            }
-
-            for (i, response) in (*prompter)
-                .prompt(&username, &instruction, &prompts)
-                .into_iter()
-                .take(prompts.len())
-                .enumerate()
-            {
-                let ptr = strdup_string(&response);
-                if !ptr.is_null() {
-                    responses[i].length = response.len() as c_uint;
-                } else {
-                    responses[i].length = 0;
-                }
-                responses[i].text = ptr;
-            }
+            }));
         }
 
         unsafe {
