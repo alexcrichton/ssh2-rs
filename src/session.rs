@@ -347,6 +347,7 @@ impl Session {
             for (i, response) in (*prompter)
                 .prompt(&username, &instruction, &prompts)
                 .into_iter()
+                .take(prompts.len())
                 .enumerate()
             {
                 let ptr = strdup_string(&response);
