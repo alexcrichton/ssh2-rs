@@ -311,7 +311,10 @@ impl Session {
             abstrakt: *mut *mut c_void,
         ) {
             use std::panic::{catch_unwind, AssertUnwindSafe};
-            catch_unwind(AssertUnwindSafe(|| {
+            // Catch panics; we can't let them unwind to C code.
+            // There's not much to be done with them though because the
+            // signature of the callback doesn't allow reporting an error.
+            let _ = catch_unwind(AssertUnwindSafe(|| {
                 let prompter = unsafe { &mut **(abstrakt as *mut *mut P) };
 
                 let username =
