@@ -289,3 +289,15 @@ impl From<HostKeyType> for KnownHostKeyFormat {
         }
     }
 }
+
+/// How to handle extended data streams, such as stderr
+#[derive(Copy, Clone, Debug)]
+pub enum ExtendedData {
+    /// Queue extended data for eventual reading
+    Normal = raw::LIBSSH2_CHANNEL_EXTENDED_DATA_NORMAL as isize,
+    /// Treat extended data and ordinary data the same. Merge all substreams such that calls to
+    /// read will pull from all substreams on a first-in/first-out basis.
+    Merge = raw::LIBSSH2_CHANNEL_EXTENDED_DATA_MERGE as isize,
+    /// Discard all extended data as it arrives.
+    Ignore = raw::LIBSSH2_CHANNEL_EXTENDED_DATA_IGNORE as isize,
+}

@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::rc::Rc;
 use std::slice;
 
-use {raw, Error, SessionInner};
+use {raw, Error, ExtendedData, SessionInner};
 
 /// A channel represents a portion of an SSH connection on which data can be
 /// read and written.
@@ -221,6 +221,14 @@ impl Channel {
         Stream {
             channel: self,
             id: stream_id,
+        }
+    }
+
+    /// Change how extended data (such as stderr) is handled
+    pub fn handle_extended_data(&mut self, mode: ExtendedData) -> Result<(), Error> {
+        unsafe {
+            let rc = raw::libssh2_channel_handle_extended_data2(self.raw, mode as c_int);
+            self.sess.rc(rc)
         }
     }
 
