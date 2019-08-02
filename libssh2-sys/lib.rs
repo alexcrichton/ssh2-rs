@@ -181,6 +181,10 @@ pub const LIBSSH2_SFTP_S_IFDIR: c_ulong = 0o040000;
 pub const LIBSSH2_SFTP_S_IFREG: c_ulong = 0o100000;
 pub const LIBSSH2_SFTP_S_IFLNK: c_ulong = 0o120000;
 
+pub const LIBSSH2_CHANNEL_EXTENDED_DATA_NORMAL: c_int = 0;
+pub const LIBSSH2_CHANNEL_EXTENDED_DATA_IGNORE: c_int = 1;
+pub const LIBSSH2_CHANNEL_EXTENDED_DATA_MERGE: c_int = 2;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
@@ -478,6 +482,10 @@ extern "C" {
         bound_port: *mut c_int,
         queue_maxsize: c_int,
     ) -> *mut LIBSSH2_LISTENER;
+    pub fn libssh2_channel_handle_extended_data2(
+        channel: *mut LIBSSH2_CHANNEL,
+        mode: c_int,
+    ) -> c_int;
 
     // userauth
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;

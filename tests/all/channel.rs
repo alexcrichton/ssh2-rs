@@ -65,6 +65,18 @@ fn reading_data() {
 }
 
 #[test]
+fn handle_extended_data() {
+    let sess = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    channel
+        .handle_extended_data(ssh2::ExtendedData::Merge)
+        .unwrap();
+    channel.exec("echo foo >&2").unwrap();
+    let (output, _) = consume_stdio(&mut channel);
+    assert_eq!(output, "foo\n");
+}
+
+#[test]
 fn writing_data() {
     let sess = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
