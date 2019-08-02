@@ -73,7 +73,11 @@ fn handle_extended_data() {
         .unwrap();
     channel.exec("echo foo >&2").unwrap();
     let (output, _) = consume_stdio(&mut channel);
-    assert_eq!(output, "foo\n");
+    // This is an ends_with test because stderr may have several
+    // lines of misc output on travis macos hosts; it appears as
+    // though the local shell configuration on travis macos is
+    // broken and contributes to this :-/
+    assert!(output.ends_with("foo\n"));
 }
 
 #[test]
