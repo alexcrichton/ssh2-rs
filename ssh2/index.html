@@ -1,0 +1,150 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `ssh2` crate."><meta name="keywords" content="rust, rustlang, rust-lang, ssh2"><title>ssh2 - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../ssh2/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><p class='location'>Crate ssh2</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all ssh2's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#statics">Statics</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'ssh2', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/ssh2/lib.rs.html#1-303' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>ssh2</a></span></h1><div class='docblock'><p>Rust bindings to libssh2, an SSH client library.</p>
+<p>This library intends to provide a safe interface to the libssh2 library. It
+will build the library if it's not available on the local system, and
+otherwise link to an installed copy.</p>
+<p>Note that libssh2 only supports SSH <em>clients</em>, not SSH <em>servers</em>.
+Additionally it only supports protocol v2, not protocol v1.</p>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1><h2 id="inspecting-ssh-agent" class="section-header"><a href="#inspecting-ssh-agent">Inspecting ssh-agent</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Almost all APIs require a `Session` to be available</span>
+<span class="kw">let</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agent</span> <span class="op">=</span> <span class="ident">sess</span>.<span class="ident">agent</span>().<span class="ident">unwrap</span>();
+
+<span class="comment">// Connect the agent and request a list of identities</span>
+<span class="ident">agent</span>.<span class="ident">connect</span>().<span class="ident">unwrap</span>();
+<span class="ident">agent</span>.<span class="ident">list_identities</span>().<span class="ident">unwrap</span>();
+
+<span class="kw">for</span> <span class="ident">identity</span> <span class="kw">in</span> <span class="ident">agent</span>.<span class="ident">identities</span>() {
+    <span class="kw">let</span> <span class="ident">identity</span> <span class="op">=</span> <span class="ident">identity</span>.<span class="ident">unwrap</span>(); <span class="comment">// assume no I/O errors</span>
+    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">identity</span>.<span class="ident">comment</span>());
+    <span class="kw">let</span> <span class="ident">pubkey</span> <span class="op">=</span> <span class="ident">identity</span>.<span class="ident">blob</span>();
+}</pre></div>
+<h2 id="authenticating-with-ssh-agent" class="section-header"><a href="#authenticating-with-ssh-agent">Authenticating with ssh-agent</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::<span class="ident">TcpStream</span>;
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Connect to the local SSH server</span>
+<span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:22&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">set_tcp_stream</span>(<span class="ident">tcp</span>);
+<span class="ident">sess</span>.<span class="ident">handshake</span>().<span class="ident">unwrap</span>();
+
+<span class="comment">// Try to authenticate with the first identity in the agent.</span>
+<span class="ident">sess</span>.<span class="ident">userauth_agent</span>(<span class="string">&quot;username&quot;</span>).<span class="ident">unwrap</span>();
+
+<span class="comment">// Make sure we succeeded</span>
+<span class="macro">assert</span><span class="macro">!</span>(<span class="ident">sess</span>.<span class="ident">authenticated</span>());</pre></div>
+<h2 id="authenticating-with-a-password" class="section-header"><a href="#authenticating-with-a-password">Authenticating with a password</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::<span class="ident">TcpStream</span>;
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Connect to the local SSH server</span>
+<span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:22&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">set_tcp_stream</span>(<span class="ident">tcp</span>);
+<span class="ident">sess</span>.<span class="ident">handshake</span>().<span class="ident">unwrap</span>();
+
+<span class="ident">sess</span>.<span class="ident">userauth_password</span>(<span class="string">&quot;username&quot;</span>, <span class="string">&quot;password&quot;</span>).<span class="ident">unwrap</span>();
+<span class="macro">assert</span><span class="macro">!</span>(<span class="ident">sess</span>.<span class="ident">authenticated</span>());</pre></div>
+<h2 id="run-a-command" class="section-header"><a href="#run-a-command">Run a command</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::{<span class="ident">TcpStream</span>};
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Connect to the local SSH server</span>
+<span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:22&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">set_tcp_stream</span>(<span class="ident">tcp</span>);
+<span class="ident">sess</span>.<span class="ident">handshake</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">userauth_agent</span>(<span class="string">&quot;username&quot;</span>).<span class="ident">unwrap</span>();
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident">sess</span>.<span class="ident">channel_session</span>().<span class="ident">unwrap</span>();
+<span class="ident">channel</span>.<span class="ident">exec</span>(<span class="string">&quot;ls&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+<span class="ident">channel</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">s</span>).<span class="ident">unwrap</span>();
+<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">s</span>);
+<span class="ident">channel</span>.<span class="ident">wait_close</span>();
+<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">channel</span>.<span class="ident">exit_status</span>().<span class="ident">unwrap</span>());</pre></div>
+<h2 id="upload-a-file" class="section-header"><a href="#upload-a-file">Upload a file</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::<span class="ident">TcpStream</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">path</span>::<span class="ident">Path</span>;
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Connect to the local SSH server</span>
+<span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:22&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">set_tcp_stream</span>(<span class="ident">tcp</span>);
+<span class="ident">sess</span>.<span class="ident">handshake</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">userauth_agent</span>(<span class="string">&quot;username&quot;</span>).<span class="ident">unwrap</span>();
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">remote_file</span> <span class="op">=</span> <span class="ident">sess</span>.<span class="ident">scp_send</span>(<span class="ident">Path</span>::<span class="ident">new</span>(<span class="string">&quot;remote&quot;</span>),
+                                    <span class="number">0o644</span>, <span class="number">10</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
+<span class="ident">remote_file</span>.<span class="ident">write</span>(<span class="string">b&quot;1234567890&quot;</span>).<span class="ident">unwrap</span>();</pre></div>
+<h2 id="download-a-file" class="section-header"><a href="#download-a-file">Download a file</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::<span class="ident">TcpStream</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">path</span>::<span class="ident">Path</span>;
+<span class="kw">use</span> <span class="ident">ssh2</span>::<span class="ident">Session</span>;
+
+<span class="comment">// Connect to the local SSH server</span>
+<span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:22&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sess</span> <span class="op">=</span> <span class="ident">Session</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">set_tcp_stream</span>(<span class="ident">tcp</span>);
+<span class="ident">sess</span>.<span class="ident">handshake</span>().<span class="ident">unwrap</span>();
+<span class="ident">sess</span>.<span class="ident">userauth_agent</span>(<span class="string">&quot;username&quot;</span>).<span class="ident">unwrap</span>();
+
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">remote_file</span>, <span class="ident">stat</span>) <span class="op">=</span> <span class="ident">sess</span>.<span class="ident">scp_recv</span>(<span class="ident">Path</span>::<span class="ident">new</span>(<span class="string">&quot;remote&quot;</span>)).<span class="ident">unwrap</span>();
+<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;remote file size: {}&quot;</span>, <span class="ident">stat</span>.<span class="ident">size</span>());
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">contents</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
+<span class="ident">remote_file</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">contents</span>).<span class="ident">unwrap</span>();
+<span class="comment">// ...</span></pre></div>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">AuthCancelledByUser</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">TooManyConnections</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">ByApplication</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">ConnectionLost</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">HostKeyNotVerifiable</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">CompressionError</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">KeyExchangeFailed</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">MacError</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">Reserved</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">HostNotAllowedToConnect</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">ProtocolError</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">IllegalUserName</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">NoMoreAuthMethodsAvailable</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">ProtocolVersionNotSupported</a>;</code></td></tr><tr><td><code>pub use DisconnectCode::<a class="enum" href="../ssh2/enum.DisconnectCode.html" title="enum ssh2::DisconnectCode">ServiceNotAvailable</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table><tr class='module-item'><td><a class="struct" href="struct.Agent.html" title='ssh2::Agent struct'>Agent</a></td><td class='docblock-short'><p>A structure representing a connection to an SSH agent.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Channel.html" title='ssh2::Channel struct'>Channel</a></td><td class='docblock-short'><p>A channel represents a portion of an SSH connection on which data can be
+read and written.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Error.html" title='ssh2::Error struct'>Error</a></td><td class='docblock-short'><p>Representation of an error that can occur within libssh2</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.ExitSignal.html" title='ssh2::ExitSignal struct'>ExitSignal</a></td><td class='docblock-short'><p>Data received from when a program exits with a signal.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.File.html" title='ssh2::File struct'>File</a></td><td class='docblock-short'><p>A file handle to an SFTP connection.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.FileStat.html" title='ssh2::FileStat struct'>FileStat</a></td><td class='docblock-short'><p>Metadata information about a remote file.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.FileType.html" title='ssh2::FileType struct'>FileType</a></td><td class='docblock-short'><p>An structure representing a type of file.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Host.html" title='ssh2::Host struct'>Host</a></td><td class='docblock-short'><p>Structure representing a known host as part of a <code>KnownHosts</code> structure.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Hosts.html" title='ssh2::Hosts struct'>Hosts</a></td><td class='docblock-short'><p>Iterator over the hosts in a <code>KnownHosts</code> structure.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Identities.html" title='ssh2::Identities struct'>Identities</a></td><td class='docblock-short'><p>An iterator over the identities found in an SSH agent.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.KnownHosts.html" title='ssh2::KnownHosts struct'>KnownHosts</a></td><td class='docblock-short'><p>A set of known hosts which can be used to verify the identity of a remote
+server.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Listener.html" title='ssh2::Listener struct'>Listener</a></td><td class='docblock-short'><p>A listener represents a forwarding port from the remote server.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.OpenFlags.html" title='ssh2::OpenFlags struct'>OpenFlags</a></td><td class='docblock-short'><p>Options that can be used to configure how a file is opened</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Prompt.html" title='ssh2::Prompt struct'>Prompt</a></td><td class='docblock-short'><p>A prompt/challenge returned as part of keyboard-interactive authentication</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.PublicKey.html" title='ssh2::PublicKey struct'>PublicKey</a></td><td class='docblock-short'><p>A public key which is extracted from an SSH agent.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.ReadWindow.html" title='ssh2::ReadWindow struct'>ReadWindow</a></td><td class='docblock-short'><p>Description of the read window as returned by <code>Channel::read_window</code></p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.RenameFlags.html" title='ssh2::RenameFlags struct'>RenameFlags</a></td><td class='docblock-short'><p>Options to <code>Sftp::rename</code>.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.ScpFileStat.html" title='ssh2::ScpFileStat struct'>ScpFileStat</a></td><td class='docblock-short'><p>Metadata returned about a remote file when received via <code>scp</code>.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Session.html" title='ssh2::Session struct'>Session</a></td><td class='docblock-short'><p>An SSH session, typically representing one TCP connection.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Sftp.html" title='ssh2::Sftp struct'>Sftp</a></td><td class='docblock-short'><p>A handle to a remote filesystem over SFTP.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Stream.html" title='ssh2::Stream struct'>Stream</a></td><td class='docblock-short'><p>A channel can have a number of streams, each identified by an id, each of
+which implements the <code>Read</code> and <code>Write</code> traits.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.WriteWindow.html" title='ssh2::WriteWindow struct'>WriteWindow</a></td><td class='docblock-short'><p>Description of the write window as returned by <code>Channel::write_window</code></p>
+</td></tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table><tr class='module-item'><td><a class="enum" href="enum.CheckResult.html" title='ssh2::CheckResult enum'>CheckResult</a></td><td class='docblock-short'><p>Possible results of a call to <code>KnownHosts::check</code></p>
+</td></tr><tr class='module-item'><td><a class="enum" href="enum.DisconnectCode.html" title='ssh2::DisconnectCode enum'>DisconnectCode</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.ExtendedData.html" title='ssh2::ExtendedData enum'>ExtendedData</a></td><td class='docblock-short'><p>How to handle extended data streams, such as stderr</p>
+</td></tr><tr class='module-item'><td><a class="enum" href="enum.HashType.html" title='ssh2::HashType enum'>HashType</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.HostKeyType.html" title='ssh2::HostKeyType enum'>HostKeyType</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.KnownHostFileKind.html" title='ssh2::KnownHostFileKind enum'>KnownHostFileKind</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.KnownHostKeyFormat.html" title='ssh2::KnownHostKeyFormat enum'>KnownHostKeyFormat</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.MethodType.html" title='ssh2::MethodType enum'>MethodType</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="enum" href="enum.OpenType.html" title='ssh2::OpenType enum'>OpenType</a></td><td class='docblock-short'><p>How to open a file handle with libssh2.</p>
+</td></tr></table><h2 id='statics' class='section-header'><a href="#statics">Statics</a></h2>
+<table><tr class='module-item'><td><a class="static" href="static.EXTENDED_DATA_STDERR.html" title='ssh2::EXTENDED_DATA_STDERR static'>EXTENDED_DATA_STDERR</a></td><td class='docblock-short'><p>Stream ID of the stderr channel for stream-related methods on <code>Channel</code></p>
+</td></tr><tr class='module-item'><td><a class="static" href="static.FLUSH_ALL.html" title='ssh2::FLUSH_ALL static'>FLUSH_ALL</a></td><td class='docblock-short'><p>When passed to <code>Channel::flush_stream</code>, flushes all substream.</p>
+</td></tr><tr class='module-item'><td><a class="static" href="static.FLUSH_EXTENDED_DATA.html" title='ssh2::FLUSH_EXTENDED_DATA static'>FLUSH_EXTENDED_DATA</a></td><td class='docblock-short'><p>When passed to <code>Channel::flush_stream</code>, flushes all extended data
+substreams.</p>
+</td></tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table><tr class='module-item'><td><a class="trait" href="trait.KeyboardInteractivePrompt.html" title='ssh2::KeyboardInteractivePrompt trait'>KeyboardInteractivePrompt</a></td><td class='docblock-short'><p>Called by libssh2 to respond to some number of challenges as part of
+keyboard interactive authentication.</p>
+</td></tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table><tr class='module-item'><td><a class="fn" href="fn.init.html" title='ssh2::init fn'>init</a></td><td class='docblock-short'><p>Initialize the libssh2 library.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "ssh2";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

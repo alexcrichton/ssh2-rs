@@ -1,0 +1,10 @@
+(function() {var implementors = {};
+implementors["ssh2"] = [{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.Agent.html\" title=\"struct ssh2::Agent\">Agent</a>",synthetic:false,types:["ssh2::agent::Agent"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.Channel.html\" title=\"struct ssh2::Channel\">Channel</a>",synthetic:false,types:["ssh2::channel::Channel"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.KnownHosts.html\" title=\"struct ssh2::KnownHosts\">KnownHosts</a>",synthetic:false,types:["ssh2::knownhosts::KnownHosts"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.Listener.html\" title=\"struct ssh2::Listener\">Listener</a>",synthetic:false,types:["ssh2::listener::Listener"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.Sftp.html\" title=\"struct ssh2::Sftp\">Sftp</a>",synthetic:false,types:["ssh2::sftp::Sftp"]},{text:"impl&lt;'sftp&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"ssh2/struct.File.html\" title=\"struct ssh2::File\">File</a>&lt;'sftp&gt;",synthetic:false,types:["ssh2::sftp::File"]},];
+
+            if (window.register_implementors) {
+                window.register_implementors(implementors);
+            } else {
+                window.pending_implementors = implementors;
+            }
+        
+})()
