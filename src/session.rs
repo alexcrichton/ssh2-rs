@@ -230,16 +230,7 @@ impl Session {
                 )
             })?;
 
-            let res = handshake(self.inner.raw, stream);
-            self.rc(res)?;
-            if res < 0 {
-                // There are some kex related errors that don't set the
-                // last error on the session object and that will not cause
-                // the `rc` function to emit an error.
-                // Let's ensure that we indicate an error in this situation.
-                return Err(Error::new(res, "Error during handshake"));
-            }
-            Ok(())
+            self.rc(handshake(self.inner.raw, stream))
         }
     }
 
@@ -601,10 +592,10 @@ impl Session {
             let mut ptr = 0 as *mut _;
             let rc = raw::libssh2_session_supported_algs(self.inner.raw, method_type, &mut ptr);
             if rc <= 0 {
-                try!(self.rc(rc))
+                self.rc(rc)?;
             }
             for i in 0..(rc as isize) {
-                let s = ::opt_bytes(&STATIC, *ptr.offset(i)).unwrap();;
+                let s = ::opt_bytes(&STATIC, *ptr.offset(i)).unwrap();
                 let s = str::from_utf8(s).unwrap();
                 ret.push(s);
             }
@@ -881,7 +872,7 @@ impl Session {
     pub fn keepalive_send(&self) -> Result<u32, Error> {
         let mut ret = 0;
         let rc = unsafe { raw::libssh2_keepalive_send(self.inner.raw, &mut ret) };
-        try!(self.rc(rc));
+        self.rc(rc)?;
         Ok(ret as u32)
     }
 
@@ -912,14 +903,7 @@ impl Session {
 
     /// Translate a return code into a Rust-`Result`.
     pub fn rc(&self, rc: c_int) -> Result<(), Error> {
-        if rc >= 0 {
-            Ok(())
-        } else {
-            match Error::last_error(self) {
-                Some(e) => Err(e),
-                None => Ok(()),
-            }
-        }
+        self.inner.rc(rc)
     }
 }
 
@@ -929,10 +913,7 @@ impl SessionInner {
         if rc >= 0 {
             Ok(())
         } else {
-            match Error::last_error_raw(self.raw) {
-                Some(e) => Err(e),
-                None => Ok(()),
-            }
+            Err(Error::from_session_error_raw(self.raw, rc))
         }
     }
 }

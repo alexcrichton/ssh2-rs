@@ -3,6 +3,7 @@ use std::error;
 use std::ffi::NulError;
 use std::fmt;
 use std::io;
+use std::ptr::null_mut;
 use std::str;
 
 use {raw, Session};
@@ -27,6 +28,30 @@ impl Error {
             }
             let s = ::opt_bytes(&STATIC, msg).unwrap();
             Some(Error::new(rc, str::from_utf8(s).unwrap()))
+        }
+    }
+
+    /// Given a libssh2 error return code, generate an Error object that
+    /// encapsulates that error code and the error reason.
+    /// The error reason is extracted from the Session and is used if the
+    /// session contains the same error code as that provided.
+    /// If the error code doesn't match then an approximation of the error
+    /// reason is used instead of the error message stored in the Session.
+    pub fn from_session_error(sess: &Session, rc: libc::c_int) -> Error {
+        Self::from_session_error_raw(sess.raw(), rc)
+    }
+
+    #[doc(hidden)]
+    pub fn from_session_error_raw(raw: *mut raw::LIBSSH2_SESSION, rc: libc::c_int) -> Error {
+        static STATIC: () = ();
+        unsafe {
+            let mut msg = null_mut();
+            let res = raw::libssh2_session_last_error(raw, &mut msg, null_mut(), 0);
+            if res != rc {
+                return Self::from_errno(rc);
+            }
+            let s = ::opt_bytes(&STATIC, msg).unwrap();
+            Error::new(rc, str::from_utf8(s).unwrap())
         }
     }
 
