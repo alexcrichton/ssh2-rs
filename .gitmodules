@@ -1,3 +1,4 @@
 [submodule "libssh2-sys/libssh2"]
 	path = libssh2-sys/libssh2
-	url = https://github.com/alexcrichton/libssh2
+	url = https://github.com/wez/libssh2
+	branch = win10pr
