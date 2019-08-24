@@ -12,7 +12,7 @@ Rust bindings to libssh2, an ssh client library.
 ```toml
 # Cargo.toml
 [dependencies]
-ssh2 = "0.3"
+ssh2 = "0.4"
 ```
 
 ## Building on OSX 10.10+
