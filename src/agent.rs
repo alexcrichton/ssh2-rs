@@ -70,7 +70,7 @@ impl Agent {
 
     /// Attempt public key authentication with the help of ssh-agent.
     pub fn userauth(&self, username: &str, identity: &PublicKey) -> Result<(), Error> {
-        let username = try!(CString::new(username));
+        let username = CString::new(username)?;
         unsafe {
             self.sess.rc(raw::libssh2_agent_userauth(
                 self.raw,

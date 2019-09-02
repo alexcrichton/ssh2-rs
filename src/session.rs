@@ -121,7 +121,7 @@ impl Session {
     /// corresponding to the protocol and libssh2 version will be sent by
     /// default.
     pub fn set_banner(&self, banner: &str) -> Result<(), Error> {
-        let banner = try!(CString::new(banner));
+        let banner = CString::new(banner)?;
         unsafe {
             self.rc(raw::libssh2_session_banner_set(
                 self.inner.raw,
@@ -390,11 +390,11 @@ impl Session {
     /// control is needed than this method offers, it is recommended to use
     /// `agent` directly to control how the identity is found.
     pub fn userauth_agent(&self, username: &str) -> Result<(), Error> {
-        let mut agent = try!(self.agent());
-        try!(agent.connect());
-        try!(agent.list_identities());
+        let mut agent = self.agent()?;
+        agent.connect()?;
+        agent.list_identities()?;
         let identity = match agent.identities().next() {
-            Some(identity) => try!(identity),
+            Some(identity) => identity?,
             None => {
                 return Err(Error::new(
                     raw::LIBSSH2_ERROR_INVAL as c_int,
@@ -415,12 +415,12 @@ impl Session {
         passphrase: Option<&str>,
     ) -> Result<(), Error> {
         let pubkey = match pubkey {
-            Some(s) => Some(try!(CString::new(try!(util::path2bytes(s))))),
+            Some(s) => Some(CString::new(util::path2bytes(s)?)?),
             None => None,
         };
-        let privatekey = try!(CString::new(try!(util::path2bytes(privatekey))));
+        let privatekey = CString::new(util::path2bytes(privatekey)?)?;
         let passphrase = match passphrase {
-            Some(s) => Some(try!(CString::new(s))),
+            Some(s) => Some(CString::new(s)?),
             None => None,
         };
         self.rc(unsafe {
@@ -452,13 +452,13 @@ impl Session {
         passphrase: Option<&str>,
     ) -> Result<(), Error> {
         let (pubkeydata, pubkeydata_len) = match pubkeydata {
-            Some(s) => (Some(try!(CString::new(s))), s.len()),
+            Some(s) => (Some(CString::new(s)?), s.len()),
             None => (None, 0),
         };
         let privatekeydata_len = privatekeydata.len();
-        let privatekeydata = try!(CString::new(privatekeydata));
+        let privatekeydata = CString::new(privatekeydata)?;
         let passphrase = match passphrase {
-            Some(s) => Some(try!(CString::new(s))),
+            Some(s) => Some(CString::new(s)?),
             None => None,
         };
         self.rc(unsafe {
@@ -492,10 +492,10 @@ impl Session {
         hostname: &str,
         local_username: Option<&str>,
     ) -> Result<(), Error> {
-        let publickey = try!(CString::new(try!(util::path2bytes(publickey))));
-        let privatekey = try!(CString::new(try!(util::path2bytes(privatekey))));
+        let publickey = CString::new(util::path2bytes(publickey)?)?;
+        let privatekey = CString::new(util::path2bytes(privatekey)?)?;
         let passphrase = match passphrase {
-            Some(s) => Some(try!(CString::new(s))),
+            Some(s) => Some(CString::new(s)?),
             None => None,
         };
         let local_username = match local_username {
@@ -540,7 +540,7 @@ impl Session {
     /// and may be an empty string.
     pub fn auth_methods(&self, username: &str) -> Result<&str, Error> {
         let len = username.len();
-        let username = try!(CString::new(username));
+        let username = CString::new(username)?;
         unsafe {
             let ret = raw::libssh2_userauth_list(self.inner.raw, username.as_ptr(), len as c_uint);
             if ret.is_null() {
@@ -562,7 +562,7 @@ impl Session {
     /// will be ignored and not sent to the remote host during protocol
     /// negotiation.
     pub fn method_pref(&self, method_type: MethodType, prefs: &str) -> Result<(), Error> {
-        let prefs = try!(CString::new(prefs));
+        let prefs = CString::new(prefs)?;
         unsafe {
             self.rc(raw::libssh2_session_method_pref(
                 self.inner.raw,
@@ -654,8 +654,8 @@ impl Session {
         src: Option<(&str, u16)>,
     ) -> Result<Channel, Error> {
         let (shost, sport) = src.unwrap_or(("127.0.0.1", 22));
-        let host = try!(CString::new(host));
-        let shost = try!(CString::new(shost));
+        let host = CString::new(host)?;
+        let shost = CString::new(shost)?;
         unsafe {
             let ret = raw::libssh2_channel_direct_tcpip_ex(
                 self.inner.raw,
@@ -698,7 +698,7 @@ impl Session {
     /// sent over the returned channel. Some stat information is also returned
     /// about the remote file to prepare for receiving the file.
     pub fn scp_recv(&self, path: &Path) -> Result<(Channel, ScpFileStat), Error> {
-        let path = try!(CString::new(try!(util::path2bytes(path))));
+        let path = CString::new(util::path2bytes(path)?)?;
         unsafe {
             let mut sb: raw::libssh2_struct_stat = mem::zeroed();
             let ret = raw::libssh2_scp_recv2(self.inner.raw, path.as_ptr(), &mut sb);
@@ -729,7 +729,7 @@ impl Session {
         size: u64,
         times: Option<(u64, u64)>,
     ) -> Result<Channel, Error> {
-        let path = try!(CString::new(try!(util::path2bytes(remote_path))));
+        let path = CString::new(util::path2bytes(remote_path)?)?;
         let (mtime, atime) = times.unwrap_or((0, 0));
         unsafe {
             let ret = raw::libssh2_scp_send64(
@@ -889,8 +889,8 @@ impl Session {
         lang: Option<&str>,
     ) -> Result<(), Error> {
         let reason = reason.unwrap_or(ByApplication) as c_int;
-        let description = try!(CString::new(description));
-        let lang = try!(CString::new(lang.unwrap_or("")));
+        let description = CString::new(description)?;
+        let lang = CString::new(lang.unwrap_or(""))?;
         unsafe {
             self.rc(raw::libssh2_session_disconnect_ex(
                 self.inner.raw,

@@ -79,10 +79,10 @@ impl KnownHosts {
     /// Reads a collection of known hosts from a specified file and adds them to
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind) -> Result<u32, Error> {
-        let file = try!(CString::new(try!(util::path2bytes(file))));
+        let file = CString::new(util::path2bytes(file)?)?;
         let n = unsafe { raw::libssh2_knownhost_readfile(self.raw, file.as_ptr(), kind as c_int) };
         if n < 0 {
-            try!(self.sess.rc(n))
+            self.sess.rc(n)?
         }
         Ok(n as u32)
     }
@@ -102,7 +102,7 @@ impl KnownHosts {
     /// Writes all the known hosts to the specified file using the specified
     /// file format.
     pub fn write_file(&self, file: &Path, kind: KnownHostFileKind) -> Result<(), Error> {
-        let file = try!(CString::new(try!(util::path2bytes(file))));
+        let file = CString::new(util::path2bytes(file)?)?;
         let n = unsafe { raw::libssh2_knownhost_writefile(self.raw, file.as_ptr(), kind as c_int) };
         self.sess.rc(n)
     }
@@ -126,7 +126,7 @@ impl KnownHosts {
                     // + 1 for the trailing zero
                     v.reserve(outlen as usize + 1);
                 } else {
-                    try!(self.sess.rc(rc));
+                    self.sess.rc(rc)?;
                     v.set_len(outlen as usize);
                     break;
                 }
@@ -202,7 +202,7 @@ impl KnownHosts {
         comment: &str,
         fmt: ::KnownHostKeyFormat,
     ) -> Result<(), Error> {
-        let host = try!(CString::new(host));
+        let host = CString::new(host)?;
         let flags =
             raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN | raw::LIBSSH2_KNOWNHOST_KEYENC_RAW | (fmt as c_int);
         unsafe {
