@@ -164,7 +164,6 @@ fn main() {
         println!("cargo:rustc-link-lib=bcrypt");
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=user32");
-        println!("cargo:rustc-link-lib=ntdll");
     }
 }
 
