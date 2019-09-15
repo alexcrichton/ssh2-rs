@@ -16,7 +16,6 @@ jobs:
         - TARGET: i686-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     steps:
-    
     - uses: actions/checkout@v1
     - name: Dump environment
       env:
@@ -24,6 +23,8 @@ jobs:
         TARGET: ${{ matrix.env.TARGET }}
       run: set
     - name: Download Rust Installer
+      # GitHub Actions doesn't automatically apply the environment from the matrix,
+      # so we get to do that for ourselves here
       env:
         TARGET: ${{ matrix.env.TARGET }}
       run: |
@@ -36,7 +37,7 @@ jobs:
       env:
         TARGET: ${{ matrix.env.TARGET }}
       run: |
-        SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+        SET PATH=C:\Program Files (x86)\Rust\bin;%PATH%
         rustc -V
         cargo -V
         cargo test --no-run --target %TARGET%
