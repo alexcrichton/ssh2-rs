@@ -18,10 +18,12 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Download Rust Installer
-      run:  Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe"
+      run: |
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadFile("https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe", "install-rust.exe")
       shell: powershell
     - name: Install Rust
-      run:  rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+      run:  install-rust.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
     - name: Build and test
       run: |
         SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
