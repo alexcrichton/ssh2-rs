@@ -16,10 +16,16 @@ jobs:
         - TARGET: i686-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     steps:
+    
     - uses: actions/checkout@v1
     - name: Dump environment
+      env:
+        MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        TARGET: ${{ matrix.env.TARGET }}
       run: set
     - name: Download Rust Installer
+      env:
+        TARGET: ${{ matrix.env.TARGET }}
       run: |
         $wc = New-Object System.Net.WebClient
         $wc.DownloadFile("https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe", "install-rust.exe")
@@ -27,6 +33,8 @@ jobs:
     - name: Install Rust
       run:  install-rust.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
     - name: Build and test
+      env:
+        TARGET: ${{ matrix.env.TARGET }}
       run: |
         SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
         rustc -V
