@@ -17,6 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
+    - name: Dump environment
+      run: set
     - name: Download Rust Installer
       run: |
         $wc = New-Object System.Net.WebClient
