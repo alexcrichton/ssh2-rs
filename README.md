@@ -1,7 +1,6 @@
 # ssh2-rs
 
 [![Build Status](https://travis-ci.com/alexcrichton/ssh2-rs.svg?branch=master)](https://travis-ci.com/alexcrichton/ssh2-rs)
-[![Build Status](https://ci.appveyor.com/api/projects/status/dwc9c26tfdpg52on?svg=true)](https://ci.appveyor.com/project/alexcrichton/ssh2-rs)
 
 [Documentation](https://docs.rs/ssh2)
 
