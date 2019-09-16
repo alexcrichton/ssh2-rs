@@ -5,10 +5,6 @@ matrix:
   include:
     - rust: 1.36.0
     - rust: stable
-    - os: osx
-      before_install:
-        - export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
-        - export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
     - rust: beta
     - rust: nightly
 
