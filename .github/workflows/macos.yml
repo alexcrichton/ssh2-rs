@@ -1,0 +1,26 @@
+name: macOS
+
+on:
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.14]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build and test
+      run: |
+        export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
+        export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
+        rustc -V
+        cargo -V
+        cargo build
+        tests/run_integration_tests.sh
+        rustdoc --test README.md -L target
+        cargo run --manifest-path systest/Cargo.toml
