@@ -57,7 +57,12 @@ fn keyboard_interactive() {
     sess.handshake().unwrap();
     sess.host_key().unwrap();
     let methods = sess.auth_methods(&user).unwrap();
-    assert!(methods.contains("keyboard-interactive"), "{}", methods);
+    assert!(
+        methods.contains("keyboard-interactive"),
+        "test server ({}) must support `ChallengeResponseAuthentication yes`, not just {}",
+        ::test_addr(),
+        methods
+    );
     assert!(!sess.authenticated());
 
     // We don't know the correct response for whatever challenges
