@@ -190,9 +190,9 @@ impl KnownHosts {
     /// The host is the host name in plain text. The host name can be the IP
     /// numerical address of the host or the full name. If you want to add a key
     /// for a specific port number for the given host, you must provide the host
-    /// name like '[host]:port' with the actual characters '[' and ']' enclosing
+    /// name like `"[host]:port"` with the actual characters `[` and `]` enclosing
     /// the host name and a colon separating the host part from the port number.
-    /// For example: "[host.example.com]:222".
+    /// For example: `"[host.example.com]:222"`.
     ///
     /// The key provided must be the raw key for the host.
     pub fn add(
