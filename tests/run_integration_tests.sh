@@ -11,6 +11,8 @@ export RUST_SSH2_FIXTURE_PORT=8022
 cleanup() {
   # Stop the ssh server and local ssh agent
   kill $(< $SSHDIR/sshd.pid) $SSH_AGENT_PID || true
+
+  test -f $SSHDIR/sshd.log && cat $SSHDIR/sshd.log
 }
 trap cleanup EXIT
 
