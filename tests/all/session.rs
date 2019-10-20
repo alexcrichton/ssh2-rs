@@ -7,6 +7,16 @@ use tempdir::TempDir;
 use ssh2::{HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session};
 
 #[test]
+fn session_is_send() {
+    fn must_be_send<T: Send>(_: &T) -> bool {
+        true
+    }
+
+    let sess = Session::new().unwrap();
+    assert!(must_be_send(&sess));
+}
+
+#[test]
 fn smoke() {
     let sess = Session::new().unwrap();
     assert!(sess.banner_bytes().is_none());

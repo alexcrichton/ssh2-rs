@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use {raw, Channel, Error, SessionInner};
 
 /// A listener represents a forwarding port from the remote server.
@@ -7,7 +7,7 @@ use {raw, Channel, Error, SessionInner};
 /// the remote server's port.
 pub struct Listener {
     raw: *mut raw::LIBSSH2_LISTENER,
-    sess: Rc<SessionInner>,
+    sess: Arc<SessionInner>,
 }
 
 impl Listener {
@@ -21,14 +21,14 @@ impl Listener {
 
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_LISTENER,
-        sess: &Rc<SessionInner>,
+        sess: &Arc<SessionInner>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
-                sess: Rc::clone(sess),
+                sess: Arc::clone(sess),
             })
         }
     }

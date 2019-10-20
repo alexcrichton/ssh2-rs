@@ -2,8 +2,8 @@ use libc::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void, size_t};
 use std::cmp;
 use std::io;
 use std::io::prelude::*;
-use std::rc::Rc;
 use std::slice;
+use std::sync::Arc;
 
 use {raw, Error, ExtendedData, SessionInner};
 
@@ -17,21 +17,21 @@ use {raw, Error, ExtendedData, SessionInner};
 /// flag on a channel's corresponding `Session`.
 pub struct Channel {
     raw: *mut raw::LIBSSH2_CHANNEL,
-    sess: Rc<SessionInner>,
+    sess: Arc<SessionInner>,
     read_limit: Option<u64>,
 }
 
 impl Channel {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_CHANNEL,
-        sess: &Rc<SessionInner>,
+        sess: &Arc<SessionInner>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
-                sess: Rc::clone(sess),
+                sess: Arc::clone(sess),
                 read_limit: None,
             })
         }

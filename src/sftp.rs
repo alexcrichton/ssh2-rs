@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::mem;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use util;
 use {raw, Error, SessionInner};
@@ -13,7 +13,7 @@ use {raw, Error, SessionInner};
 /// Instances are created through the `sftp` method on a `Session`.
 pub struct Sftp {
     raw: *mut raw::LIBSSH2_SFTP,
-    _sess: Rc<SessionInner>,
+    _sess: Arc<SessionInner>,
 }
 
 /// A file handle to an SFTP connection.
@@ -105,14 +105,14 @@ pub enum OpenType {
 impl Sftp {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_SFTP,
-        sess: &Rc<SessionInner>,
+        sess: &Arc<SessionInner>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
-                _sess: Rc::clone(sess),
+                _sess: Arc::clone(sess),
             })
         }
     }
