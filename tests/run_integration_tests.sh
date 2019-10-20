@@ -44,6 +44,7 @@ PidFile=$SSHDIR/sshd.pid
 Subsystem sftp $SFTP
 UsePAM yes
 X11Forwarding yes
+UsePrivilegeSeparation no
 PrintMotd yes
 PermitTunnel yes
 KbdInteractiveAuthentication yes
