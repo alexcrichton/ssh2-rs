@@ -9,10 +9,8 @@ set -x
 export RUST_SSH2_FIXTURE_PORT=8022
 
 cleanup() {
-  # Stop the ssh server
-  kill $(< $SSHDIR/sshd.pid)
-  # Stop local ssh agent
-  kill $SSH_AGENT_PID
+  # Stop the ssh server and local ssh agent
+  kill $(< $SSHDIR/sshd.pid) $SSH_AGENT_PID || true
 }
 trap cleanup EXIT
 
@@ -52,6 +50,8 @@ MaxStartups 500
 # Relax modes when the repo is under eg: /var/tmp
 StrictModes no
 EOT
+
+cat $SSHDIR/sshd_config
 
 # Start an ssh server
 /usr/sbin/sshd -p $RUST_SSH2_FIXTURE_PORT -f $SSHDIR/sshd_config -E $SSHDIR/sshd.log
