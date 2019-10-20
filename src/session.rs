@@ -90,8 +90,9 @@ impl Session {
     /// This function does not associate the session with a remote connection
     /// just yet. Various configuration options can be set such as the blocking
     /// mode, compression, sigpipe, the banner, etc. To associate this session
-    /// with a TCP connection, use the `handshake` method to pass in an
-    /// already-established TCP socket.
+    /// with a TCP connection, use the `set_tcp_stream` method pass in an
+    /// already-established TCP socket, and then follow up with a call to
+    /// `handshake` to perform the ssh protocol handshake.
     pub fn new() -> Result<Session, Error> {
         ::init();
         unsafe {
