@@ -2,8 +2,8 @@ use libc::{c_int, size_t};
 use std::ffi::CString;
 use std::marker;
 use std::path::Path;
-use std::rc::Rc;
 use std::str;
+use std::sync::Arc;
 
 use util::{self, Binding};
 use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
@@ -46,7 +46,7 @@ use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
 /// ```
 pub struct KnownHosts {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-    sess: Rc<SessionInner>,
+    sess: Arc<SessionInner>,
 }
 
 /// Iterator over the hosts in a `KnownHosts` structure.
@@ -64,14 +64,14 @@ pub struct Host<'kh> {
 impl KnownHosts {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-        sess: &Rc<SessionInner>,
+        sess: &Arc<SessionInner>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
-                sess: Rc::clone(sess),
+                sess: Arc::clone(sess),
             })
         }
     }

@@ -7,9 +7,9 @@ use std::ffi::CString;
 use std::mem;
 use std::net::TcpStream;
 use std::path::Path;
-use std::rc::Rc;
 use std::slice;
 use std::str;
+use std::sync::Arc;
 
 use util;
 use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
@@ -68,6 +68,9 @@ pub(crate) struct SessionInner {
     tcp: RefCell<Option<TcpStream>>,
 }
 
+// The compiler doesn't know that it is Send safe because of the raw
+// pointer inside.  We know that the way that it is used by libssh2
+// and this crate is Send safe.
 unsafe impl Send for SessionInner {}
 
 /// An SSH session, typically representing one TCP connection.
@@ -76,8 +79,13 @@ unsafe impl Send for SessionInner {}
 /// session. Sessions are created and then have the TCP socket handed to them
 /// (via the `set_tcp_stream` method).
 pub struct Session {
-    inner: Rc<SessionInner>,
+    inner: Arc<SessionInner>,
 }
+
+// The compiler doesn't know that it is Send safe because of the raw
+// pointer inside.  We know that the way that it is used by libssh2
+// and this crate is Send safe.
+unsafe impl Send for Session {}
 
 /// Metadata returned about a remote file when received via `scp`.
 pub struct ScpFileStat {
@@ -101,7 +109,7 @@ impl Session {
                 Err(Error::unknown())
             } else {
                 Ok(Session {
-                    inner: Rc::new(SessionInner {
+                    inner: Arc::new(SessionInner {
                         raw: ret,
                         tcp: RefCell::new(None),
                     }),

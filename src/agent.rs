@@ -1,8 +1,8 @@
 use std::ffi::CString;
 use std::marker;
-use std::rc::Rc;
 use std::slice;
 use std::str;
+use std::sync::Arc;
 
 use util::Binding;
 use {raw, Error, SessionInner};
@@ -12,7 +12,7 @@ use {raw, Error, SessionInner};
 /// Agents can be used to authenticate a session.
 pub struct Agent {
     raw: *mut raw::LIBSSH2_AGENT,
-    sess: Rc<SessionInner>,
+    sess: Arc<SessionInner>,
 }
 
 /// An iterator over the identities found in an SSH agent.
@@ -30,14 +30,14 @@ pub struct PublicKey<'agent> {
 impl Agent {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_AGENT,
-        sess: &Rc<SessionInner>,
+        sess: &Arc<SessionInner>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
             Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
-                sess: Rc::clone(sess),
+                sess: Arc::clone(sess),
             })
         }
     }
