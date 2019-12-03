@@ -31,7 +31,7 @@ cp $SSHDIR/id_rsa.pub $SSHDIR/authorized_keys
 
 ssh-keygen -f $SSHDIR/ssh_host_rsa_key -N '' -t rsa
 
-for p in /usr/lib/openssh/sftp-server /usr/libexec/sftp-server ; do
+for p in /usr/lib/openssh/sftp-server /usr/libexec/sftp-server /usr/libexec/openssh/sftp-server ; do
   if test -x $p ; then
     SFTP=$p
   fi

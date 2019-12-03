@@ -220,3 +220,24 @@ fn exit_code_ignores_other_errors() {
     assert!(sess.disconnect(None, &longdescription, None).is_err()); // max len == 256
     assert!(channel.exit_status().unwrap() == 0);
 }
+
+#[test]
+fn pty_modes_are_propagated() {
+    let sess = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    eprintln!("requesting pty");
+
+    let mut mode = ssh2::PtyModes::new();
+    // intr is typically CTRL-C; setting it to unmodified `y`
+    // should be very high signal that it took effect
+    mode.set_character(ssh2::PtyModeOpcode::VINTR, Some('y'));
+
+    channel.request_pty("xterm", Some(mode), None).unwrap();
+    channel.exec("stty -a").unwrap();
+
+    let (out, _err) = consume_stdio(&mut channel);
+    channel.close().unwrap();
+
+    // This may well be linux specific
+    assert!(out.contains("intr = y"), "mode was propagated");
+}

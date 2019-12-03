@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::slice;
 use std::sync::Arc;
 
-use {raw, Error, ExtendedData, SessionInner};
+use {raw, Error, ExtendedData, PtyModes, SessionInner};
 
 /// A channel represents a portion of an SSH connection on which data can be
 /// read and written.
@@ -105,17 +105,19 @@ impl Channel {
     pub fn request_pty(
         &mut self,
         term: &str,
-        mode: Option<&str>,
+        mode: Option<PtyModes>,
         dim: Option<(u32, u32, u32, u32)>,
     ) -> Result<(), Error> {
+        let mode = mode.map(PtyModes::finish);
+        let mode = mode.as_ref().map(Vec::as_slice).unwrap_or(&[]);
         self.sess.rc(unsafe {
             let (width, height, width_px, height_px) = dim.unwrap_or((80, 24, 0, 0));
             raw::libssh2_channel_request_pty_ex(
                 self.raw,
                 term.as_ptr() as *const _,
                 term.len() as c_uint,
-                mode.map(|s| s.as_ptr()).unwrap_or(0 as *const _) as *const _,
-                mode.map(|s| s.len()).unwrap_or(0) as c_uint,
+                mode.as_ptr() as *const _,
+                mode.len() as c_uint,
                 width as c_int,
                 height as c_int,
                 width_px as c_int,
