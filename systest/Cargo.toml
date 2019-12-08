@@ -6,7 +6,7 @@ build = "build.rs"
 
 [dependencies]
 libssh2-sys = { path = "../libssh2-sys" }
-libc = "0.1"
+libc = "0.2"
 
 [build-dependencies]
-ctest = "0.1"
+ctest = "0.2"

@@ -8,7 +8,7 @@ fn main() {
         .header("libssh2_publickey.h")
         .header("libssh2_sftp.h")
         .include(env::var("DEP_SSH2_INCLUDE").unwrap())
-        .type_name(|s, is_struct| {
+        .type_name(|s, is_struct, _is_union| {
             if s == "stat" {
                 // Ensure that we emit `struct stat` rather than just a `stat` typedef.
                 format!("struct stat")
