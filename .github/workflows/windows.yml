@@ -31,6 +31,7 @@ jobs:
       shell: powershell
     - name: Install Rust
       run:  install-rust.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+      shell: cmd
     - name: Build and test
       env:
         TARGET: ${{ matrix.env.TARGET }}
@@ -40,3 +41,4 @@ jobs:
         cargo -V
         cargo test --no-run --target %TARGET%
         cargo run --manifest-path systest/Cargo.toml --target %TARGET%
+      shell: cmd
