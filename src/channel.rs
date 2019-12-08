@@ -102,6 +102,18 @@ impl Channel {
     ///
     /// The dimensions argument is a tuple of (width, height, width_px,
     /// height_px)
+    ///
+    /// The mode parameter is optional and specifies modes to apply to
+    /// the pty.  Use the `PtyModes` type construct these modes.
+    /// A contrived example of this is below:
+    ///
+    /// ```
+    /// let mut mode = ssh2::PtyModes::new();
+    /// // Set the interrupt character to CTRL-C (ASCII 3: ETX).
+    /// // This is typically the default, but we're showing how to
+    /// // set a relatable option for the sake of example!
+    /// mode.set_character(ssh2::PtyModeOpcode::VINTR, Some(3 as char));
+    /// ```
     pub fn request_pty(
         &mut self,
         term: &str,
@@ -126,7 +138,9 @@ impl Channel {
         })
     }
 
-    /// Request a PTY of a specified size
+    /// Request that the PTY size be changed to the specified size.
+    /// width and height are the number of character cells, and you
+    /// may optionally include the size specified in pixels.
     pub fn request_pty_size(
         &mut self,
         width: u32,
