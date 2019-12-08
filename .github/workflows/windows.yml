@@ -20,11 +20,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
-    - name: Dump environment
-      env:
-        MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        TARGET: ${{ matrix.env.TARGET }}
-      run: set
     - name: Download Rust Installer
       # GitHub Actions doesn't automatically apply the environment from the matrix,
       # so we get to do that for ourselves here
