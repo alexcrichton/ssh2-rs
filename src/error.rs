@@ -169,6 +169,7 @@ impl From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
         let kind = match err.code {
             raw::LIBSSH2_ERROR_EAGAIN => io::ErrorKind::WouldBlock,
+            raw::LIBSSH2_ERROR_TIMEOUT => io::ErrorKind::TimedOut,
             _ => io::ErrorKind::Other,
         };
         io::Error::new(kind, err.msg)
