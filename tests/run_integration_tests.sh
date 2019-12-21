@@ -31,17 +31,11 @@ cp $SSHDIR/id_rsa.pub $SSHDIR/authorized_keys
 
 ssh-keygen -f $SSHDIR/ssh_host_rsa_key -N '' -t rsa
 
-for p in /usr/lib/openssh/sftp-server /usr/libexec/sftp-server /usr/libexec/openssh/sftp-server ; do
-  if test -x $p ; then
-    SFTP=$p
-  fi
-done
-
 cat > $SSHDIR/sshd_config <<-EOT
 AuthorizedKeysFile=$SSHDIR/authorized_keys
 HostKey=$SSHDIR/ssh_host_rsa_key
 PidFile=$SSHDIR/sshd.pid
-Subsystem sftp $SFTP
+Subsystem sftp internal-sftp
 UsePAM yes
 X11Forwarding yes
 UsePrivilegeSeparation no
