@@ -185,6 +185,9 @@ pub const LIBSSH2_CHANNEL_EXTENDED_DATA_NORMAL: c_int = 0;
 pub const LIBSSH2_CHANNEL_EXTENDED_DATA_IGNORE: c_int = 1;
 pub const LIBSSH2_CHANNEL_EXTENDED_DATA_MERGE: c_int = 2;
 
+pub const LIBSSH2_SESSION_BLOCK_INBOUND: c_int = 1;
+pub const LIBSSH2_SESSION_BLOCK_OUTBOUND: c_int = 2;
+
 pub enum LIBSSH2_SESSION {}
 pub enum LIBSSH2_AGENT {}
 pub enum LIBSSH2_CHANNEL {}
@@ -362,6 +365,7 @@ extern "C" {
     );
     pub fn libssh2_keepalive_send(sess: *mut LIBSSH2_SESSION, seconds_to_next: *mut c_int)
         -> c_int;
+    pub fn libssh2_session_block_directions(sess: *mut LIBSSH2_SESSION) -> c_int;
 
     // agent
     pub fn libssh2_agent_init(sess: *mut LIBSSH2_SESSION) -> *mut LIBSSH2_AGENT;

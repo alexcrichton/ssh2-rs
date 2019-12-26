@@ -1,10 +1,10 @@
 use std::env;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::{self, prelude::*};
 use std::path::Path;
 use tempdir::TempDir;
 
-use ssh2::{HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session};
+use ssh2::{HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session, BlockDirections};
 
 #[test]
 fn session_is_send() {
@@ -176,4 +176,13 @@ fn scp_send() {
         .read_to_end(&mut actual)
         .unwrap();
     assert_eq!(actual, b"foobar");
+}
+
+#[test]
+fn block_directions() {
+    let mut sess = ::authed_session();
+    sess.set_blocking(false);
+    let actual = sess.handshake().map_err(|e| io::Error::from(e).kind());
+    assert_eq!(actual, Err(io::ErrorKind::WouldBlock));
+    assert_eq!(sess.block_directions(), BlockDirections::Inbound);
 }
