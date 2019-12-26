@@ -92,6 +92,19 @@ pub struct ScpFileStat {
     stat: libc::stat,
 }
 
+/// The io direction an application has to wait for in order not to block.
+#[derive(Debug, PartialEq)]
+pub enum BlockDirections {
+    /// No direction blocked.
+    None,
+    /// Inbound direction blocked.
+    Inbound,
+    /// Outbound direction blockd.
+    Outbound,
+    /// Inbound and Outbound direction blocked.
+    Both,
+}
+
 impl Session {
     /// Initializes an SSH session object.
     ///
@@ -913,6 +926,21 @@ impl Session {
     /// Translate a return code into a Rust-`Result`.
     pub fn rc(&self, rc: c_int) -> Result<(), Error> {
         self.inner.rc(rc)
+    }
+
+    /// Returns the blocked io directions that the application needs to wait for.
+    ///
+    /// This function should be used after an error of type `WouldBlock` is returned to
+    /// find out the socket events the application has to wait for.
+    pub fn block_directions(&self) -> BlockDirections {
+        let dir = unsafe { raw::libssh2_session_block_directions(self.inner.raw) };
+        match dir {
+            raw::LIBSSH2_SESSION_BLOCK_INBOUND => BlockDirections::Inbound,
+            raw::LIBSSH2_SESSION_BLOCK_OUTBOUND => BlockDirections::Outbound,
+            x if x == raw::LIBSSH2_SESSION_BLOCK_INBOUND | raw::LIBSSH2_SESSION_BLOCK_OUTBOUND
+              => BlockDirections::Both,
+            _ => BlockDirections::None,
+        }
     }
 }
 
