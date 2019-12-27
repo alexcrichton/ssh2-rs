@@ -136,7 +136,7 @@ impl Sftp {
                 open_type as c_int,
             );
             if ret.is_null() {
-                Err(self.last_error())
+                Err(self.last_session_error().unwrap_or_else(|| { Error::unknown() }))
             } else {
                 Ok(File::from_raw(self, ret))
             }
@@ -309,7 +309,7 @@ impl Sftp {
             }
         }
         if rc < 0 {
-            Err(self.last_error())
+            Err(Error::from_errno(rc))
         } else {
             unsafe { ret.set_len(rc as usize) }
             Ok(mkpath(ret))
@@ -359,12 +359,17 @@ impl Sftp {
         Error::from_errno(code as c_int)
     }
 
+    /// Peel off the last error to happen on this Session.
+    pub fn last_session_error(&self) -> Option<Error> {
+        Error::last_error_raw(self._sess.raw)
+    }
+
     /// Translates a return code into a Rust-`Result`
     pub fn rc(&self, rc: c_int) -> Result<(), Error> {
         if rc == 0 {
             Ok(())
         } else {
-            Err(self.last_error())
+            Err(Error::from_errno(rc))
         }
     }
 }
@@ -448,7 +453,7 @@ impl<'sftp> File<'sftp> {
             }
         }
         if rc < 0 {
-            return Err(self.sftp.last_error());
+            return Err(Error::from_errno(rc));
         } else if rc == 0 {
             return Err(Error::new(raw::LIBSSH2_ERROR_FILE, "no more files"));
         } else {
@@ -474,7 +479,7 @@ impl<'sftp> Read for File<'sftp> {
             let rc =
                 raw::libssh2_sftp_read(self.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
             match rc {
-                n if n < 0 => Err(io::Error::new(ErrorKind::Other, self.sftp.last_error())),
+                n if n < 0 =>  Err(Error::from_errno(n as i32).into()),
                 n => Ok(n as usize),
             }
         }
@@ -487,7 +492,7 @@ impl<'sftp> Write for File<'sftp> {
             raw::libssh2_sftp_write(self.raw, buf.as_ptr() as *const _, buf.len() as size_t)
         };
         if rc < 0 {
-            Err(io::Error::new(ErrorKind::Other, self.sftp.last_error()))
+            Err(Error::from_errno(rc as i32).into())
         } else {
             Ok(rc as usize)
         }
