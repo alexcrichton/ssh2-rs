@@ -455,6 +455,7 @@ impl ExtensiblePtyModeOpcode {
 /// Encodes modes for Pty allocation requests.
 /// The modes documented in <https://tools.ietf.org/html/rfc4250#section-4.5>
 /// are supported.
+#[derive(Debug, Clone)]
 pub struct PtyModes {
     data: Vec<u8>,
 }
