@@ -14,6 +14,7 @@ use {raw, Error, SessionInner};
 pub struct Sftp {
     raw: *mut raw::LIBSSH2_SFTP,
     _sess: Arc<SessionInner>,
+    closed: bool,
 }
 
 /// A file handle to an SFTP connection.
@@ -26,6 +27,7 @@ pub struct Sftp {
 pub struct File<'sftp> {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
     sftp: &'sftp Sftp,
+    closed: bool,
 }
 
 /// Metadata information about a remote file.
@@ -113,6 +115,7 @@ impl Sftp {
             Ok(Self {
                 raw,
                 _sess: Arc::clone(sess),
+                closed: false,
             })
         }
     }
@@ -372,11 +375,32 @@ impl Sftp {
             Err(Error::from_errno(rc))
         }
     }
+
+    /// Shuts the sftp connection down.
+    ///
+    /// This should not be called manually since the destructor takes care of it.
+    /// However, it is useful for async wrappers that take care of async destruction.
+    pub fn shutdown(&mut self) -> Result<(), Error> {
+        if !self.closed {
+            self.rc(unsafe { raw::libssh2_sftp_shutdown(self.raw) })?;
+            // set flag for destructor that we don't need to close the file anymore
+            self.closed = true;
+        }
+        Ok(())
+    }
 }
 
 impl Drop for Sftp {
     fn drop(&mut self) {
-        unsafe { assert_eq!(raw::libssh2_sftp_shutdown(self.raw), 0) }
+        if !self.closed {
+            let rc = loop {
+                let rc = unsafe { raw::libssh2_sftp_shutdown(self.raw) };
+                if rc != raw::LIBSSH2_ERROR_EAGAIN {
+                    break rc;
+                }
+            };
+            assert_eq!(rc, 0);
+        }
     }
 }
 
@@ -389,6 +413,7 @@ impl<'sftp> File<'sftp> {
         File {
             raw: raw,
             sftp: sftp,
+            closed: false,
         }
     }
 
@@ -471,6 +496,19 @@ impl<'sftp> File<'sftp> {
     pub fn fsync(&mut self) -> Result<(), Error> {
         self.sftp.rc(unsafe { raw::libssh2_sftp_fsync(self.raw) })
     }
+
+    /// This function closes the file.
+    ///
+    /// This should not be called manually since the destructor takes care of it.
+    /// However, it is useful for async wrappers that take care of async destruction.
+    pub fn close(&mut self) -> Result<(), Error> {
+        if !self.closed {
+            self.sftp.rc(unsafe { raw::libssh2_sftp_close_handle(self.raw) })?;
+            // set flag for destructor that we don't need to close the file anymore
+            self.closed = true;
+        }
+        Ok(())
+    }
 }
 
 impl<'sftp> Read for File<'sftp> {
@@ -535,7 +573,15 @@ impl<'sftp> Seek for File<'sftp> {
 
 impl<'sftp> Drop for File<'sftp> {
     fn drop(&mut self) {
-        unsafe { assert_eq!(raw::libssh2_sftp_close_handle(self.raw), 0) }
+        if !self.closed {
+            let rc = loop {
+                let rc = unsafe { raw::libssh2_sftp_close_handle(self.raw) };
+                if rc != raw::LIBSSH2_ERROR_EAGAIN {
+                    break rc;
+                }
+            };
+            assert_eq!(rc, 0);
+        }
     }
 }
 
