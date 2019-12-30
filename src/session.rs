@@ -78,6 +78,7 @@ unsafe impl Send for SessionInner {}
 /// All other structures are based on an SSH session and cannot outlive a
 /// session. Sessions are created and then have the TCP socket handed to them
 /// (via the `set_tcp_stream` method).
+#[derive(Clone)]
 pub struct Session {
     inner: Arc<SessionInner>,
 }
