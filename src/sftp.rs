@@ -478,7 +478,7 @@ impl<'sftp> Read for File<'sftp> {
             let rc =
                 raw::libssh2_sftp_read(self.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
             match rc {
-                n if n < 0 =>  Err(Error::from_errno(n as _).into()),
+                n if n < 0 => Err(Error::from_errno(n as _).into()),
                 n => Ok(n as usize),
             }
         }
