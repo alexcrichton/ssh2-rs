@@ -937,8 +937,9 @@ impl Session {
         match dir {
             raw::LIBSSH2_SESSION_BLOCK_INBOUND => BlockDirections::Inbound,
             raw::LIBSSH2_SESSION_BLOCK_OUTBOUND => BlockDirections::Outbound,
-            x if x == raw::LIBSSH2_SESSION_BLOCK_INBOUND | raw::LIBSSH2_SESSION_BLOCK_OUTBOUND
-              => BlockDirections::Both,
+            x if x == raw::LIBSSH2_SESSION_BLOCK_INBOUND | raw::LIBSSH2_SESSION_BLOCK_OUTBOUND => {
+                BlockDirections::Both
+            }
             _ => BlockDirections::None,
         }
     }
