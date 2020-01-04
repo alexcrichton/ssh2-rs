@@ -136,7 +136,7 @@ impl Sftp {
                 open_type as c_int,
             );
             if ret.is_null() {
-                Err(self.last_session_error().unwrap_or_else(|| { Error::unknown() }))
+                Err(self.last_session_error().unwrap_or_else(Error::unknown))
             } else {
                 Ok(File::from_raw(self, ret))
             }
