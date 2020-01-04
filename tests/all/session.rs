@@ -4,7 +4,7 @@ use std::io::{self, prelude::*};
 use std::path::Path;
 use tempdir::TempDir;
 
-use ssh2::{HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session, BlockDirections};
+use ssh2::{BlockDirections, HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session};
 
 #[test]
 fn session_is_send() {
