@@ -359,8 +359,7 @@ impl Sftp {
         Error::from_errno(code as c_int)
     }
 
-    /// Peel off the last error to happen on this Session.
-    pub fn last_session_error(&self) -> Option<Error> {
+    fn last_session_error(&self) -> Option<Error> {
         Error::last_error_raw(self._sess.raw)
     }
 
