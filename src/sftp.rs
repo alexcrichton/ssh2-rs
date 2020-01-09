@@ -491,7 +491,7 @@ impl<'sftp> Write for File<'sftp> {
             raw::libssh2_sftp_write(self.raw, buf.as_ptr() as *const _, buf.len() as size_t)
         };
         if rc < 0 {
-            Err(Error::from_errno(rc as i32).into())
+            Err(Error::from_errno(rc as _).into())
         } else {
             Ok(rc as usize)
         }
