@@ -299,9 +299,9 @@ pub struct LIBSSH2_USERAUTH_KBDINT_RESPONSE {
 
 #[cfg(unix)]
 pub type libssh2_socket_t = c_int;
-#[cfg(all(windows, target_arch = "x86"))]
+#[cfg(all(windows, target_pointer_width = "32"))]
 pub type libssh2_socket_t = u32;
-#[cfg(all(windows, target_arch = "x86_64"))]
+#[cfg(all(windows, target_pointer_width = "64"))]
 pub type libssh2_socket_t = u64;
 
 extern "C" {
