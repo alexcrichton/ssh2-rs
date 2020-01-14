@@ -25,3 +25,20 @@ This library depends on OpenSSL. To get OpenSSL working follow the
 Starting with version `0.4` of `ssh2`, you can enable the `vendored-openssl` feature
 to have `libssh2` built against a statically built version of openssl as [described
 here](https://docs.rs/openssl/0.10.24/openssl/#vendored)
+
+# License
+
+This project is licensed under either of
+
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+   http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   http://opensource.org/licenses/MIT)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this project by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
