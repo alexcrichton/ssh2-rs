@@ -197,12 +197,12 @@ impl Session {
     /// a blocking session will wait for room. A non-blocking session will
     /// return immediately without writing anything.
     pub fn set_blocking(&self, blocking: bool) {
-        unsafe { raw::libssh2_session_set_blocking(self.inner.raw, blocking as c_int) }
+        self.inner.set_blocking(blocking);
     }
 
     /// Returns whether the session was previously set to nonblocking.
     pub fn is_blocking(&self) -> bool {
-        unsafe { raw::libssh2_session_get_blocking(self.inner.raw) != 0 }
+        self.inner.is_blocking()
     }
 
     /// Set timeout for blocking functions.
@@ -954,6 +954,16 @@ impl SessionInner {
         } else {
             Err(Error::from_session_error_raw(self.raw, rc))
         }
+    }
+
+    /// Set or clear blocking mode on session
+    pub fn set_blocking(&self, blocking: bool) {
+        unsafe { raw::libssh2_session_set_blocking(self.raw, blocking as c_int) }
+    }
+
+    /// Returns whether the session was previously set to nonblocking.
+    pub fn is_blocking(&self) -> bool {
+        unsafe { raw::libssh2_session_get_blocking(self.raw) != 0 }
     }
 }
 
