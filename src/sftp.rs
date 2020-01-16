@@ -438,7 +438,7 @@ impl<'sftp> File<'sftp> {
 
     /// Set the metadata for this handle.
     pub fn setstat(&mut self, stat: FileStat) -> Result<(), Error> {
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         inner.sftp.rc(unsafe {
             let mut raw = stat.raw();
             raw::libssh2_sftp_fstat_ex(inner.raw, &mut raw, 1)
@@ -448,7 +448,7 @@ impl<'sftp> File<'sftp> {
     /// Get the metadata for this handle.
     pub fn stat(&mut self) -> Result<FileStat, Error> {
         unsafe {
-            let inner = self.unwrap_inner_or_err()?;
+            let inner = self.get_inner()?;
             let mut ret = mem::zeroed();
             inner
                 .sftp
@@ -460,7 +460,7 @@ impl<'sftp> File<'sftp> {
     #[allow(missing_docs)] // sure wish I knew what this did...
     pub fn statvfs(&mut self) -> Result<raw::LIBSSH2_SFTP_STATVFS, Error> {
         unsafe {
-            let inner = self.unwrap_inner_or_err()?;
+            let inner = self.get_inner()?;
             let mut ret = mem::zeroed();
             inner
                 .sftp
@@ -480,7 +480,7 @@ impl<'sftp> File<'sftp> {
     /// Also note that the return paths will not be absolute paths, they are
     /// the filenames of the files in this directory.
     pub fn readdir(&mut self) -> Result<(PathBuf, FileStat), Error> {
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         let mut buf = Vec::<u8>::with_capacity(128);
         let mut stat = unsafe { mem::zeroed() };
         let mut rc;
@@ -519,11 +519,11 @@ impl<'sftp> File<'sftp> {
     ///
     /// For this to work requires fsync@openssh.com support on the server.
     pub fn fsync(&mut self) -> Result<(), Error> {
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         inner.sftp.rc(unsafe { raw::libssh2_sftp_fsync(inner.raw) })
     }
 
-    fn unwrap_inner_or_err(&self) -> Result<&FileInner, Error> {
+    fn get_inner(&self) -> Result<&FileInner, Error> {
         match self.inner.as_ref() {
             Some(inner) => Ok(inner),
             None => Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)),
@@ -532,7 +532,7 @@ impl<'sftp> File<'sftp> {
 
     #[doc(hidden)]
     pub fn close(&mut self) -> Result<(), Error> {
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         inner
             .sftp
             .rc(unsafe { raw::libssh2_sftp_close_handle(inner.raw) })?;
@@ -544,7 +544,7 @@ impl<'sftp> File<'sftp> {
 impl<'sftp> Read for File<'sftp> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         unsafe {
-            let inner = self.unwrap_inner_or_err()?;
+            let inner = self.get_inner()?;
             let rc =
                 raw::libssh2_sftp_read(inner.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
             match rc {
@@ -557,7 +557,7 @@ impl<'sftp> Read for File<'sftp> {
 
 impl<'sftp> Write for File<'sftp> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         let rc = unsafe {
             raw::libssh2_sftp_write(inner.raw, buf.as_ptr() as *const _, buf.len() as size_t)
         };
@@ -587,7 +587,7 @@ impl<'sftp> Seek for File<'sftp> {
         let next = match how {
             SeekFrom::Start(pos) => pos,
             SeekFrom::Current(offset) => {
-                let inner = self.unwrap_inner_or_err()?;
+                let inner = self.get_inner()?;
                 let cur = unsafe { raw::libssh2_sftp_tell64(inner.raw) };
                 (cur as i64 + offset) as u64
             }
@@ -599,7 +599,7 @@ impl<'sftp> Seek for File<'sftp> {
                 Err(e) => return Err(io::Error::new(ErrorKind::Other, e)),
             },
         };
-        let inner = self.unwrap_inner_or_err()?;
+        let inner = self.get_inner()?;
         unsafe { raw::libssh2_sftp_seek64(inner.raw, next) }
         Ok(next)
     }
