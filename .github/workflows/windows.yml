@@ -20,23 +20,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
-    - name: Download Rust Installer
-      # GitHub Actions doesn't automatically apply the environment from the matrix,
-      # so we get to do that for ourselves here
-      env:
-        TARGET: ${{ matrix.env.TARGET }}
-      run: |
-        $wc = New-Object System.Net.WebClient
-        $wc.DownloadFile("https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe", "install-rust.exe")
-      shell: powershell
     - name: Install Rust
-      run:  install-rust.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
-      shell: cmd
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+        target: ${{ matrix.env.TARGET }}
     - name: Build and test
       env:
         TARGET: ${{ matrix.env.TARGET }}
       run: |
-        SET PATH=C:\Program Files (x86)\Rust\bin;%PATH%
         rustc -V
         cargo -V
         cargo test --no-run --target %TARGET%
