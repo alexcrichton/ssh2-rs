@@ -146,7 +146,7 @@ impl Sftp {
                 open_type as c_int,
             );
             if ret.is_null() {
-                Err(self.last_session_error()?.unwrap_or_else(Error::unknown))
+                Err(self.last_session_error())
             } else {
                 Ok(File::from_raw(self, ret))
             }
@@ -377,11 +377,11 @@ impl Sftp {
         Error::from_errno(code as c_int)
     }
 
-    fn last_session_error(&self) -> Result<Option<Error>, Error> {
+    fn last_session_error(&self) -> Error {
         if let Some(inner) = self.inner.as_ref() {
-            Ok(Error::last_error_raw(inner.sess.raw))
+            Error::last_error_raw(inner.sess.raw).unwrap_or_else(Error::unknown)
         } else {
-            Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE))
+            Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)
         }
     }
 
