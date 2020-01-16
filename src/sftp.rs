@@ -415,13 +415,9 @@ impl Drop for Sftp {
         // Set ssh2 to blocking if sftp was not shutdown yet.
         if let Some(inner) = self.inner.take() {
             let was_blocking = inner.sess.is_blocking();
-            if !was_blocking {
-                inner.sess.set_blocking(true);
-            }
+            inner.sess.set_blocking(true);
             assert_eq!(unsafe { raw::libssh2_sftp_shutdown(inner.raw) }, 0);
-            if !was_blocking {
-                inner.sess.set_blocking(false);
-            }
+            inner.sess.set_blocking(was_blocking);
         }
     }
 }
@@ -618,13 +614,9 @@ impl<'sftp> Drop for File<'sftp> {
             // also properly poll `close` on `File` until success.
             if let Some(sftp) = inner.sftp.inner.as_ref() {
                 let was_blocking = sftp.sess.is_blocking();
-                if !was_blocking {
-                    sftp.sess.set_blocking(true);
-                }
+                sftp.sess.set_blocking(true);
                 assert_eq!(unsafe { raw::libssh2_sftp_close_handle(inner.raw) }, 0);
-                if !was_blocking {
-                    sftp.sess.set_blocking(false);
-                }
+                sftp.sess.set_blocking(was_blocking);
             } else {
                 assert_eq!(unsafe { raw::libssh2_sftp_close_handle(inner.raw) }, 0);
             }
