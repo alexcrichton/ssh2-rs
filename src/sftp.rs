@@ -413,7 +413,7 @@ impl Sftp {
 impl Drop for Sftp {
     fn drop(&mut self) {
         // Set ssh2 to blocking if sftp was not shutdown yet.
-        if let Some(inner) = self.inner.as_ref() {
+        if let Some(inner) = self.inner.take() {
             let was_blocking = inner.sess.is_blocking();
             if !was_blocking {
                 inner.sess.set_blocking(true);
@@ -612,7 +612,7 @@ impl<'sftp> Seek for File<'sftp> {
 impl<'sftp> Drop for File<'sftp> {
     fn drop(&mut self) {
         // Set ssh2 to blocking if the file was not closed yet.
-        if let Some(inner) = self.inner.as_ref() {
+        if let Some(inner) = self.inner.take() {
             // Normally sftp should still be available here. The only way it is `None` is when
             // shutdown has been polled until success. In this case the async client should
             // also properly poll `close` on `File` until success.
