@@ -138,7 +138,7 @@ impl Sftp {
         let filename = util::path2bytes(filename)?;
         unsafe {
             let ret = raw::libssh2_sftp_open_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 flags.bits() as c_ulong,
@@ -201,7 +201,7 @@ impl Sftp {
         let filename = util::path2bytes(filename)?;
         self.rc(unsafe {
             raw::libssh2_sftp_mkdir_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 mode as c_long,
@@ -214,7 +214,7 @@ impl Sftp {
         let filename = util::path2bytes(filename)?;
         self.rc(unsafe {
             raw::libssh2_sftp_rmdir_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
             )
@@ -227,7 +227,7 @@ impl Sftp {
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_STAT,
@@ -244,7 +244,7 @@ impl Sftp {
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_LSTAT,
@@ -261,7 +261,7 @@ impl Sftp {
         self.rc(unsafe {
             let mut raw = stat.raw();
             raw::libssh2_sftp_stat_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_SETSTAT,
@@ -276,7 +276,7 @@ impl Sftp {
         let target = util::path2bytes(target)?;
         self.rc(unsafe {
             raw::libssh2_sftp_symlink_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 path.as_ptr() as *const _,
                 path.len() as c_uint,
                 target.as_ptr() as *mut _,
@@ -303,7 +303,7 @@ impl Sftp {
         loop {
             rc = unsafe {
                 raw::libssh2_sftp_symlink_ex(
-                    self.unwrap_raw_or_err()?,
+                    self.get_raw()?,
                     path.as_ptr() as *const _,
                     path.len() as c_uint,
                     ret.as_ptr() as *mut _,
@@ -345,7 +345,7 @@ impl Sftp {
         let dst = util::path2bytes(dst)?;
         self.rc(unsafe {
             raw::libssh2_sftp_rename_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 src.as_ptr() as *const _,
                 src.len() as c_uint,
                 dst.as_ptr() as *const _,
@@ -360,7 +360,7 @@ impl Sftp {
         let file = util::path2bytes(file)?;
         self.rc(unsafe {
             raw::libssh2_sftp_unlink_ex(
-                self.unwrap_raw_or_err()?,
+                self.get_raw()?,
                 file.as_ptr() as *const _,
                 file.len() as c_uint,
             )
@@ -369,7 +369,7 @@ impl Sftp {
 
     /// Peel off the last error to happen on this SFTP instance.
     pub fn last_error(&self) -> Error {
-        let raw = match self.unwrap_raw_or_err() {
+        let raw = match self.get_raw() {
             Ok(raw) => raw,
             Err(e) => return e,
         };
@@ -394,7 +394,7 @@ impl Sftp {
         }
     }
 
-    fn unwrap_raw_or_err(&self) -> Result<*mut raw::LIBSSH2_SFTP, Error> {
+    fn get_raw(&self) -> Result<*mut raw::LIBSSH2_SFTP, Error> {
         match self.inner.as_ref() {
             Some(inner) => Ok(inner.raw),
             None => Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)),
@@ -403,7 +403,7 @@ impl Sftp {
 
     #[doc(hidden)]
     pub fn shutdown(&mut self) -> Result<(), Error> {
-        let raw = self.unwrap_raw_or_err()?;
+        let raw = self.get_raw()?;
         self.rc(unsafe { raw::libssh2_sftp_shutdown(raw) })?;
         let _ = self.inner.take();
         Ok(())
