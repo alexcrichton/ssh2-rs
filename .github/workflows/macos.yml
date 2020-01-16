@@ -23,10 +23,12 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
+    - name: Export OpenSSL environment variables
+      run: |
+        echo "::set-env name=OPENSSL_INCLUDE_DIR::$(brew --prefix openssl)/include"
+        echo "::set-env name=OPENSSL_LIB_DIR::$(brew --prefix openssl)/lib"
     - name: Build and test
       run: |
-        export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
-        export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
         rustc -V
         cargo -V
         cargo build
