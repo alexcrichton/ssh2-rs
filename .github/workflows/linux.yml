@@ -19,14 +19,15 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install Rust
-      run: curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${{ matrix.rust_toolchain }}
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust_toolchain }}
     - name: Build and test
       run: |
-        source $HOME/.cargo/env
         rustc -V
         cargo -V
         cargo build
         tests/run_integration_tests.sh
         rustdoc --test README.md -L target
         cargo run --manifest-path systest/Cargo.toml
-

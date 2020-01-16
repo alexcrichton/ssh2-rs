@@ -18,12 +18,15 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install Rust
-      run: curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
     - name: Build and test
       run: |
         export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
         export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
-        source $HOME/.cargo/env
         rustc -V
         cargo -V
         cargo build
