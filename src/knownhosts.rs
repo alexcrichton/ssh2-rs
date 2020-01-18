@@ -1,11 +1,11 @@
 use libc::{c_int, size_t};
+use parking_lot::{Mutex, MutexGuard};
 use std::ffi::CString;
-use std::marker;
 use std::path::Path;
 use std::str;
 use std::sync::Arc;
 
-use util::{self, Binding};
+use util;
 use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
 
 /// A set of known hosts which can be used to verify the identity of a remote
@@ -46,28 +46,24 @@ use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
 /// ```
 pub struct KnownHosts {
     raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-    sess: Arc<SessionInner>,
-}
-
-/// Iterator over the hosts in a `KnownHosts` structure.
-pub struct Hosts<'kh> {
-    prev: *mut raw::libssh2_knownhost,
-    hosts: &'kh KnownHosts,
+    sess: Arc<Mutex<SessionInner>>,
 }
 
 /// Structure representing a known host as part of a `KnownHosts` structure.
-pub struct Host<'kh> {
-    raw: *mut raw::libssh2_knownhost,
-    _marker: marker::PhantomData<&'kh str>,
+#[derive(Debug, PartialEq, Eq)]
+pub struct Host {
+    name: Option<String>,
+    key: String,
 }
 
 impl KnownHosts {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_KNOWNHOSTS,
-        sess: &Arc<SessionInner>,
+        err: Option<Error>,
+        sess: &Arc<Mutex<SessionInner>>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
-            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+            Err(err.unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
@@ -80,16 +76,18 @@ impl KnownHosts {
     /// the collection of known hosts.
     pub fn read_file(&mut self, file: &Path, kind: KnownHostFileKind) -> Result<u32, Error> {
         let file = CString::new(util::path2bytes(file)?)?;
+        let sess = self.sess.lock();
         let n = unsafe { raw::libssh2_knownhost_readfile(self.raw, file.as_ptr(), kind as c_int) };
         if n < 0 {
-            self.sess.rc(n)?
+            sess.rc(n)?
         }
         Ok(n as u32)
     }
 
     /// Read a line as if it were from a known hosts file.
     pub fn read_str(&mut self, s: &str, kind: KnownHostFileKind) -> Result<(), Error> {
-        self.sess.rc(unsafe {
+        let sess = self.sess.lock();
+        sess.rc(unsafe {
             raw::libssh2_knownhost_readline(
                 self.raw,
                 s.as_ptr() as *const _,
@@ -103,20 +101,28 @@ impl KnownHosts {
     /// file format.
     pub fn write_file(&self, file: &Path, kind: KnownHostFileKind) -> Result<(), Error> {
         let file = CString::new(util::path2bytes(file)?)?;
+        let sess = self.sess.lock();
         let n = unsafe { raw::libssh2_knownhost_writefile(self.raw, file.as_ptr(), kind as c_int) };
-        self.sess.rc(n)
+        sess.rc(n)
     }
 
     /// Converts a single known host to a single line of output for storage,
     /// using the 'type' output format.
     pub fn write_string(&self, host: &Host, kind: KnownHostFileKind) -> Result<String, Error> {
         let mut v = Vec::with_capacity(128);
+        let sess = self.sess.lock();
+        let raw_host = self.resolve_to_raw_host(&sess, host)?.ok_or_else(|| {
+            Error::new(
+                raw::LIBSSH2_ERROR_BAD_USE,
+                "Host is not in the set of known hosts",
+            )
+        })?;
         loop {
             let mut outlen = 0;
             unsafe {
                 let rc = raw::libssh2_knownhost_writeline(
                     self.raw,
-                    host.raw,
+                    raw_host,
                     v.as_mut_ptr() as *mut _,
                     v.capacity() as size_t,
                     &mut outlen,
@@ -126,7 +132,7 @@ impl KnownHosts {
                     // + 1 for the trailing zero
                     v.reserve(outlen as usize + 1);
                 } else {
-                    self.sess.rc(rc)?;
+                    sess.rc(rc)?;
                     v.set_len(outlen as usize);
                     break;
                 }
@@ -136,17 +142,66 @@ impl KnownHosts {
     }
 
     /// Create an iterator over all of the known hosts in this structure.
-    pub fn iter(&self) -> Hosts {
-        Hosts {
-            prev: 0 as *mut _,
-            hosts: self,
+    pub fn iter(&self) -> Result<Vec<Host>, Error> {
+        self.hosts()
+    }
+
+    /// Retrieves the list of known hosts
+    pub fn hosts(&self) -> Result<Vec<Host>, Error> {
+        let mut next = 0 as *mut _;
+        let mut prev = 0 as *mut _;
+        let sess = self.sess.lock();
+        let mut hosts = vec![];
+
+        loop {
+            match unsafe { raw::libssh2_knownhost_get(self.raw, &mut next, prev) } {
+                0 => {
+                    prev = next;
+                    hosts.push(unsafe { Host::from_raw(next) });
+                }
+                1 => break,
+                rc => return Err(Error::from_session_error_raw(sess.raw, rc)),
+            }
         }
+
+        Ok(hosts)
+    }
+
+    /// Given a Host object, find the matching raw node in the internal list.
+    /// The returned value is only valid while the session is locked.
+    fn resolve_to_raw_host(
+        &self,
+        sess: &MutexGuard<SessionInner>,
+        host: &Host,
+    ) -> Result<Option<*mut raw::libssh2_knownhost>, Error> {
+        let mut next = 0 as *mut _;
+        let mut prev = 0 as *mut _;
+
+        loop {
+            match unsafe { raw::libssh2_knownhost_get(self.raw, &mut next, prev) } {
+                0 => {
+                    prev = next;
+                    let current = unsafe { Host::from_raw(next) };
+                    if current == *host {
+                        return Ok(Some(next));
+                    }
+                }
+                1 => break,
+                rc => return Err(Error::from_session_error_raw(sess.raw, rc)),
+            }
+        }
+        Ok(None)
     }
 
     /// Delete a known host entry from the collection of known hosts.
-    pub fn remove(&self, host: Host) -> Result<(), Error> {
-        self.sess
-            .rc(unsafe { raw::libssh2_knownhost_del(self.raw, host.raw) })
+    pub fn remove(&self, host: &Host) -> Result<(), Error> {
+        let sess = self.sess.lock();
+
+        if let Some(raw_host) = self.resolve_to_raw_host(&sess, host)? {
+            return sess.rc(unsafe { raw::libssh2_knownhost_del(self.raw, raw_host) });
+        } else {
+            Ok(())
+        }
     }
 
     /// Checks a host and its associated key against the collection of known
@@ -205,6 +260,7 @@ impl KnownHosts {
         let host = CString::new(host)?;
         let flags =
             raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN | raw::LIBSSH2_KNOWNHOST_KEYENC_RAW | (fmt as c_int);
+        let sess = self.sess.lock();
         unsafe {
             let rc = raw::libssh2_knownhost_addc(
                 self.raw,
@@ -217,57 +273,33 @@ impl KnownHosts {
                 flags,
                 0 as *mut _,
             );
-            self.sess.rc(rc)
+            sess.rc(rc)
         }
     }
 }
 
 impl Drop for KnownHosts {
     fn drop(&mut self) {
+        let _sess = self.sess.lock();
         unsafe { raw::libssh2_knownhost_free(self.raw) }
     }
 }
 
-impl<'kh> Iterator for Hosts<'kh> {
-    type Item = Result<Host<'kh>, Error>;
-    fn next(&mut self) -> Option<Result<Host<'kh>, Error>> {
-        unsafe {
-            let mut next = 0 as *mut _;
-            match raw::libssh2_knownhost_get(self.hosts.raw, &mut next, self.prev) {
-                0 => {
-                    self.prev = next;
-                    Some(Ok(Binding::from_raw(next)))
-                }
-                1 => None,
-                rc => Some(Err(self.hosts.sess.rc(rc).err().unwrap())),
-            }
-        }
-    }
-}
-
-impl<'kh> Host<'kh> {
+impl Host {
     /// This is `None` if no plain text host name exists.
     pub fn name(&self) -> Option<&str> {
-        unsafe { ::opt_bytes(self, (*self.raw).name).and_then(|s| str::from_utf8(s).ok()) }
+        self.name.as_ref().map(String::as_str)
     }
 
     /// Returns the key in base64/printable format
     pub fn key(&self) -> &str {
-        let bytes = unsafe { ::opt_bytes(self, (*self.raw).key).unwrap() };
-        str::from_utf8(bytes).unwrap()
+        &self.key
     }
-}
 
-impl<'kh> Binding for Host<'kh> {
-    type Raw = *mut raw::libssh2_knownhost;
-
-    unsafe fn from_raw(raw: *mut raw::libssh2_knownhost) -> Host<'kh> {
-        Host {
-            raw: raw,
-            _marker: marker::PhantomData,
-        }
-    }
-    fn raw(&self) -> *mut raw::libssh2_knownhost {
-        self.raw
+    unsafe fn from_raw(raw: *mut raw::libssh2_knownhost) -> Self {
+        let name = ::opt_bytes(&raw, (*raw).name).and_then(|s| String::from_utf8(s.to_vec()).ok());
+        let key = ::opt_bytes(&raw, (*raw).key).unwrap();
+        let key = String::from_utf8(key.to_vec()).unwrap();
+        Self { name, key }
     }
 }

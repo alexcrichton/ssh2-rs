@@ -1,10 +1,9 @@
-use std::ffi::CString;
-use std::marker;
+use parking_lot::{Mutex, MutexGuard};
+use std::ffi::{CStr, CString};
 use std::slice;
 use std::str;
 use std::sync::Arc;
 
-use util::Binding;
 use {raw, Error, SessionInner};
 
 /// A structure representing a connection to an SSH agent.
@@ -12,28 +11,24 @@ use {raw, Error, SessionInner};
 /// Agents can be used to authenticate a session.
 pub struct Agent {
     raw: *mut raw::LIBSSH2_AGENT,
-    sess: Arc<SessionInner>,
-}
-
-/// An iterator over the identities found in an SSH agent.
-pub struct Identities<'agent> {
-    prev: *mut raw::libssh2_agent_publickey,
-    agent: &'agent Agent,
+    sess: Arc<Mutex<SessionInner>>,
 }
 
 /// A public key which is extracted from an SSH agent.
-pub struct PublicKey<'agent> {
-    raw: *mut raw::libssh2_agent_publickey,
-    _marker: marker::PhantomData<&'agent [u8]>,
+#[derive(Debug, PartialEq, Eq)]
+pub struct PublicKey {
+    blob: Vec<u8>,
+    comment: String,
 }
 
 impl Agent {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_AGENT,
-        sess: &Arc<SessionInner>,
+        err: Option<Error>,
+        sess: &Arc<Mutex<SessionInner>>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
-            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+            Err(err.unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
                 raw,
@@ -44,12 +39,14 @@ impl Agent {
 
     /// Connect to an ssh-agent running on the system.
     pub fn connect(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_agent_connect(self.raw)) }
+        let sess = self.sess.lock();
+        unsafe { sess.rc(raw::libssh2_agent_connect(self.raw)) }
     }
 
     /// Close a connection to an ssh-agent.
     pub fn disconnect(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_agent_disconnect(self.raw)) }
+        let sess = self.sess.lock();
+        unsafe { sess.rc(raw::libssh2_agent_disconnect(self.raw)) }
     }
 
     /// Request an ssh-agent to list of public keys, and stores them in the
@@ -57,25 +54,64 @@ impl Agent {
     ///
     /// Call `identities` to get the public keys.
     pub fn list_identities(&mut self) -> Result<(), Error> {
-        unsafe { self.sess.rc(raw::libssh2_agent_list_identities(self.raw)) }
+        let sess = self.sess.lock();
+        unsafe { sess.rc(raw::libssh2_agent_list_identities(self.raw)) }
     }
 
-    /// Get an iterator over the identities of this agent.
-    pub fn identities(&self) -> Identities {
-        Identities {
-            prev: 0 as *mut _,
-            agent: self,
+    /// Get list of the identities of this agent.
+    pub fn identities(&self) -> Result<Vec<PublicKey>, Error> {
+        let sess = self.sess.lock();
+        let mut res = vec![];
+        let mut prev = 0 as *mut _;
+        let mut next = 0 as *mut _;
+        loop {
+            match unsafe { raw::libssh2_agent_get_identity(self.raw, &mut next, prev) } {
+                0 => {
+                    prev = next;
+                    res.push(unsafe { PublicKey::from_raw(next) });
+                }
+                1 => break,
+                rc => return Err(Error::from_session_error_raw(sess.raw, rc)),
+            }
         }
+        Ok(res)
+    }
+
+    fn resolve_raw_identity(
+        &self,
+        sess: &MutexGuard<SessionInner>,
+        identity: &PublicKey,
+    ) -> Result<Option<*mut raw::libssh2_agent_publickey>, Error> {
+        let mut prev = 0 as *mut _;
+        let mut next = 0 as *mut _;
+        loop {
+            match unsafe { raw::libssh2_agent_get_identity(self.raw, &mut next, prev) } {
+                0 => {
+                    prev = next;
+                    let this_ident = unsafe { PublicKey::from_raw(next) };
+                    if this_ident == *identity {
+                        return Ok(Some(next));
+                    }
+                }
+                1 => break,
+                rc => return Err(Error::from_session_error_raw(sess.raw, rc)),
+            }
+        }
+        Ok(None)
     }
 
     /// Attempt public key authentication with the help of ssh-agent.
     pub fn userauth(&self, username: &str, identity: &PublicKey) -> Result<(), Error> {
         let username = CString::new(username)?;
+        let sess = self.sess.lock();
+        let raw_ident = self
+            .resolve_raw_identity(&sess, identity)?
+            .ok_or_else(|| Error::new(raw::LIBSSH2_ERROR_BAD_USE, "Identity not found in agent"))?;
         unsafe {
-            self.sess.rc(raw::libssh2_agent_userauth(
+            sess.rc(raw::libssh2_agent_userauth(
                 self.raw,
                 username.as_ptr(),
-                identity.raw,
+                raw_ident,
             ))
         }
     }
@@ -87,46 +123,28 @@ impl Drop for Agent {
     }
 }
 
-impl<'agent> Iterator for Identities<'agent> {
-    type Item = Result<PublicKey<'agent>, Error>;
-    fn next(&mut self) -> Option<Result<PublicKey<'agent>, Error>> {
-        unsafe {
-            let mut next = 0 as *mut _;
-            match raw::libssh2_agent_get_identity(self.agent.raw, &mut next, self.prev) {
-                0 => {
-                    self.prev = next;
-                    Some(Ok(Binding::from_raw(next)))
-                }
-                1 => None,
-                rc => Some(Err(self.agent.sess.rc(rc).err().unwrap())),
-            }
+impl PublicKey {
+    unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey) -> Self {
+        let blob = slice::from_raw_parts_mut((*raw).blob, (*raw).blob_len as usize);
+        let comment = (*raw).comment;
+        let comment = if comment.is_null() {
+            String::new()
+        } else {
+            CStr::from_ptr(comment).to_string_lossy().into_owned()
+        };
+        Self {
+            blob: blob.to_vec(),
+            comment,
         }
     }
-}
 
-impl<'agent> PublicKey<'agent> {
     /// Return the data of this public key.
     pub fn blob(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts_mut((*self.raw).blob, (*self.raw).blob_len as usize) }
+        &self.blob
     }
 
     /// Returns the comment in a printable format
     pub fn comment(&self) -> &str {
-        unsafe { str::from_utf8(::opt_bytes(self, (*self.raw).comment).unwrap()).unwrap() }
-    }
-}
-
-impl<'agent> Binding for PublicKey<'agent> {
-    type Raw = *mut raw::libssh2_agent_publickey;
-
-    unsafe fn from_raw(raw: *mut raw::libssh2_agent_publickey) -> PublicKey<'agent> {
-        PublicKey {
-            raw: raw,
-            _marker: marker::PhantomData,
-        }
-    }
-
-    fn raw(&self) -> *mut raw::libssh2_agent_publickey {
-        self.raw
+        &self.comment
     }
 }

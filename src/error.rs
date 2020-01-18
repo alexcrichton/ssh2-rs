@@ -38,7 +38,7 @@ impl Error {
     /// If the error code doesn't match then an approximation of the error
     /// reason is used instead of the error message stored in the Session.
     pub fn from_session_error(sess: &Session, rc: libc::c_int) -> Error {
-        Self::from_session_error_raw(sess.raw(), rc)
+        Self::from_session_error_raw(&mut *sess.raw(), rc)
     }
 
     #[doc(hidden)]
@@ -59,7 +59,7 @@ impl Error {
     ///
     /// Returns `None` if there was no last error.
     pub fn last_error(sess: &Session) -> Option<Error> {
-        Self::last_error_raw(sess.raw())
+        Self::last_error_raw(&mut *sess.raw())
     }
 
     /// Create a new error for the given code and message
@@ -78,6 +78,14 @@ impl Error {
     /// Generate an error for unknown failure
     pub fn unknown() -> Error {
         Error::new(libc::c_int::min_value(), "no other error listed")
+    }
+
+    pub(crate) fn rc(rc: libc::c_int) -> Result<(), Error> {
+        if rc == 0 {
+            Ok(())
+        } else {
+            Err(Self::from_errno(rc))
+        }
     }
 
     /// Construct an error from an error code from libssh2

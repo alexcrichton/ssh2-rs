@@ -1,6 +1,6 @@
 [package]
 name = "ssh2"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Alex Crichton <alex@alexcrichton.com>", "Wez Furlong <wez@wezfurlong.org>"]
 license = "MIT/Apache-2.0"
 keywords = ["ssh"]
@@ -20,6 +20,7 @@ vendored-openssl = ["libssh2-sys/vendored-openssl"]
 bitflags = "1.2"
 libc = "0.2"
 libssh2-sys = { path = "libssh2-sys", version = "0.2.13" }
+parking_lot = "0.10"
 
 [dev-dependencies]
 tempdir = "0.3"

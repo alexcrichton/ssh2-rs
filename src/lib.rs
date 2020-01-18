@@ -22,8 +22,7 @@
 //! agent.connect().unwrap();
 //! agent.list_identities().unwrap();
 //!
-//! for identity in agent.identities() {
-//!     let identity = identity.unwrap(); // assume no I/O errors
+//! for identity in agent.identities().unwrap() {
 //!     println!("{}", identity.comment());
 //!     let pubkey = identity.blob();
 //! }
@@ -138,13 +137,14 @@ extern crate libc;
 extern crate libssh2_sys as raw;
 #[macro_use]
 extern crate bitflags;
+extern crate parking_lot;
 
 use std::ffi::CStr;
 
-pub use agent::{Agent, Identities, PublicKey};
+pub use agent::{Agent, PublicKey};
 pub use channel::{Channel, ExitSignal, ReadWindow, Stream, WriteWindow};
 pub use error::Error;
-pub use knownhosts::{Host, Hosts, KnownHosts};
+pub use knownhosts::{Host, KnownHosts};
 pub use listener::Listener;
 use session::SessionInner;
 pub use session::{BlockDirections, KeyboardInteractivePrompt, Prompt, ScpFileStat, Session};

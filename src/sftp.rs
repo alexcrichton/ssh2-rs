@@ -1,4 +1,5 @@
 use libc::{c_int, c_long, c_uint, c_ulong, size_t};
+use parking_lot::{Mutex, MutexGuard};
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::mem;
@@ -10,19 +11,29 @@ use {raw, Error, SessionInner};
 
 struct SftpInner {
     raw: *mut raw::LIBSSH2_SFTP,
-    sess: Arc<SessionInner>,
+    sess: Arc<Mutex<SessionInner>>,
 }
 
 /// A handle to a remote filesystem over SFTP.
 ///
 /// Instances are created through the `sftp` method on a `Session`.
 pub struct Sftp {
-    inner: Option<SftpInner>,
+    inner: Option<Arc<SftpInner>>,
 }
 
-struct FileInner<'sftp> {
+struct LockedSftp<'sftp> {
+    sess: MutexGuard<'sftp, SessionInner>,
+    raw: *mut raw::LIBSSH2_SFTP,
+}
+
+struct FileInner {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
-    sftp: &'sftp Sftp,
+    sftp: Arc<SftpInner>,
+}
+
+struct LockedFile<'file> {
+    sess: MutexGuard<'file, SessionInner>,
+    raw: *mut raw::LIBSSH2_SFTP_HANDLE,
 }
 
 /// A file handle to an SFTP connection.
@@ -32,8 +43,8 @@ struct FileInner<'sftp> {
 ///
 /// Files are created through `open`, `create`, and `open_mode` on an instance
 /// of `Sftp`.
-pub struct File<'sftp> {
-    inner: Option<FileInner<'sftp>>,
+pub struct File {
+    inner: Option<FileInner>,
 }
 
 /// Metadata information about a remote file.
@@ -110,19 +121,27 @@ pub enum OpenType {
     Dir = raw::LIBSSH2_SFTP_OPENDIR as isize,
 }
 
+impl<'sftp> LockedSftp<'sftp> {
+    pub fn last_error(&self) -> Error {
+        let code = unsafe { raw::libssh2_sftp_last_error(self.raw) };
+        Error::from_errno(code as c_int)
+    }
+}
+
 impl Sftp {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_SFTP,
-        sess: &Arc<SessionInner>,
+        err: Option<Error>,
+        sess: &Arc<Mutex<SessionInner>>,
     ) -> Result<Self, Error> {
         if raw.is_null() {
-            Err(Error::last_error_raw(sess.raw).unwrap_or_else(Error::unknown))
+            Err(err.unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
-                inner: Some(SftpInner {
+                inner: Some(Arc::new(SftpInner {
                     raw,
                     sess: Arc::clone(sess),
-                }),
+                })),
             })
         }
     }
@@ -136,9 +155,11 @@ impl Sftp {
         open_type: OpenType,
     ) -> Result<File, Error> {
         let filename = util::path2bytes(filename)?;
+
+        let locked = self.lock()?;
         unsafe {
             let ret = raw::libssh2_sftp_open_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 flags.bits() as c_ulong,
@@ -146,7 +167,7 @@ impl Sftp {
                 open_type as c_int,
             );
             if ret.is_null() {
-                Err(self.last_session_error())
+                Err(locked.last_error())
             } else {
                 Ok(File::from_raw(self, ret))
             }
@@ -199,9 +220,10 @@ impl Sftp {
     /// Create a directory on the remote file system.
     pub fn mkdir(&self, filename: &Path, mode: i32) -> Result<(), Error> {
         let filename = util::path2bytes(filename)?;
-        self.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             raw::libssh2_sftp_mkdir_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 mode as c_long,
@@ -212,9 +234,10 @@ impl Sftp {
     /// Remove a directory from the remote file system.
     pub fn rmdir(&self, filename: &Path) -> Result<(), Error> {
         let filename = util::path2bytes(filename)?;
-        self.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             raw::libssh2_sftp_rmdir_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
             )
@@ -224,16 +247,17 @@ impl Sftp {
     /// Get the metadata for a file, performed by stat(2)
     pub fn stat(&self, filename: &Path) -> Result<FileStat, Error> {
         let filename = util::path2bytes(filename)?;
+        let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_STAT,
                 &mut ret,
             );
-            self.rc(rc)?;
+            locked.sess.rc(rc)?;
             Ok(FileStat::from_raw(&ret))
         }
     }
@@ -241,16 +265,17 @@ impl Sftp {
     /// Get the metadata for a file, performed by lstat(2)
     pub fn lstat(&self, filename: &Path) -> Result<FileStat, Error> {
         let filename = util::path2bytes(filename)?;
+        let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
             let rc = raw::libssh2_sftp_stat_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_LSTAT,
                 &mut ret,
             );
-            self.rc(rc)?;
+            locked.sess.rc(rc)?;
             Ok(FileStat::from_raw(&ret))
         }
     }
@@ -258,10 +283,11 @@ impl Sftp {
     /// Set the metadata for a file.
     pub fn setstat(&self, filename: &Path, stat: FileStat) -> Result<(), Error> {
         let filename = util::path2bytes(filename)?;
-        self.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             let mut raw = stat.raw();
             raw::libssh2_sftp_stat_ex(
-                self.get_raw()?,
+                locked.raw,
                 filename.as_ptr() as *const _,
                 filename.len() as c_uint,
                 raw::LIBSSH2_SFTP_SETSTAT,
@@ -274,9 +300,10 @@ impl Sftp {
     pub fn symlink(&self, path: &Path, target: &Path) -> Result<(), Error> {
         let path = util::path2bytes(path)?;
         let target = util::path2bytes(target)?;
-        self.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             raw::libssh2_sftp_symlink_ex(
-                self.get_raw()?,
+                locked.raw,
                 path.as_ptr() as *const _,
                 path.len() as c_uint,
                 target.as_ptr() as *mut _,
@@ -300,10 +327,11 @@ impl Sftp {
         let path = util::path2bytes(path)?;
         let mut ret = Vec::<u8>::with_capacity(128);
         let mut rc;
+        let locked = self.lock()?;
         loop {
             rc = unsafe {
                 raw::libssh2_sftp_symlink_ex(
-                    self.get_raw()?,
+                    locked.raw,
                     path.as_ptr() as *const _,
                     path.len() as c_uint,
                     ret.as_ptr() as *mut _,
@@ -319,7 +347,7 @@ impl Sftp {
             }
         }
         if rc < 0 {
-            Err(Error::from_errno(rc))
+            Err(Error::from_session_error_raw(locked.sess.raw, rc))
         } else {
             unsafe { ret.set_len(rc as usize) }
             Ok(mkpath(ret))
@@ -343,9 +371,10 @@ impl Sftp {
             flags.unwrap_or(RenameFlags::ATOMIC | RenameFlags::OVERWRITE | RenameFlags::NATIVE);
         let src = util::path2bytes(src)?;
         let dst = util::path2bytes(dst)?;
-        self.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             raw::libssh2_sftp_rename_ex(
-                self.get_raw()?,
+                locked.raw,
                 src.as_ptr() as *const _,
                 src.len() as c_uint,
                 dst.as_ptr() as *const _,
@@ -358,53 +387,34 @@ impl Sftp {
     /// Remove a file on the remote filesystem
     pub fn unlink(&self, file: &Path) -> Result<(), Error> {
         let file = util::path2bytes(file)?;
-        self.rc(unsafe {
-            raw::libssh2_sftp_unlink_ex(
-                self.get_raw()?,
-                file.as_ptr() as *const _,
-                file.len() as c_uint,
-            )
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
+            raw::libssh2_sftp_unlink_ex(locked.raw, file.as_ptr() as *const _, file.len() as c_uint)
         })
     }
 
-    /// Peel off the last error to happen on this SFTP instance.
-    pub fn last_error(&self) -> Error {
-        let raw = match self.get_raw() {
-            Ok(raw) => raw,
-            Err(e) => return e,
-        };
-        let code = unsafe { raw::libssh2_sftp_last_error(raw) };
-        Error::from_errno(code as c_int)
-    }
-
-    fn last_session_error(&self) -> Error {
-        if let Some(inner) = self.inner.as_ref() {
-            Error::last_error_raw(inner.sess.raw).unwrap_or_else(Error::unknown)
-        } else {
-            Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)
-        }
-    }
-
-    /// Translates a return code into a Rust-`Result`
-    pub fn rc(&self, rc: c_int) -> Result<(), Error> {
-        if rc == 0 {
-            Ok(())
-        } else {
-            Err(Error::from_errno(rc))
-        }
-    }
-
-    fn get_raw(&self) -> Result<*mut raw::LIBSSH2_SFTP, Error> {
+    fn lock(&self) -> Result<LockedSftp, Error> {
         match self.inner.as_ref() {
-            Some(inner) => Ok(inner.raw),
+            Some(inner) => {
+                let sess = inner.sess.lock();
+                Ok(LockedSftp {
+                    sess,
+                    raw: inner.raw,
+                })
+            }
             None => Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)),
         }
     }
 
+    // This method is used by the async ssh crate
     #[doc(hidden)]
     pub fn shutdown(&mut self) -> Result<(), Error> {
-        let raw = self.get_raw()?;
-        self.rc(unsafe { raw::libssh2_sftp_shutdown(raw) })?;
+        {
+            let locked = self.lock()?;
+            locked
+                .sess
+                .rc(unsafe { raw::libssh2_sftp_shutdown(locked.raw) })?;
+        }
         let _ = self.inner.take();
         Ok(())
     }
@@ -414,57 +424,62 @@ impl Drop for Sftp {
     fn drop(&mut self) {
         // Set ssh2 to blocking if sftp was not shutdown yet.
         if let Some(inner) = self.inner.take() {
-            let was_blocking = inner.sess.is_blocking();
-            inner.sess.set_blocking(true);
+            let sess = inner.sess.lock();
+            let was_blocking = sess.is_blocking();
+            sess.set_blocking(true);
             assert_eq!(unsafe { raw::libssh2_sftp_shutdown(inner.raw) }, 0);
-            inner.sess.set_blocking(was_blocking);
+            sess.set_blocking(was_blocking);
         }
     }
 }
 
-impl<'sftp> File<'sftp> {
+impl File {
     /// Wraps a raw pointer in a new File structure tied to the lifetime of the
     /// given session.
     ///
     /// This consumes ownership of `raw`.
-    unsafe fn from_raw(sftp: &'sftp Sftp, raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File<'sftp> {
+    unsafe fn from_raw(sftp: &Sftp, raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File {
         File {
             inner: Some(FileInner {
                 raw: raw,
-                sftp: sftp,
+                sftp: Arc::clone(
+                    sftp.inner
+                        .as_ref()
+                        .expect("we have a live option during construction"),
+                ),
             }),
         }
     }
 
     /// Set the metadata for this handle.
     pub fn setstat(&mut self, stat: FileStat) -> Result<(), Error> {
-        let inner = self.get_inner()?;
-        inner.sftp.rc(unsafe {
+        let locked = self.lock()?;
+        locked.sess.rc(unsafe {
             let mut raw = stat.raw();
-            raw::libssh2_sftp_fstat_ex(inner.raw, &mut raw, 1)
+            raw::libssh2_sftp_fstat_ex(locked.raw, &mut raw, 1)
         })
     }
 
     /// Get the metadata for this handle.
     pub fn stat(&mut self) -> Result<FileStat, Error> {
+        let locked = self.lock()?;
         unsafe {
-            let inner = self.get_inner()?;
             let mut ret = mem::zeroed();
-            inner
-                .sftp
-                .rc(raw::libssh2_sftp_fstat_ex(inner.raw, &mut ret, 0))?;
+            locked
+                .sess
+                .rc(raw::libssh2_sftp_fstat_ex(locked.raw, &mut ret, 0))?;
             Ok(FileStat::from_raw(&ret))
         }
     }
 
     #[allow(missing_docs)] // sure wish I knew what this did...
     pub fn statvfs(&mut self) -> Result<raw::LIBSSH2_SFTP_STATVFS, Error> {
+        let locked = self.lock()?;
         unsafe {
-            let inner = self.get_inner()?;
             let mut ret = mem::zeroed();
-            inner
-                .sftp
-                .rc(raw::libssh2_sftp_fstatvfs(inner.raw, &mut ret))?;
+            locked
+                .sess
+                .rc(raw::libssh2_sftp_fstatvfs(locked.raw, &mut ret))?;
             Ok(ret)
         }
     }
@@ -480,14 +495,15 @@ impl<'sftp> File<'sftp> {
     /// Also note that the return paths will not be absolute paths, they are
     /// the filenames of the files in this directory.
     pub fn readdir(&mut self) -> Result<(PathBuf, FileStat), Error> {
-        let inner = self.get_inner()?;
+        let locked = self.lock()?;
+
         let mut buf = Vec::<u8>::with_capacity(128);
         let mut stat = unsafe { mem::zeroed() };
         let mut rc;
         loop {
             rc = unsafe {
                 raw::libssh2_sftp_readdir_ex(
-                    inner.raw,
+                    locked.raw,
                     buf.as_mut_ptr() as *mut _,
                     buf.capacity() as size_t,
                     0 as *mut _,
@@ -503,7 +519,7 @@ impl<'sftp> File<'sftp> {
             }
         }
         if rc < 0 {
-            return Err(Error::from_errno(rc));
+            return Err(Error::from_session_error_raw(locked.sess.raw, rc));
         } else if rc == 0 {
             return Err(Error::new(raw::LIBSSH2_ERROR_FILE, "no more files"));
         } else {
@@ -519,50 +535,59 @@ impl<'sftp> File<'sftp> {
     ///
     /// For this to work requires fsync@openssh.com support on the server.
     pub fn fsync(&mut self) -> Result<(), Error> {
-        let inner = self.get_inner()?;
-        inner.sftp.rc(unsafe { raw::libssh2_sftp_fsync(inner.raw) })
+        let locked = self.lock()?;
+        locked
+            .sess
+            .rc(unsafe { raw::libssh2_sftp_fsync(locked.raw) })
     }
 
-    fn get_inner(&self) -> Result<&FileInner, Error> {
+    fn lock(&self) -> Result<LockedFile, Error> {
         match self.inner.as_ref() {
-            Some(inner) => Ok(inner),
+            Some(file_inner) => {
+                let sess = file_inner.sftp.sess.lock();
+                Ok(LockedFile {
+                    sess,
+                    raw: file_inner.raw,
+                })
+            }
             None => Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)),
         }
     }
 
     #[doc(hidden)]
     pub fn close(&mut self) -> Result<(), Error> {
-        let inner = self.get_inner()?;
-        inner
-            .sftp
-            .rc(unsafe { raw::libssh2_sftp_close_handle(inner.raw) })?;
+        {
+            let locked = self.lock()?;
+            Error::rc(unsafe { raw::libssh2_sftp_close_handle(locked.raw) })?;
+        }
         let _ = self.inner.take();
         Ok(())
     }
 }
 
-impl<'sftp> Read for File<'sftp> {
+impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let locked = self.lock()?;
         unsafe {
-            let inner = self.get_inner()?;
             let rc =
-                raw::libssh2_sftp_read(inner.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
-            match rc {
-                n if n < 0 => Err(io::Error::new(ErrorKind::Other, inner.sftp.last_error())),
-                n => Ok(n as usize),
+                raw::libssh2_sftp_read(locked.raw, buf.as_mut_ptr() as *mut _, buf.len() as size_t);
+            if rc < 0 {
+                Err(Error::from_session_error_raw(locked.sess.raw, rc as _).into())
+            } else {
+                Ok(rc as usize)
             }
         }
     }
 }
 
-impl<'sftp> Write for File<'sftp> {
+impl Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let inner = self.get_inner()?;
+        let locked = self.lock()?;
         let rc = unsafe {
-            raw::libssh2_sftp_write(inner.raw, buf.as_ptr() as *const _, buf.len() as size_t)
+            raw::libssh2_sftp_write(locked.raw, buf.as_ptr() as *const _, buf.len() as size_t)
         };
         if rc < 0 {
-            Err(Error::from_errno(rc as _).into())
+            Err(Error::from_session_error_raw(locked.sess.raw, rc as _).into())
         } else {
             Ok(rc as usize)
         }
@@ -572,7 +597,7 @@ impl<'sftp> Write for File<'sftp> {
     }
 }
 
-impl<'sftp> Seek for File<'sftp> {
+impl Seek for File {
     /// Move the file handle's internal pointer to an arbitrary location.
     ///
     /// libssh2 implements file pointers as a localized concept to make file
@@ -587,8 +612,8 @@ impl<'sftp> Seek for File<'sftp> {
         let next = match how {
             SeekFrom::Start(pos) => pos,
             SeekFrom::Current(offset) => {
-                let inner = self.get_inner()?;
-                let cur = unsafe { raw::libssh2_sftp_tell64(inner.raw) };
+                let locked = self.lock()?;
+                let cur = unsafe { raw::libssh2_sftp_tell64(locked.raw) };
                 (cur as i64 + offset) as u64
             }
             SeekFrom::End(offset) => match self.stat() {
@@ -599,27 +624,21 @@ impl<'sftp> Seek for File<'sftp> {
                 Err(e) => return Err(io::Error::new(ErrorKind::Other, e)),
             },
         };
-        let inner = self.get_inner()?;
-        unsafe { raw::libssh2_sftp_seek64(inner.raw, next) }
+        let locked = self.lock()?;
+        unsafe { raw::libssh2_sftp_seek64(locked.raw, next) }
         Ok(next)
     }
 }
 
-impl<'sftp> Drop for File<'sftp> {
+impl Drop for File {
     fn drop(&mut self) {
         // Set ssh2 to blocking if the file was not closed yet.
-        if let Some(inner) = self.inner.take() {
-            // Normally sftp should still be available here. The only way it is `None` is when
-            // shutdown has been polled until success. In this case the async client should
-            // also properly poll `close` on `File` until success.
-            if let Some(sftp) = inner.sftp.inner.as_ref() {
-                let was_blocking = sftp.sess.is_blocking();
-                sftp.sess.set_blocking(true);
-                assert_eq!(unsafe { raw::libssh2_sftp_close_handle(inner.raw) }, 0);
-                sftp.sess.set_blocking(was_blocking);
-            } else {
-                assert_eq!(unsafe { raw::libssh2_sftp_close_handle(inner.raw) }, 0);
-            }
+        if let Some(file_inner) = self.inner.take() {
+            let sess_inner = file_inner.sftp.sess.lock();
+            let was_blocking = sess_inner.is_blocking();
+            sess_inner.set_blocking(true);
+            assert_eq!(unsafe { raw::libssh2_sftp_close_handle(file_inner.raw) }, 0);
+            sess_inner.set_blocking(was_blocking);
         }
     }
 }

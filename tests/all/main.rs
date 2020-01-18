@@ -36,7 +36,8 @@ pub fn authed_session() -> ssh2::Session {
         let mut agent = sess.agent().unwrap();
         agent.connect().unwrap();
         agent.list_identities().unwrap();
-        let identity = agent.identities().next().unwrap().unwrap();
+        let identities = agent.identities().unwrap();
+        let identity = &identities[0];
         agent.userauth(&user, &identity).unwrap();
     }
     assert!(sess.authenticated());
