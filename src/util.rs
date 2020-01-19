@@ -3,14 +3,6 @@ use std::path::Path;
 
 use {raw, Error};
 
-#[doc(hidden)]
-pub trait Binding: Sized {
-    type Raw;
-
-    unsafe fn from_raw(raw: Self::Raw) -> Self;
-    fn raw(&self) -> Self::Raw;
-}
-
 #[cfg(unix)]
 pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
     use std::ffi::OsStr;
