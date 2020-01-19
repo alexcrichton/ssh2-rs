@@ -11,6 +11,12 @@ pub struct Listener {
     sess: Arc<Mutex<SessionInner>>,
 }
 
+// Listener is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for Listener {}
+unsafe impl Sync for Listener {}
+
 impl Listener {
     /// Accept a queued connection from this listener.
     pub fn accept(&mut self) -> Result<Channel, Error> {
@@ -40,6 +46,7 @@ impl Listener {
 
 impl Drop for Listener {
     fn drop(&mut self) {
+        let _sess = self.sess.lock();
         unsafe {
             let _ = raw::libssh2_channel_forward_cancel(self.raw);
         }
