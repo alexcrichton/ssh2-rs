@@ -68,6 +68,11 @@ pub(crate) struct SessionInner {
     tcp: Option<TcpStream>,
 }
 
+// The compiler doesn't know that it is Send safe because of the raw
+// pointer inside.  We know that the way that it is used by libssh2
+// and this crate is Send safe.
+unsafe impl Send for SessionInner {}
+
 /// An SSH session, typically representing one TCP connection.
 ///
 /// All other structures are based on an SSH session and cannot outlive a
