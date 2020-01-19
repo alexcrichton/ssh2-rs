@@ -121,13 +121,6 @@ pub enum OpenType {
     Dir = raw::LIBSSH2_SFTP_OPENDIR as isize,
 }
 
-impl<'sftp> LockedSftp<'sftp> {
-    pub fn last_error(&self) -> Error {
-        let code = unsafe { raw::libssh2_sftp_last_error(self.raw) };
-        Error::from_errno(code as c_int)
-    }
-}
-
 impl Sftp {
     pub(crate) fn from_raw_opt(
         raw: *mut raw::LIBSSH2_SFTP,
@@ -167,7 +160,7 @@ impl Sftp {
                 open_type as c_int,
             );
             if ret.is_null() {
-                Err(locked.last_error())
+                Err(locked.sess.last_error().unwrap_or_else(Error::unknown))
             } else {
                 Ok(File::from_raw(self, ret))
             }
