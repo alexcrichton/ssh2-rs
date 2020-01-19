@@ -24,6 +24,13 @@ fn consume_stdio(channel: &mut Channel) -> (String, String) {
 fn smoke() {
     let sess = ::authed_session();
     let mut channel = sess.channel_session().unwrap();
+
+    fn must_be_send<T: Send>(_: &T) -> bool {
+        true
+    }
+    assert!(must_be_send(&channel));
+    assert!(must_be_send(&channel.stream(0)));
+
     channel.flush().unwrap();
     channel.exec("true").unwrap();
     consume_stdio(&mut channel);

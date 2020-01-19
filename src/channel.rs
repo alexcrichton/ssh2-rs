@@ -14,6 +14,12 @@ struct ChannelInner {
     read_limit: Mutex<Option<u64>>,
 }
 
+// ChannelInner is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for ChannelInner {}
+unsafe impl Sync for ChannelInner {}
+
 struct LockedChannel<'a> {
     raw: *mut raw::LIBSSH2_CHANNEL,
     sess: MutexGuard<'a, SessionInner>,
