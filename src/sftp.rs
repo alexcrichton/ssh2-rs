@@ -14,6 +14,12 @@ struct SftpInner {
     sess: Arc<Mutex<SessionInner>>,
 }
 
+// Sftp is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for Sftp {}
+unsafe impl Sync for Sftp {}
+
 /// A handle to a remote filesystem over SFTP.
 ///
 /// Instances are created through the `sftp` method on a `Session`.
@@ -30,6 +36,12 @@ struct FileInner {
     raw: *mut raw::LIBSSH2_SFTP_HANDLE,
     sftp: Arc<SftpInner>,
 }
+
+// FileInner is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for FileInner {}
+unsafe impl Sync for FileInner {}
 
 struct LockedFile<'file> {
     sess: MutexGuard<'file, SessionInner>,

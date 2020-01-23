@@ -14,6 +14,12 @@ pub struct Agent {
     sess: Arc<Mutex<SessionInner>>,
 }
 
+// Agent is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for Agent {}
+unsafe impl Sync for Agent {}
+
 /// A public key which is extracted from an SSH agent.
 #[derive(Debug, PartialEq, Eq)]
 pub struct PublicKey {
