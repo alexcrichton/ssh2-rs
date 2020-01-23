@@ -78,6 +78,20 @@ unsafe impl Send for SessionInner {}
 /// All other structures are based on an SSH session and cannot outlive a
 /// session. Sessions are created and then have the TCP socket handed to them
 /// (via the `set_tcp_stream` method).
+///
+/// `Session`, and any objects its methods return, hold a reference to the underlying
+/// SSH session.  You may clone `Session` to obtain another handle referencing
+/// the same session, and create multiple `Channel` and `Stream` objects
+/// from that same underlying session, which can all be passed across thread
+/// boundaries (they are `Send` and `Sync`).  These are all related objects and
+/// are internally synchronized via a `Mutex` to make it safe to pass them
+/// around in this way.
+///
+/// This means that a blocking read from a `Channel` or `Stream` will block
+/// all other calls on objects created from the same underlying `Session`.
+/// If you need the ability to perform concurrent operations then you will
+/// need to create separate `Session` instances, or employ non-blocking mode,
+/// perhaps using the `async-ssh2` crate.
 #[derive(Clone)]
 pub struct Session {
     inner: Arc<Mutex<SessionInner>>,
