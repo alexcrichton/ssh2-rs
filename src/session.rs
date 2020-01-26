@@ -5,7 +5,10 @@ use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 use std::borrow::Cow;
 use std::ffi::CString;
 use std::mem;
-use std::net::TcpStream;
+#[cfg(unix)]
+use std::os::unix::io::{AsRawFd, RawFd};
+#[cfg(windows)]
+use std::os::windows::io::{AsRawSocket, RawSocket};
 use std::path::Path;
 use std::slice;
 use std::str;
@@ -65,7 +68,10 @@ unsafe fn with_abstract<R, F: FnOnce() -> R>(
 
 pub(crate) struct SessionInner {
     pub(crate) raw: *mut raw::LIBSSH2_SESSION,
-    tcp: Option<TcpStream>,
+    #[cfg(unix)]
+    tcp: Option<Box<dyn AsRawFd>>,
+    #[cfg(windows)]
+    tcp: Option<Box<dyn AsRawSocket>>,
 }
 
 // The compiler doesn't know that it is Send safe because of the raw
@@ -242,14 +248,15 @@ impl Session {
     /// via the `set_tcp_stream` function.
     pub fn handshake(&mut self) -> Result<(), Error> {
         #[cfg(windows)]
-        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream) -> libc::c_int {
-            use std::os::windows::prelude::*;
+        unsafe fn handshake(
+            raw: *mut raw::LIBSSH2_SESSION,
+            stream: &dyn AsRawSocket,
+        ) -> libc::c_int {
             raw::libssh2_session_handshake(raw, stream.as_raw_socket())
         }
 
         #[cfg(unix)]
-        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &TcpStream) -> libc::c_int {
-            use std::os::unix::prelude::*;
+        unsafe fn handshake(raw: *mut raw::LIBSSH2_SESSION, stream: &dyn AsRawFd) -> libc::c_int {
             raw::libssh2_session_handshake(raw, stream.as_raw_fd())
         }
 
@@ -263,31 +270,48 @@ impl Session {
                 )
             })?;
 
-            inner.rc(handshake(inner.raw, stream))
+            inner.rc(handshake(inner.raw, stream.as_ref()))
         }
     }
 
-    /// The session takes ownership of the socket provided.
-    /// You may use the tcp_stream() method to obtain a reference
-    /// to it later.
+    /// The session takes ownership of the stream provided.
+    /// You may use the tcp_stream() method to obtain the raw fd later.
     ///
     /// It is also highly recommended that the stream provided is not used
     /// concurrently elsewhere for the duration of this session as it may
     /// interfere with the protocol.
-    pub fn set_tcp_stream(&mut self, stream: TcpStream) {
+    #[cfg(unix)]
+    pub fn set_tcp_stream<S: 'static + AsRawFd>(&mut self, stream: S) {
         let mut inner = self.inner();
-        let _ = inner.tcp.replace(stream);
+        let _ = inner.tcp.replace(Box::new(stream));
     }
 
-    /// Returns a reference to the stream that was associated with the Session
-    /// by the Session::handshake method.
-    pub fn tcp_stream(&self) -> Option<MappedMutexGuard<TcpStream>> {
+    /// The session takes ownership of the stream provided.
+    /// You may use the tcp_stream() method to obtain the raw socket later.
+    ///
+    /// It is also highly recommended that the stream provided is not used
+    /// concurrently elsewhere for the duration of this session as it may
+    /// interfere with the protocol.
+    #[cfg(windows)]
+    pub fn set_tcp_stream<S: 'static + AsRawSocket>(&mut self, stream: S) {
+        let mut inner = self.inner();
+        let _ = inner.tcp.replace(Box::new(stream));
+    }
+
+    /// Returns the raw fd of the stream that was associated with the Session by
+    /// the Session::handshake method.
+    #[cfg(unix)]
+    pub fn tcp_stream(&self) -> Option<RawFd> {
         let inner = self.inner();
-        if inner.tcp.is_some() {
-            Some(MutexGuard::map(inner, |inner| inner.tcp.as_mut().unwrap()))
-        } else {
-            None
-        }
+        inner.tcp.as_ref().map(|tcp| tcp.as_raw_fd())
+    }
+
+    /// Returns the raw socket of the stream that was associated with the
+    /// Session by the Session::handshake method.
+    #[cfg(windows)]
+    pub fn tcp_stream(&self) -> Option<RawSocket> {
+        let inner = self.inner();
+        inner.tcp.as_ref().map(|tcp| tcp.as_raw_socket())
     }
 
     /// Attempt basic password authentication.
