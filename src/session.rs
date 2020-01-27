@@ -298,22 +298,6 @@ impl Session {
         let _ = inner.tcp.replace(Box::new(stream));
     }
 
-    /// Returns the raw fd of the stream that was associated with the Session by
-    /// the Session::handshake method.
-    #[cfg(unix)]
-    pub fn tcp_stream(&self) -> Option<RawFd> {
-        let inner = self.inner();
-        inner.tcp.as_ref().map(|tcp| tcp.as_raw_fd())
-    }
-
-    /// Returns the raw socket of the stream that was associated with the
-    /// Session by the Session::handshake method.
-    #[cfg(windows)]
-    pub fn tcp_stream(&self) -> Option<RawSocket> {
-        let inner = self.inner();
-        inner.tcp.as_ref().map(|tcp| tcp.as_raw_socket())
-    }
-
     /// Attempt basic password authentication.
     ///
     /// Note that many SSH servers which appear to support ordinary password
@@ -1017,6 +1001,28 @@ impl Session {
 
     fn inner(&self) -> MutexGuard<SessionInner> {
         self.inner.lock()
+    }
+}
+
+#[cfg(unix)]
+impl AsRawFd for Session {
+    fn as_raw_fd(&self) -> RawFd {
+        let inner = self.inner();
+        match inner.tcp.as_ref() {
+            Some(tcp) => tcp.as_raw_fd(),
+            None => panic!("tried to obtain raw fd without tcp stream set"),
+        }
+    }
+}
+
+#[cfg(windows)]
+impl AsRawSocket for Session {
+    fn as_raw_socket(&self) -> RawSocket {
+        let inner = self.inner();
+        match inner.tcp.as_ref() {
+            Some(tcp) => tcp.as_raw_socket(),
+            None => panic!("tried to obtain raw socket without tcp stream set"),
+        }
     }
 }
 
