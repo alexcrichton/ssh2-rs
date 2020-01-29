@@ -1,4 +1,5 @@
 use libc;
+use std::borrow::Cow;
 use std::error;
 use std::ffi::NulError;
 use std::fmt;
@@ -13,21 +14,26 @@ use {raw, Session};
 #[allow(missing_copy_implementations)]
 pub struct Error {
     code: libc::c_int,
-    msg: &'static str,
+    msg: Cow<'static, str>,
 }
 
 impl Error {
     #[doc(hidden)]
     pub fn last_error_raw(raw: *mut raw::LIBSSH2_SESSION) -> Option<Error> {
-        static STATIC: () = ();
         unsafe {
-            let mut msg = 0 as *mut _;
-            let rc = raw::libssh2_session_last_error(raw, &mut msg, 0 as *mut _, 0);
+            let mut msg = null_mut();
+            let rc = raw::libssh2_session_last_error(raw, &mut msg, null_mut(), 0);
             if rc == 0 {
                 return None;
             }
-            let s = ::opt_bytes(&STATIC, msg).unwrap();
-            Some(Error::new(rc, str::from_utf8(s).unwrap()))
+
+            // The pointer stored in `msg` points to the internal buffer of
+            // LIBSSH2_SESSION, so the error message should be copied before
+            // it is overwritten by the next API call.
+            Some(Self {
+                code: rc,
+                msg: make_error_message(msg),
+            })
         }
     }
 
@@ -43,15 +49,20 @@ impl Error {
 
     #[doc(hidden)]
     pub fn from_session_error_raw(raw: *mut raw::LIBSSH2_SESSION, rc: libc::c_int) -> Error {
-        static STATIC: () = ();
         unsafe {
             let mut msg = null_mut();
             let res = raw::libssh2_session_last_error(raw, &mut msg, null_mut(), 0);
             if res != rc {
                 return Self::from_errno(rc);
             }
-            let s = ::opt_bytes(&STATIC, msg).unwrap();
-            Error::new(rc, str::from_utf8(s).unwrap())
+
+            // The pointer stored in `msg` points to the internal buffer of
+            // LIBSSH2_SESSION, so the error message should be copied before
+            // it is overwritten by the next API call.
+            Self {
+                code: rc,
+                msg: make_error_message(msg),
+            }
         }
     }
 
@@ -66,7 +77,7 @@ impl Error {
     pub fn new(code: libc::c_int, msg: &'static str) -> Error {
         Error {
             code: code,
-            msg: msg,
+            msg: Cow::Borrowed(msg),
         }
     }
 
@@ -164,7 +175,7 @@ impl Error {
 
     /// Get the message corresponding to this error
     pub fn message(&self) -> &str {
-        self.msg
+        &*self.msg
     }
 
     /// Return the code for this error
@@ -204,4 +215,15 @@ impl From<NulError> for Error {
              as as string",
         )
     }
+}
+
+unsafe fn make_error_message(msg: *mut libc::c_char) -> Cow<'static, str> {
+    const FALLBACK: Cow<'_, str> = Cow::Borrowed("<failed to fetch the error message>");
+    ::opt_bytes(&(), msg)
+        .and_then(|msg| {
+            str::from_utf8(msg)
+                .map(|msg| Cow::Owned(msg.to_owned()))
+                .ok()
+        })
+        .unwrap_or_else(|| FALLBACK)
 }
