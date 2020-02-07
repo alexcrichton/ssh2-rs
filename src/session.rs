@@ -869,14 +869,14 @@ impl Session {
     /// successfully, this function can be used to get the server id from the
     /// banner each server presents.
     ///
-    /// May return `None` on invalid utf-8 or if an error has ocurred.
+    /// May return `None` on invalid utf-8 or if an error has occurred.
     pub fn banner(&self) -> Option<&str> {
         self.banner_bytes().and_then(|s| str::from_utf8(s).ok())
     }
 
     /// See `banner`.
     ///
-    /// Will only return `None` if an error has ocurred.
+    /// Will only return `None` if an error has occurred.
     pub fn banner_bytes(&self) -> Option<&[u8]> {
         let inner = self.inner();
         unsafe { ::opt_bytes(self, raw::libssh2_session_banner_get(inner.raw)) }
