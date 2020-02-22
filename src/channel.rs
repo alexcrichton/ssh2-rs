@@ -204,6 +204,20 @@ impl Channel {
         })
     }
 
+    /// Requests that the remote host start an authentication agent;
+    /// if successful requests to that agent will be forwarded from
+    /// the server back to the local authentication agent on the client side.
+    ///
+    /// Note that some hosts are configured to disallow agent forwarding,
+    /// and that even if enabled, there is a possibility that starting
+    /// the agent on the remote system can fail.
+    pub fn request_auth_agent_forwarding(&mut self) -> Result<(), Error> {
+        let locked = self.lock();
+        locked
+            .sess
+            .rc(unsafe { raw::libssh2_channel_request_auth_agent(locked.raw) })
+    }
+
     /// Execute a command
     ///
     /// An execution is one of the standard process services defined by the SSH2

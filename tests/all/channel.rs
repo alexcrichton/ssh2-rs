@@ -45,6 +45,22 @@ fn smoke() {
 }
 
 #[test]
+fn agent_forward() {
+    let sess = ::authed_session();
+    let mut channel = sess.channel_session().unwrap();
+    channel.request_auth_agent_forwarding().unwrap();
+    channel.exec("echo $SSH_AUTH_SOCK").unwrap();
+
+    let (output, _) = consume_stdio(&mut channel);
+    let output = output.trim();
+    // make sure that the sock is set
+    assert_ne!(output, "");
+    // and that it isn't just inherited the one we set for this
+    // test environment
+    assert_ne!(output, std::env::var("SSH_AUTH_SOCK").unwrap());
+}
+
+#[test]
 fn bad_smoke() {
     let sess = ::authed_session();
     let mut channel = sess.channel_session().unwrap();

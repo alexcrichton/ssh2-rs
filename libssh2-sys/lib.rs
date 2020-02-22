@@ -490,6 +490,7 @@ extern "C" {
         channel: *mut LIBSSH2_CHANNEL,
         mode: c_int,
     ) -> c_int;
+    pub fn libssh2_channel_request_auth_agent(channel: *mut LIBSSH2_CHANNEL) -> c_int;
 
     // userauth
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;
