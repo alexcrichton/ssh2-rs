@@ -122,6 +122,10 @@ fn main() {
     cfg.define("LIBSSH2_HAVE_ZLIB", None);
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
+    } else if let Ok(lib) = pkg_config::find_library("zlib") {
+        for path in &lib.include_paths {
+            cfg.include(path);
+        }
     }
 
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
@@ -131,6 +135,10 @@ fn main() {
                     cfg.include(path);
                 }
             }
+        }
+    } else if let Ok(lib) = pkg_config::find_library("openssl") {
+        for path in &lib.include_paths {
+            cfg.include(path);
         }
     }
 
