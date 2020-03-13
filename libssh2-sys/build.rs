@@ -17,6 +17,7 @@ fn main() {
     // The system copy of libssh2 is not used by default because it
     // can lead to having two copies of libssl loaded at once.
     // See https://github.com/alexcrichton/ssh2-rs/pull/88
+    println!("cargo:rerun-if-env-changed=LIBSSH2_SYS_USE_PKG_CONFIG");
     if env::var("LIBSSH2_SYS_USE_PKG_CONFIG").is_ok() {
         if let Ok(lib) = pkg_config::find_library("libssh2") {
             for path in &lib.include_paths {
@@ -32,7 +33,9 @@ fn main() {
             .status();
     }
 
+    println!("cargo:rerun-if-env-changed=TARGET");
     let target = env::var("TARGET").unwrap();
+    println!("cargo:rerun-if-env-changed=OUT_DIR");
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut cfg = cc::Build::new();
 
@@ -120,6 +123,7 @@ fn main() {
     cfg.define("LIBSSH2_DH_GEX_NEW", None);
 
     cfg.define("LIBSSH2_HAVE_ZLIB", None);
+    println!("cargo:rerun-if-env-changed=DEP_Z_INCLUDE");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
     } else if let Ok(lib) = pkg_config::find_library("zlib") {
@@ -128,6 +132,7 @@ fn main() {
         }
     }
 
+    println!("cargo:rerun-if-env-changed=DEP_OPENSSL_INCLUDE");
     if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
         if let Some(path) = env::split_paths(&path).next() {
             if let Some(path) = path.to_str() {
