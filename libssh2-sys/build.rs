@@ -189,9 +189,16 @@ fn try_vcpkg() -> bool {
         .map(|_| {
             // found libssh2 which depends on openssl and zlib
             vcpkg::Config::new()
-                .lib_name("libeay32")
-                .lib_name("ssleay32")
+                .lib_name("libssl")
+                .lib_name("libcrypto")
                 .probe("openssl")
+                .or_else(|_| {
+                    // openssl 1.1 was not found, try openssl 1.0
+                    vcpkg::Config::new()
+                        .lib_name("libeay32")
+                        .lib_name("ssleay32")
+                        .probe("openssl")
+                })
                 .expect(
                     "configured libssh2 from vcpkg but could not \
                      find openssl libraries that it depends on",
