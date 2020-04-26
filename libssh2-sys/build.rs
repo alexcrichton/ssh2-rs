@@ -124,10 +124,6 @@ fn main() {
     println!("cargo:rerun-if-env-changed=DEP_Z_INCLUDE");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
-    } else if let Ok(lib) = pkg_config::find_library("zlib") {
-        for path in &lib.include_paths {
-            cfg.include(path);
-        }
     }
 
     println!("cargo:rerun-if-env-changed=DEP_OPENSSL_INCLUDE");
@@ -138,10 +134,6 @@ fn main() {
                     cfg.include(path);
                 }
             }
-        }
-    } else if let Ok(lib) = pkg_config::find_library("openssl") {
-        for path in &lib.include_paths {
-            cfg.include(path);
         }
     }
 
