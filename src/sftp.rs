@@ -432,7 +432,9 @@ impl Drop for Sftp {
             let sess = inner.sess.lock();
             let was_blocking = sess.is_blocking();
             sess.set_blocking(true);
-            assert_eq!(unsafe { raw::libssh2_sftp_shutdown(inner.raw) }, 0);
+            // The shutdown statement can go wrong and return an error code, but we are too late 
+            // in the execution to recover it.
+            let _shutdown_result = unsafe { raw::libssh2_sftp_shutdown(inner.raw) };
             sess.set_blocking(was_blocking);
         }
     }
@@ -446,7 +448,7 @@ impl File {
     unsafe fn from_raw(sftp: &Sftp, raw: *mut raw::LIBSSH2_SFTP_HANDLE) -> File {
         File {
             inner: Some(FileInner {
-                raw: raw,
+                raw,
                 sftp: Arc::clone(
                     sftp.inner
                         .as_ref()
@@ -642,7 +644,9 @@ impl Drop for File {
             let sess_inner = file_inner.sftp.sess.lock();
             let was_blocking = sess_inner.is_blocking();
             sess_inner.set_blocking(true);
-            assert_eq!(unsafe { raw::libssh2_sftp_close_handle(file_inner.raw) }, 0);
+            // The close statement can go wrong and return an error code, but we are too late 
+            // in the execution to recover it.
+            let _close_handle_result = unsafe { raw::libssh2_sftp_close_handle(file_inner.raw) };
             sess_inner.set_blocking(was_blocking);
         }
     }
