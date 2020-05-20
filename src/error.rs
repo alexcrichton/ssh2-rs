@@ -99,12 +99,18 @@ impl Error {
 
     /// Generate an error that represents EOF
     pub fn eof() -> Error {
-        Error::new(ErrorCode::Session(raw::LIBSSH2_ERROR_CHANNEL_EOF_SENT), "end of file")
+        Error::new(
+            ErrorCode::Session(raw::LIBSSH2_ERROR_CHANNEL_EOF_SENT),
+            "end of file",
+        )
     }
 
     /// Generate an error for unknown failure
     pub fn unknown() -> Error {
-        Error::new(ErrorCode::Session(libc::c_int::min_value()), "no other error listed")
+        Error::new(
+            ErrorCode::Session(libc::c_int::min_value()),
+            "no other error listed",
+        )
     }
 
     /// Construct an error from an error code from libssh2

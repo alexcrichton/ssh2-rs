@@ -256,13 +256,17 @@ impl Sftp {
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
-            Self::rc(&locked, raw::libssh2_sftp_stat_ex(
-                locked.raw,
-                filename.as_ptr() as *const _,
-                filename.len() as c_uint,
-                raw::LIBSSH2_SFTP_STAT,
-                &mut ret,
-            )).map(|_| FileStat::from_raw(&ret))
+            Self::rc(
+                &locked,
+                raw::libssh2_sftp_stat_ex(
+                    locked.raw,
+                    filename.as_ptr() as *const _,
+                    filename.len() as c_uint,
+                    raw::LIBSSH2_SFTP_STAT,
+                    &mut ret,
+                ),
+            )
+            .map(|_| FileStat::from_raw(&ret))
         }
     }
 
@@ -272,13 +276,17 @@ impl Sftp {
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
-            Self::rc(&locked, raw::libssh2_sftp_stat_ex(
-                locked.raw,
-                filename.as_ptr() as *const _,
-                filename.len() as c_uint,
-                raw::LIBSSH2_SFTP_LSTAT,
-                &mut ret,
-            )).map(|_| FileStat::from_raw(&ret))
+            Self::rc(
+                &locked,
+                raw::libssh2_sftp_stat_ex(
+                    locked.raw,
+                    filename.as_ptr() as *const _,
+                    filename.len() as c_uint,
+                    raw::LIBSSH2_SFTP_LSTAT,
+                    &mut ret,
+                ),
+            )
+            .map(|_| FileStat::from_raw(&ret))
         }
     }
 
@@ -402,7 +410,9 @@ impl Sftp {
                     raw: inner.raw,
                 })
             }
-            None => Err(Error::from_errno(ErrorCode::Session(raw::LIBSSH2_ERROR_BAD_USE))),
+            None => Err(Error::from_errno(ErrorCode::Session(
+                raw::LIBSSH2_ERROR_BAD_USE,
+            ))),
         }
     }
 
@@ -417,7 +427,11 @@ impl Sftp {
         Ok(())
     }
 
-    fn error_code_into_error(session_raw: *mut raw::LIBSSH2_SESSION, sftp_raw: *mut raw::LIBSSH2_SFTP, rc: libc::c_int) -> Error {
+    fn error_code_into_error(
+        session_raw: *mut raw::LIBSSH2_SESSION,
+        sftp_raw: *mut raw::LIBSSH2_SFTP,
+        rc: libc::c_int,
+    ) -> Error {
         if rc >= 0 {
             Error::unknown()
         } else if rc == raw::LIBSSH2_ERROR_SFTP_PROTOCOL {
@@ -428,7 +442,11 @@ impl Sftp {
         }
     }
 
-    fn error_code_into_result(session_raw: *mut raw::LIBSSH2_SESSION, sftp_raw: *mut raw::LIBSSH2_SFTP, rc: libc::c_int) -> Result<(), Error> {
+    fn error_code_into_result(
+        session_raw: *mut raw::LIBSSH2_SESSION,
+        sftp_raw: *mut raw::LIBSSH2_SFTP,
+        rc: libc::c_int,
+    ) -> Result<(), Error> {
         if rc >= 0 {
             Ok(())
         } else {
@@ -448,7 +466,7 @@ impl Drop for Sftp {
             let sess = inner.sess.lock();
             let was_blocking = sess.is_blocking();
             sess.set_blocking(true);
-            // The shutdown statement can go wrong and return an error code, but we are too late 
+            // The shutdown statement can go wrong and return an error code, but we are too late
             // in the execution to recover it.
             let _shutdown_result = unsafe { raw::libssh2_sftp_shutdown(inner.raw) };
             sess.set_blocking(was_blocking);
@@ -488,7 +506,8 @@ impl File {
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
-            self.rc(&locked, raw::libssh2_sftp_fstat_ex(locked.raw, &mut ret, 0)).map(|_| FileStat::from_raw(&ret))
+            self.rc(&locked, raw::libssh2_sftp_fstat_ex(locked.raw, &mut ret, 0))
+                .map(|_| FileStat::from_raw(&ret))
         }
     }
 
@@ -497,7 +516,8 @@ impl File {
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
-            self.rc(&locked, raw::libssh2_sftp_fstatvfs(locked.raw, &mut ret)).map(move |_| ret)
+            self.rc(&locked, raw::libssh2_sftp_fstatvfs(locked.raw, &mut ret))
+                .map(move |_| ret)
         }
     }
 
@@ -537,7 +557,10 @@ impl File {
         }
 
         if rc == 0 {
-            Err(Error::new(ErrorCode::Session(raw::LIBSSH2_ERROR_FILE), "no more files"))
+            Err(Error::new(
+                ErrorCode::Session(raw::LIBSSH2_ERROR_FILE),
+                "no more files",
+            ))
         } else {
             self.rc(&locked, rc).map(move |_| {
                 unsafe {
@@ -566,7 +589,9 @@ impl File {
                     raw: file_inner.raw,
                 })
             }
-            None => Err(Error::from_errno(ErrorCode::Session(raw::LIBSSH2_ERROR_BAD_USE))),
+            None => Err(Error::from_errno(ErrorCode::Session(
+                raw::LIBSSH2_ERROR_BAD_USE,
+            ))),
         }
     }
 
@@ -574,7 +599,9 @@ impl File {
     pub fn close(&mut self) -> Result<(), Error> {
         {
             let locked = self.lock()?;
-            self.rc(&locked, unsafe { raw::libssh2_sftp_close_handle(locked.raw) })?;
+            self.rc(&locked, unsafe {
+                raw::libssh2_sftp_close_handle(locked.raw)
+            })?;
         }
         let _ = self.inner.take();
         Ok(())
@@ -608,7 +635,7 @@ impl Read for File {
         } else {
             Ok(rc as usize)
         }
-}
+    }
 }
 
 impl Write for File {
@@ -675,7 +702,7 @@ impl Drop for File {
             let sess_inner = file_inner.sftp.sess.lock();
             let was_blocking = sess_inner.is_blocking();
             sess_inner.set_blocking(true);
-            // The close statement can go wrong and return an error code, but we are too late 
+            // The close statement can go wrong and return an error code, but we are too late
             // in the execution to recover it.
             let _close_handle_result = unsafe { raw::libssh2_sftp_close_handle(file_inner.raw) };
             sess_inner.set_blocking(was_blocking);

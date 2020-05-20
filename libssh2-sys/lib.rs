@@ -350,9 +350,7 @@ extern "C" {
         method_type: c_int,
         algs: *mut *mut *const c_char,
     ) -> c_int;
-    pub fn libssh2_session_last_errno(
-        sess: *mut LIBSSH2_SESSION,
-    ) -> c_int;
+    pub fn libssh2_session_last_errno(sess: *mut LIBSSH2_SESSION) -> c_int;
     pub fn libssh2_session_last_error(
         sess: *mut LIBSSH2_SESSION,
         msg: *mut *mut c_char,
