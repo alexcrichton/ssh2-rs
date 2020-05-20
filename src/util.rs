@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::path::Path;
 
-use {raw, Error};
+use {raw, Error, ErrorCode};
 
 #[cfg(unix)]
 pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
@@ -40,7 +40,7 @@ pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
 fn check(b: Cow<[u8]>) -> Result<Cow<[u8]>, Error> {
     if b.iter().any(|b| *b == 0) {
         Err(Error::new(
-            raw::LIBSSH2_ERROR_INVAL,
+            ErrorCode::Session(raw::LIBSSH2_ERROR_INVAL),
             "path provided contains a 0 byte",
         ))
     } else {

@@ -15,7 +15,7 @@ use std::str;
 use std::sync::Arc;
 
 use util;
-use {raw, ByApplication, DisconnectCode, Error, HostKeyType};
+use {raw, ByApplication, DisconnectCode, Error, ErrorCode, HostKeyType};
 use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 
 /// Called by libssh2 to respond to some number of challenges as part of
@@ -265,7 +265,7 @@ impl Session {
         unsafe {
             let stream = inner.tcp.as_ref().ok_or_else(|| {
                 Error::new(
-                    raw::LIBSSH2_ERROR_BAD_SOCKET,
+                    ErrorCode::Session(raw::LIBSSH2_ERROR_BAD_SOCKET),
                     "use set_tcp_stream() to associate with a TcpStream",
                 )
             })?;
@@ -447,7 +447,7 @@ impl Session {
             Some(identity) => identity,
             None => {
                 return Err(Error::new(
-                    raw::LIBSSH2_ERROR_INVAL as c_int,
+                    ErrorCode::Session(raw::LIBSSH2_ERROR_INVAL),
                     "no identities found in the ssh agent",
                 ))
             }
@@ -1037,7 +1037,7 @@ impl SessionInner {
     }
 
     pub fn last_error(&self) -> Option<Error> {
-        Error::last_error_raw(self.raw)
+        Error::last_session_error_raw(self.raw)
     }
 
     /// Set or clear blocking mode on session
