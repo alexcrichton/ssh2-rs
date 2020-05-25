@@ -6,7 +6,7 @@ use std::str;
 use std::sync::Arc;
 
 use util;
-use {raw, CheckResult, Error, KnownHostFileKind, SessionInner};
+use {raw, CheckResult, Error, ErrorCode, KnownHostFileKind, SessionInner};
 
 /// A set of known hosts which can be used to verify the identity of a remote
 /// server.
@@ -113,7 +113,7 @@ impl KnownHosts {
         let sess = self.sess.lock();
         let raw_host = self.resolve_to_raw_host(&sess, host)?.ok_or_else(|| {
             Error::new(
-                raw::LIBSSH2_ERROR_BAD_USE,
+                ErrorCode::Session(raw::LIBSSH2_ERROR_BAD_USE),
                 "Host is not in the set of known hosts",
             )
         })?;
