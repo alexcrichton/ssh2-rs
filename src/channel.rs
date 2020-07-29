@@ -286,7 +286,7 @@ impl Channel {
     ///
     /// The returned handle implements the `Read` and `Write` traits.
     ///
-    /// Groups of substreams may be flushed by passing on of the following
+    /// Groups of substreams may be flushed by passing one of the following
     /// constants and then calling `flush()`.
     ///
     /// * FLUSH_EXTENDED_DATA - Flush all extended data substreams
