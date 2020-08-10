@@ -9,6 +9,15 @@ use std::sync::Arc;
 use util;
 use {raw, Error, SessionInner};
 
+/// A handle to a remote filesystem over SFTP.
+///
+/// Instances are created through the `sftp` method on a `Session`.
+pub struct Sftp {
+    inner: Option<Arc<SftpInnerDropWrapper>>,
+}
+/// This contains an Option so that we're able to disable the Drop hook when dropping manually,
+/// while still dropping all the fields of SftpInner (which we couldn't do with `mem::forget`)
+struct SftpInnerDropWrapper(Option<SftpInner>);
 struct SftpInner {
     raw: *mut raw::LIBSSH2_SFTP,
     sess: Arc<Mutex<SessionInner>>,
@@ -20,32 +29,9 @@ struct SftpInner {
 unsafe impl Send for Sftp {}
 unsafe impl Sync for Sftp {}
 
-/// A handle to a remote filesystem over SFTP.
-///
-/// Instances are created through the `sftp` method on a `Session`.
-pub struct Sftp {
-    inner: Option<Arc<SftpInner>>,
-}
-
 struct LockedSftp<'sftp> {
-    sess: MutexGuard<'sftp, SessionInner>,
     raw: *mut raw::LIBSSH2_SFTP,
-}
-
-struct FileInner {
-    raw: *mut raw::LIBSSH2_SFTP_HANDLE,
-    sftp: Arc<SftpInner>,
-}
-
-// FileInner is both Send and Sync; the compiler can't see it because it
-// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
-// the raw pointer so we are safe for both.
-unsafe impl Send for FileInner {}
-unsafe impl Sync for FileInner {}
-
-struct LockedFile<'file> {
-    sess: MutexGuard<'file, SessionInner>,
-    raw: *mut raw::LIBSSH2_SFTP_HANDLE,
+    sess: MutexGuard<'sftp, SessionInner>,
 }
 
 /// A file handle to an SFTP connection.
@@ -57,6 +43,21 @@ struct LockedFile<'file> {
 /// of `Sftp`.
 pub struct File {
     inner: Option<FileInner>,
+}
+struct FileInner {
+    raw: *mut raw::LIBSSH2_SFTP_HANDLE,
+    sftp: Arc<SftpInnerDropWrapper>,
+}
+
+// File is both Send and Sync; the compiler can't see it because it
+// is pessimistic about the raw pointer.  We use Arc/Mutex to guard accessing
+// the raw pointer so we are safe for both.
+unsafe impl Send for File {}
+unsafe impl Sync for File {}
+
+struct LockedFile<'file> {
+    raw: *mut raw::LIBSSH2_SFTP_HANDLE,
+    sess: MutexGuard<'file, SessionInner>,
 }
 
 /// Metadata information about a remote file.
@@ -143,10 +144,10 @@ impl Sftp {
             Err(err.unwrap_or_else(Error::unknown))
         } else {
             Ok(Self {
-                inner: Some(Arc::new(SftpInner {
+                inner: Some(Arc::new(SftpInnerDropWrapper(Some(SftpInner {
                     raw,
                     sess: Arc::clone(sess),
-                })),
+                })))),
             })
         }
     }
@@ -400,11 +401,15 @@ impl Sftp {
 
     fn lock(&self) -> Result<LockedSftp, Error> {
         match self.inner.as_ref() {
-            Some(inner) => {
-                let sess = inner.sess.lock();
+            Some(sftp_inner_drop_wrapper) => {
+                let sftp_inner = sftp_inner_drop_wrapper
+                    .0
+                    .as_ref()
+                    .expect("Never unset until shutdown, in which case inner is also unset");
+                let sess = sftp_inner.sess.lock();
                 Ok(LockedSftp {
                     sess,
-                    raw: inner.raw,
+                    raw: sftp_inner.raw,
                 })
             }
             None => Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE)),
@@ -414,25 +419,48 @@ impl Sftp {
     // This method is used by the async ssh crate
     #[doc(hidden)]
     pub fn shutdown(&mut self) -> Result<(), Error> {
-        {
-            let locked = self.lock()?;
-            locked
-                .sess
-                .rc(unsafe { raw::libssh2_sftp_shutdown(locked.raw) })?;
+        // We cannot shutdown the SFTP if files are still open, etc, as these store a ref to the sftp in libssh2.
+        // We have to make sure we are the last reference to it.
+        match self.inner.take() {
+            Some(sftp_inner_arc) => {
+                // We were not already un-initialized
+                match Arc::try_unwrap(sftp_inner_arc) {
+                    Ok(mut sftp_inner_wrapper) => {
+                        // Early drop
+                        let sftp_inner = sftp_inner_wrapper.0.take().expect(
+                            "We were holding an Arc<SftpInnerDropWrapper>, \
+                                    so nobody could unset this (set on creation)",
+                        );
+                        sftp_inner
+                            .sess
+                            .lock()
+                            .rc(unsafe { raw::libssh2_sftp_shutdown(sftp_inner.raw) })?;
+                        Ok(())
+                    }
+                    Err(sftp_inner_arc) => {
+                        // We are failing shutdown as there are files left open, keep this object usable
+                        self.inner = Some(sftp_inner_arc);
+                        Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE))
+                    }
+                }
+            }
+            None => {
+                // We have already shut this down. Shutting down twice is a mistake from the caller code
+                Err(Error::from_errno(raw::LIBSSH2_ERROR_BAD_USE))
+            }
         }
-        let _ = self.inner.take();
-        Ok(())
     }
 }
 
-impl Drop for Sftp {
+impl Drop for SftpInnerDropWrapper {
     fn drop(&mut self) {
-        // Set ssh2 to blocking if sftp was not shutdown yet.
-        if let Some(inner) = self.inner.take() {
+        // Check we were not early-dropped
+        if let Some(inner) = self.0.take() {
             let sess = inner.sess.lock();
+            // Set ssh2 to blocking during the drop
             let was_blocking = sess.is_blocking();
             sess.set_blocking(true);
-            // The shutdown statement can go wrong and return an error code, but we are too late 
+            // The shutdown statement can go wrong and return an error code, but we are too late
             // in the execution to recover it.
             let _shutdown_result = unsafe { raw::libssh2_sftp_shutdown(inner.raw) };
             sess.set_blocking(was_blocking);
@@ -450,9 +478,10 @@ impl File {
             inner: Some(FileInner {
                 raw,
                 sftp: Arc::clone(
-                    sftp.inner
+                    &sftp
+                        .inner
                         .as_ref()
-                        .expect("we have a live option during construction"),
+                        .expect("Cannot open file after sftp shutdown"),
                 ),
             }),
         }
@@ -551,7 +580,11 @@ impl File {
     fn lock(&self) -> Result<LockedFile, Error> {
         match self.inner.as_ref() {
             Some(file_inner) => {
-                let sess = file_inner.sftp.sess.lock();
+                let sftp_inner = file_inner.sftp.0.as_ref().expect(
+                    "We are holding an Arc<SftpInnerDropWrapper>, \
+                        so nobody could unset this (set on creation)",
+                );
+                let sess = sftp_inner.sess.lock();
                 Ok(LockedFile {
                     sess,
                     raw: file_inner.raw,
@@ -567,7 +600,7 @@ impl File {
             let locked = self.lock()?;
             Error::rc(unsafe { raw::libssh2_sftp_close_handle(locked.raw) })?;
         }
-        let _ = self.inner.take();
+        self.inner = None;
         Ok(())
     }
 }
@@ -639,12 +672,16 @@ impl Seek for File {
 
 impl Drop for File {
     fn drop(&mut self) {
-        // Set ssh2 to blocking if the file was not closed yet.
+        // Set ssh2 to blocking if the file was not closed yet (by .close()).
         if let Some(file_inner) = self.inner.take() {
-            let sess_inner = file_inner.sftp.sess.lock();
+            let sftp_inner = file_inner.sftp.0.as_ref().expect(
+                "We are holding an Arc<SftpInnerDropWrapper>, \
+                    so nobody could unset this (set on creation)",
+            );
+            let sess_inner = sftp_inner.sess.lock();
             let was_blocking = sess_inner.is_blocking();
             sess_inner.set_blocking(true);
-            // The close statement can go wrong and return an error code, but we are too late 
+            // The close statement can go wrong and return an error code, but we are too late
             // in the execution to recover it.
             let _close_handle_result = unsafe { raw::libssh2_sftp_close_handle(file_inner.raw) };
             sess_inner.set_blocking(was_blocking);
