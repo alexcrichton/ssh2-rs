@@ -10,7 +10,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
-    if try_vcpkg() {
+    let zlib_ng_compat = env::var("CARGO_FEATURE_ZLIB_NG_COMPAT").is_ok();
+
+    if !zlib_ng_compat && try_vcpkg() {
         return;
     }
 
@@ -19,6 +21,9 @@ fn main() {
     // See https://github.com/alexcrichton/ssh2-rs/pull/88
     println!("cargo:rerun-if-env-changed=LIBSSH2_SYS_USE_PKG_CONFIG");
     if env::var("LIBSSH2_SYS_USE_PKG_CONFIG").is_ok() {
+        if zlib_ng_compat {
+            panic!("LIBSSH2_SYS_USE_PKG_CONFIG set, but cannot use zlib-ng-compat with system libssh2");
+        }
         if let Ok(lib) = pkg_config::find_library("libssh2") {
             for path in &lib.include_paths {
                 println!("cargo:include={}", path.display());
