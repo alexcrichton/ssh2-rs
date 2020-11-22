@@ -225,7 +225,7 @@ use std::ffi::CStr;
 
 pub use agent::{Agent, PublicKey};
 pub use channel::{Channel, ExitSignal, ReadWindow, Stream, WriteWindow};
-pub use error::Error;
+pub use error::{Error, ErrorCode};
 pub use knownhosts::{Host, KnownHosts};
 pub use listener::Listener;
 use session::SessionInner;
