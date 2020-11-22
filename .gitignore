@@ -1,4 +1,5 @@
 .*.sw*
 /target/
+libssh2-sys/target/
 /Cargo.lock
 /tests/sshd

@@ -4,7 +4,7 @@ use std::slice;
 use std::str;
 use std::sync::Arc;
 
-use {raw, Error, SessionInner};
+use {raw, Error, ErrorCode, SessionInner};
 
 /// A structure representing a connection to an SSH agent.
 ///
@@ -110,9 +110,12 @@ impl Agent {
     pub fn userauth(&self, username: &str, identity: &PublicKey) -> Result<(), Error> {
         let username = CString::new(username)?;
         let sess = self.sess.lock();
-        let raw_ident = self
-            .resolve_raw_identity(&sess, identity)?
-            .ok_or_else(|| Error::new(raw::LIBSSH2_ERROR_BAD_USE, "Identity not found in agent"))?;
+        let raw_ident = self.resolve_raw_identity(&sess, identity)?.ok_or_else(|| {
+            Error::new(
+                ErrorCode::Session(raw::LIBSSH2_ERROR_BAD_USE),
+                "Identity not found in agent",
+            )
+        })?;
         unsafe {
             sess.rc(raw::libssh2_agent_userauth(
                 self.raw,
