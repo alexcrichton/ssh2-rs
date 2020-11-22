@@ -1,6 +1,5 @@
 # ssh2-rs
 
-[![Build Status](https://travis-ci.com/alexcrichton/ssh2-rs.svg?branch=master)](https://travis-ci.com/alexcrichton/ssh2-rs)
 [![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/linux/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=linux)
 [![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/Windows/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=Windows)
 [![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/macOS/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=macOS)
@@ -14,7 +13,7 @@ Rust bindings to libssh2, an ssh client library.
 ```toml
 # Cargo.toml
 [dependencies]
-ssh2 = "0.8"
+ssh2 = "0.9"
 ```
 
 ## Building on OSX 10.10+
