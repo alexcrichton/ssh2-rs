@@ -319,7 +319,7 @@ extern "C" {
     pub fn libssh2_exit();
     pub fn libssh2_free(sess: *mut LIBSSH2_SESSION, ptr: *mut c_void);
     pub fn libssh2_hostkey_hash(session: *mut LIBSSH2_SESSION, hash_type: c_int) -> *const c_char;
-    pub fn libssh2_trace(session: *mut LIBSSH2_SESSION, bitmask: c_int);
+    pub fn libssh2_trace(session: *mut LIBSSH2_SESSION, bitmask: c_int) -> c_int;
 
     // session
     pub fn libssh2_session_init_ex(

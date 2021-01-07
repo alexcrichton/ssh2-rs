@@ -1032,7 +1032,7 @@ impl Session {
     ///
     pub fn trace(&self, bitmask: TraceFlags) {
         let inner = self.inner();
-        unsafe { raw::libssh2_trace(inner.raw, bitmask.bits() as c_int); }
+        unsafe { let _ = raw::libssh2_trace(inner.raw, bitmask.bits() as c_int); }
     }
 }
 
