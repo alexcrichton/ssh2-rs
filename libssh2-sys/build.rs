@@ -39,6 +39,7 @@ fn main() {
     }
 
     let target = env::var("TARGET").unwrap();
+    let profile = env::var("PROFILE").unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut cfg = cc::Build::new();
 
@@ -108,6 +109,7 @@ fn main() {
         cfg.define("HAVE_LIBCRYPT32", None);
         cfg.define("HAVE_EVP_AES_128_CTR", None);
         cfg.define("HAVE_POLL", None);
+        cfg.define("HAVE_GETTIMEOFDAY", None);
 
         cfg.file("libssh2/src/openssl.c");
 
@@ -126,6 +128,11 @@ fn main() {
     cfg.define("LIBSSH2_DH_GEX_NEW", None);
 
     cfg.define("LIBSSH2_HAVE_ZLIB", None);
+
+    if profile.contains("debug") {
+        cfg.define("LIBSSH2DEBUG", None);
+    }
+    
     println!("cargo:rerun-if-env-changed=DEP_Z_INCLUDE");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);

@@ -18,6 +18,31 @@ use util;
 use {raw, ByApplication, DisconnectCode, Error, ErrorCode, HostKeyType};
 use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 
+bitflags! {
+    /// Flags which can be used with the session trace method to set
+    /// the trace level.
+    pub struct TraceFlags: c_int {
+        /// Authentication debugging
+        const AUTH      = raw::LIBSSH2_TRACE_AUTH;
+        /// Connection layer debugging
+        const CONN      = raw::LIBSSH2_TRACE_CONN;
+        /// Error debugging
+        const ERROR     = raw::LIBSSH2_TRACE_ERROR;
+        /// Key exchange debugging
+        const KEX       = raw::LIBSSH2_TRACE_KEX;
+        /// Public Key Debugging
+        const PUBLICKEY = raw::LIBSSH2_TRACE_PUBLICKEY;
+        /// SCP debugging
+        const SCP       = raw::LIBSSH2_TRACE_SCP;
+        /// SFTP debugging
+        const SFTP      = raw::LIBSSH2_TRACE_SFTP;
+        /// Socket low-level debugging
+        const SOCKET    = raw::LIBSSH2_TRACE_SOCKET;
+        /// Transport layer debugging
+        const TRANS     = raw::LIBSSH2_TRACE_TRANS;
+    }
+}
+
 /// Called by libssh2 to respond to some number of challenges as part of
 /// keyboard interactive authentication.
 pub trait KeyboardInteractivePrompt {
@@ -1001,6 +1026,13 @@ impl Session {
 
     fn inner(&self) -> MutexGuard<SessionInner> {
         self.inner.lock()
+    }
+
+    /// Sets the trace level for the session.
+    ///
+    pub fn trace(&self, bitmask: TraceFlags) {
+        let inner = self.inner();
+        unsafe { raw::libssh2_trace(inner.raw, bitmask.bits() as c_int); }
     }
 }
 
