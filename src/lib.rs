@@ -233,7 +233,7 @@ pub use error::{Error, ErrorCode};
 pub use knownhosts::{Host, KnownHosts};
 pub use listener::Listener;
 use session::SessionInner;
-pub use session::{BlockDirections, KeyboardInteractivePrompt, Prompt, ScpFileStat, Session};
+pub use session::{BlockDirections, KeyboardInteractivePrompt, Prompt, ScpFileStat, Session, TraceFlags};
 pub use sftp::{File, FileStat, FileType, OpenType};
 pub use sftp::{OpenFlags, RenameFlags, Sftp};
 pub use DisconnectCode::{AuthCancelledByUser, TooManyConnections};
