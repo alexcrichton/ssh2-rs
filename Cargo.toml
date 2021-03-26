@@ -15,6 +15,7 @@ commands, forwarding local ports, etc.
 
 [features]
 vendored-openssl = ["libssh2-sys/vendored-openssl"]
+openssl-on-win32 = ["libssh2-sys/openssl-on-win32"]
 
 [dependencies]
 bitflags = "1.2"
