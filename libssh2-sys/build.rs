@@ -93,6 +93,7 @@ fn main() {
         cfg.include("libssh2/win32");
         cfg.define("LIBSSH2_WINCNG", None);
         cfg.define("LIBSSH2_WIN32", None);
+        cfg.file("libssh2/src/agent_win.c");
         cfg.file("libssh2/src/wincng.c");
     } else {
         cfg.flag("-fvisibility=hidden");
