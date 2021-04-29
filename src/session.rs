@@ -323,6 +323,18 @@ impl Session {
         let _ = inner.tcp.replace(Box::new(stream));
     }
 
+    /// Obtain the raw fd from the session
+    #[cfg(unix)]
+    pub fn tcp_stream(&self) -> RawFd {
+        self.as_raw_fd()
+    }
+
+    /// Obtain the raw socket from the session
+    #[cfg(windows)]
+    pub fn tcp_stream(&self) -> RawSocket {
+        self.as_raw_socket()
+    }
+
     /// Attempt basic password authentication.
     ///
     /// Note that many SSH servers which appear to support ordinary password
