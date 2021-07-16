@@ -7,10 +7,6 @@
 //! Note that libssh2 only supports SSH *clients*, not SSH *servers*.
 //! Additionally it only supports protocol v2, not protocol v1.
 //!
-//! In case you are searching for an async versions of this library,
-//! you can look at https://github.com/spebern/async-ssh2 or https://github.com/bk-rs/async-ssh2-lite,
-//! which are both adding async compatibility on top of ssh2-rs implementation.
-//!
 //! # Examples
 //!
 //! ## Inspecting ssh-agent
