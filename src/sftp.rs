@@ -81,9 +81,25 @@ pub struct FileStat {
     pub mtime: Option<u64>,
 }
 
-/// An structure representing a type of file.
-pub struct FileType {
-    perm: c_ulong,
+/// An enum representing a type of file.
+#[derive(PartialEq)]
+pub enum FileType {
+    /// Named pipe (S_IFIFO)
+    NamedPipe,
+    /// Character device (S_IFCHR)
+    CharDevice,
+    /// Block device (S_IFBLK)
+    BlockDevice,
+    /// Directory (S_IFDIR)
+    Directory,
+    /// Regular file (S_IFREG)
+    RegularFile,
+    /// Symbolic link (S_IFLNK)
+    Symlink,
+    /// Unix domain socket (S_IFSOCK)
+    Socket,
+    /// Other filetype (does not correspond to any of the other ones)
+    Other(c_ulong),
 }
 
 bitflags! {
@@ -773,9 +789,7 @@ impl Drop for File {
 impl FileStat {
     /// Returns the file type for this filestat.
     pub fn file_type(&self) -> FileType {
-        FileType {
-            perm: self.perm.unwrap_or(0) as c_ulong,
-        }
+        FileType::from_perm(self.perm.unwrap_or(0) as c_ulong)
     }
 
     /// Returns whether this metadata is for a directory.
@@ -838,21 +852,30 @@ impl FileStat {
 impl FileType {
     /// Test whether this file type represents a directory.
     pub fn is_dir(&self) -> bool {
-        self.is(raw::LIBSSH2_SFTP_S_IFDIR)
+        self == &FileType::Directory
     }
 
     /// Test whether this file type represents a regular file.
     pub fn is_file(&self) -> bool {
-        self.is(raw::LIBSSH2_SFTP_S_IFREG)
+        self == &FileType::RegularFile
     }
 
     /// Test whether this file type represents a symbolic link.
     pub fn is_symlink(&self) -> bool {
-        self.is(raw::LIBSSH2_SFTP_S_IFLNK)
+        self == &FileType::Symlink
     }
 
-    fn is(&self, perm: c_ulong) -> bool {
-        (self.perm & raw::LIBSSH2_SFTP_S_IFMT) == perm
+    fn from_perm(perm: c_ulong) -> Self {
+        match perm & raw::LIBSSH2_SFTP_S_IFMT {
+            raw::LIBSSH2_SFTP_S_IFIFO => FileType::NamedPipe,
+            raw::LIBSSH2_SFTP_S_IFCHR => FileType::CharDevice,
+            raw::LIBSSH2_SFTP_S_IFDIR => FileType::Directory,
+            raw::LIBSSH2_SFTP_S_IFBLK => FileType::BlockDevice,
+            raw::LIBSSH2_SFTP_S_IFREG => FileType::RegularFile,
+            raw::LIBSSH2_SFTP_S_IFLNK => FileType::Symlink,
+            raw::LIBSSH2_SFTP_S_IFSOCK => FileType::Socket,
+            other => FileType::Other(other),
+        }
     }
 }
 
