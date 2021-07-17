@@ -91,9 +91,18 @@ fn main() {
 
     if target.contains("windows") {
         cfg.include("libssh2/win32");
-        cfg.define("LIBSSH2_WINCNG", None);
         cfg.define("LIBSSH2_WIN32", None);
-        cfg.file("libssh2/src/wincng.c");
+
+        if env::var_os("CARGO_FEATURE_OPENSSL_ON_WIN32").is_some() {
+            cfg.define("LIBSSH2_OPENSSL", None);
+            cfg.define("HAVE_EVP_AES_128_CTR", None);
+            cfg.file("libssh2/src/openssl.c");
+            println!("cargo:rustc-link-lib=static=libssl");
+            println!("cargo:rustc-link-lib=static=libcrypto");
+        } else {
+            cfg.define("LIBSSH2_WINCNG", None);
+            cfg.file("libssh2/src/wincng.c");
+        }
     } else {
         cfg.flag("-fvisibility=hidden");
         cfg.define("HAVE_SNPRINTF", None);
@@ -133,7 +142,7 @@ fn main() {
     if profile.contains("debug") {
         cfg.define("LIBSSH2DEBUG", None);
     }
-    
+
     println!("cargo:rerun-if-env-changed=DEP_Z_INCLUDE");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
