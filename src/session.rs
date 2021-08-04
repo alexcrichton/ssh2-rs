@@ -121,8 +121,7 @@ unsafe impl Send for SessionInner {}
 /// This means that a blocking read from a `Channel` or `Stream` will block
 /// all other calls on objects created from the same underlying `Session`.
 /// If you need the ability to perform concurrent operations then you will
-/// need to create separate `Session` instances, or employ non-blocking mode,
-/// perhaps using the `async-ssh2` crate.
+/// need to create separate `Session` instances, or employ non-blocking mode.
 #[derive(Clone)]
 pub struct Session {
     inner: Arc<Mutex<SessionInner>>,
