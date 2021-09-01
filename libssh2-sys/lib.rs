@@ -177,9 +177,13 @@ pub const LIBSSH2_SFTP_RENAME_NATIVE: c_long = 0x4;
 pub const LIBSSH2_INIT_NO_CRYPTO: c_int = 0x1;
 
 pub const LIBSSH2_SFTP_S_IFMT: c_ulong = 0o170000;
+pub const LIBSSH2_SFTP_S_IFIFO: c_ulong = 0o010000;
+pub const LIBSSH2_SFTP_S_IFCHR: c_ulong = 0o020000;
 pub const LIBSSH2_SFTP_S_IFDIR: c_ulong = 0o040000;
+pub const LIBSSH2_SFTP_S_IFBLK: c_ulong = 0o060000;
 pub const LIBSSH2_SFTP_S_IFREG: c_ulong = 0o100000;
 pub const LIBSSH2_SFTP_S_IFLNK: c_ulong = 0o120000;
+pub const LIBSSH2_SFTP_S_IFSOCK: c_ulong = 0o140000;
 
 pub const LIBSSH2_CHANNEL_EXTENDED_DATA_NORMAL: c_int = 0;
 pub const LIBSSH2_CHANNEL_EXTENDED_DATA_IGNORE: c_int = 1;
