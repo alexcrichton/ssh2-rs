@@ -23,12 +23,6 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
-    - name: Export OpenSSL environment variables
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-      run: |
-        echo "::set-env name=OPENSSL_INCLUDE_DIR::$(brew --prefix openssl)/include"
-        echo "::set-env name=OPENSSL_LIB_DIR::$(brew --prefix openssl)/lib"
     - name: Build and test
       run: |
         rustc -V
