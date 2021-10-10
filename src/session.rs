@@ -299,7 +299,8 @@ impl Session {
     }
 
     /// The session takes ownership of the stream provided.
-    /// You may use the tcp_stream() method to obtain the raw fd later.
+    /// You may use the `AsRawFd` (unix) or `AsRawSocket` (windows) traits
+    /// to obtain the raw fd later if required.
     ///
     /// It is also highly recommended that the stream provided is not used
     /// concurrently elsewhere for the duration of this session as it may
