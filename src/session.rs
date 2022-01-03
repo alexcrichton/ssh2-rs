@@ -1,4 +1,3 @@
-#[cfg(unix)]
 use libc::size_t;
 use libc::{self, c_char, c_int, c_long, c_uint, c_void};
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
