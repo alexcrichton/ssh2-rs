@@ -516,10 +516,8 @@ impl Session {
 
     /// Attempt public key authentication using a PEM encoded private key from
     /// memory. Public key is computed from private key if none passed.
-    /// This is available only for `unix` targets, as it relies on openssl.
-    /// It is therefore recommended to use `#[cfg(unix)]` or otherwise test for
-    /// the `unix` compliation target when using this function.
-    #[cfg(unix)]
+    /// This is available with openssl enabled (Required for Unix, or with vendored-openssl or openssl-on-win32 features).
+    #[cfg(any(unix, feature = "vendored-openssl", feature = "openssl-on-win32"))]
     pub fn userauth_pubkey_memory(
         &self,
         username: &str,
