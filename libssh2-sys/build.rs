@@ -32,13 +32,21 @@ fn main() {
         }
     }
 
+    // When cross-compiling for the Haiku platform, always link to
+    // the system-provided library.
+    let host = env::var("HOST").unwrap();
+    let target = env::var("TARGET").unwrap();
+
+    if host != target && target.contains("haiku") {
+        return println!("cargo:rustc-link-lib=ssh2");
+    }
+
     if !Path::new("libssh2/.git").exists() {
         let _ = Command::new("git")
             .args(&["submodule", "update", "--init"])
             .status();
     }
 
-    let target = env::var("TARGET").unwrap();
     let profile = env::var("PROFILE").unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut cfg = cc::Build::new();
