@@ -593,7 +593,11 @@ impl File {
     pub fn readdir(&mut self) -> Result<(PathBuf, FileStat), Error> {
         let locked = self.lock()?;
 
-        let mut buf = Vec::<u8>::with_capacity(128);
+        // libssh2 through 1.10.0 skips entries if the buffer
+        // is not large enough: it's not enough to resize and try again
+        // on getting an error. So, we make it quite large here.
+        // See <https://github.com/alexcrichton/ssh2-rs/issues/217>.
+        let mut buf = Vec::<u8>::with_capacity(4 * 1024);
         let mut stat = unsafe { mem::zeroed() };
         let mut rc;
         loop {
