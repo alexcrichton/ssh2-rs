@@ -16,6 +16,12 @@ fn main() {
         return;
     }
 
+    // If we're being built as part of another project that supplies its own
+    // copy of libssh2, use the supplied library.
+    if bring_your_own_libssh2("LIBSSH2_DIR") {
+        return;
+    }
+
     // The system copy of libssh2 is not used by default because it
     // can lead to having two copies of libssl loaded at once.
     // See https://github.com/alexcrichton/ssh2-rs/pull/88
@@ -235,4 +241,37 @@ fn try_vcpkg() -> bool {
             println!("cargo:rustc-link-lib=user32");
         })
         .is_ok()
+}
+
+fn bring_your_own_libssh2(varname: &str) -> bool {
+    println!("cargo:rerun-if-env-changed={}", varname);
+    let libssh2_dir = match env::var(varname) {
+        Ok(v) => {
+            // The value may be a space-separated list of dirs.
+            // Pick the first one.
+            let mut dirs = v.split(' ');
+            PathBuf::from(dirs.nth(0).unwrap())
+        },
+        Err(_) => return false,
+    };
+
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let pkgconfig = dst.join("lib/pkgconfig");
+    fs::create_dir_all(&pkgconfig).unwrap();
+
+    eprintln!("Using:");
+    eprintln!("libssh2dir = {:?}", libssh2_dir);
+    eprintln!("dst = {:?}", dst);
+    eprintln!("pkgcfg = {:?}", pkgconfig);
+
+    // Read in the precompiled library's pkgconfig file and rewrite the prefix
+    // to the user-supplied LIBSSH2_DIR.
+    fs::write(
+        pkgconfig.join("libssh2.pc"),
+        fs::read_to_string(libssh2_dir.join("lib/pkgconfig/libssh2.pc"))
+            .unwrap()
+            .replace("${prefix}", libssh2_dir.to_str().unwrap())
+    )
+    .unwrap();
+    true
 }
