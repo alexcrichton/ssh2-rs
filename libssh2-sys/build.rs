@@ -84,6 +84,7 @@ fn main() {
         .file("libssh2/src/sftp.c")
         .file("libssh2/src/transport.c")
         .file("libssh2/src/userauth.c")
+        .file("libssh2/src/userauth_kbd_packet.c")
         .include(&include)
         .include("libssh2/src");
 
