@@ -302,8 +302,8 @@ pub type LIBSSH2_USERAUTH_KBDINT_RESPONSE_FUNC = extern "C" fn(
 
 #[repr(C)]
 pub struct LIBSSH2_USERAUTH_KBDINT_PROMPT {
-    pub text: *mut c_char,
-    pub length: c_uint,
+    pub text: *mut c_uchar,
+    pub length: size_t,
     pub echo: c_uchar,
 }
 
