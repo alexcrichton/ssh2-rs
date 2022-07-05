@@ -98,6 +98,9 @@ pub const LIBSSH2_ERROR_SOCKET_RECV: c_int = -43;
 pub const LIBSSH2_ERROR_ENCRYPT: c_int = -44;
 pub const LIBSSH2_ERROR_BAD_SOCKET: c_int = -45;
 pub const LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
+pub const LIBSSH2_ERROR_CHANNEL_WINDOW_FULL: c_int = -47;
+pub const LIBSSH2_ERROR_KEYFILE_AUTH_FAILED: c_int = -48;
+pub const LIBSSH2_ERROR_RANDGEN: c_int = -49;
 
 pub const LIBSSH2_FX_EOF: c_int = 1;
 pub const LIBSSH2_FX_NO_SUCH_FILE: c_int = 2;
