@@ -127,7 +127,7 @@ impl Error {
                 raw::LIBSSH2_ERROR_INVALID_MAC => "invalid mac",
                 raw::LIBSSH2_ERROR_KEX_FAILURE => "kex failure",
                 raw::LIBSSH2_ERROR_ALLOC => "alloc failure",
-                raw::LIBSSH2_ERROR_SOCKET_SEND => "socket send faiulre",
+                raw::LIBSSH2_ERROR_SOCKET_SEND => "socket send failure",
                 raw::LIBSSH2_ERROR_KEY_EXCHANGE_FAILURE => "key exchange failure",
                 raw::LIBSSH2_ERROR_TIMEOUT => "timed out",
                 raw::LIBSSH2_ERROR_HOSTKEY_INIT => "hostkey init error",
