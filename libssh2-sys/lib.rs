@@ -101,6 +101,7 @@ pub const LIBSSH2_ERROR_KNOWN_HOSTS: c_int = -46;
 pub const LIBSSH2_ERROR_CHANNEL_WINDOW_FULL: c_int = -47;
 pub const LIBSSH2_ERROR_KEYFILE_AUTH_FAILED: c_int = -48;
 pub const LIBSSH2_ERROR_RANDGEN: c_int = -49;
+pub const LIBSSH2_ERROR_MISSING_USERAUTH_BANNER: c_int = -50;
 
 pub const LIBSSH2_FX_EOF: c_int = 1;
 pub const LIBSSH2_FX_NO_SUCH_FILE: c_int = 2;
@@ -511,6 +512,7 @@ extern "C" {
     pub fn libssh2_channel_request_auth_agent(channel: *mut LIBSSH2_CHANNEL) -> c_int;
 
     // userauth
+    pub fn libssh2_userauth_banner(sess: *mut LIBSSH2_SESSION, banner: *mut *mut c_char) -> c_int;
     pub fn libssh2_userauth_authenticated(sess: *mut LIBSSH2_SESSION) -> c_int;
     pub fn libssh2_userauth_list(
         sess: *mut LIBSSH2_SESSION,
