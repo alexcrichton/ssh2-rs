@@ -167,6 +167,9 @@ impl Error {
                 raw::LIBSSH2_ERROR_ENCRYPT => "bad encrypt",
                 raw::LIBSSH2_ERROR_BAD_SOCKET => "bad socket",
                 raw::LIBSSH2_ERROR_KNOWN_HOSTS => "known hosts error",
+                raw::LIBSSH2_ERROR_CHANNEL_WINDOW_FULL => "channel window full",
+                raw::LIBSSH2_ERROR_KEYFILE_AUTH_FAILED => "keyfile auth failed",
+                raw::LIBSSH2_ERROR_RANDGEN => "unable to get random bytes",
                 _ => "unknown error",
             },
             ErrorCode::SFTP(code) => match code {
