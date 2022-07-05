@@ -1,6 +1,6 @@
 [package]
 name = "ssh2"
-version = "0.9.3"
+version = "0.9.4"
 authors = ["Alex Crichton <alex@alexcrichton.com>", "Wez Furlong <wez@wezfurlong.org>", "Matteo Bigoi <bigo@crisidev.org>"]
 license = "MIT/Apache-2.0"
 keywords = ["ssh"]
