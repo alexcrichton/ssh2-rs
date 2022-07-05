@@ -48,6 +48,7 @@ pub const LIBSSH2_METHOD_COMP_CS: c_int = 6;
 pub const LIBSSH2_METHOD_COMP_SC: c_int = 7;
 pub const LIBSSH2_METHOD_LANG_CS: c_int = 8;
 pub const LIBSSH2_METHOD_LANG_SC: c_int = 9;
+pub const LIBSSH2_METHOD_SIGN_ALGO: c_int = 10;
 
 pub const LIBSSH2_CHANNEL_PACKET_DEFAULT: c_uint = 32768;
 pub const LIBSSH2_CHANNEL_WINDOW_DEFAULT: c_uint = 2 * 1024 * 1024;
@@ -102,6 +103,7 @@ pub const LIBSSH2_ERROR_CHANNEL_WINDOW_FULL: c_int = -47;
 pub const LIBSSH2_ERROR_KEYFILE_AUTH_FAILED: c_int = -48;
 pub const LIBSSH2_ERROR_RANDGEN: c_int = -49;
 pub const LIBSSH2_ERROR_MISSING_USERAUTH_BANNER: c_int = -50;
+pub const LIBSSH2_ERROR_ALGO_UNSUPPORTED: c_int = -51;
 
 pub const LIBSSH2_FX_EOF: c_int = 1;
 pub const LIBSSH2_FX_NO_SUCH_FILE: c_int = 2;
