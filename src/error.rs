@@ -170,6 +170,7 @@ impl Error {
                 raw::LIBSSH2_ERROR_CHANNEL_WINDOW_FULL => "channel window full",
                 raw::LIBSSH2_ERROR_KEYFILE_AUTH_FAILED => "keyfile auth failed",
                 raw::LIBSSH2_ERROR_RANDGEN => "unable to get random bytes",
+                raw::LIBSSH2_ERROR_MISSING_USERAUTH_BANNER => "missing userauth banner",
                 _ => "unknown error",
             },
             ErrorCode::SFTP(code) => match code {
