@@ -171,6 +171,7 @@ impl Error {
                 raw::LIBSSH2_ERROR_KEYFILE_AUTH_FAILED => "keyfile auth failed",
                 raw::LIBSSH2_ERROR_RANDGEN => "unable to get random bytes",
                 raw::LIBSSH2_ERROR_MISSING_USERAUTH_BANNER => "missing userauth banner",
+                raw::LIBSSH2_ERROR_ALGO_UNSUPPORTED => "algorithm unsupported",
                 _ => "unknown error",
             },
             ErrorCode::SFTP(code) => match code {

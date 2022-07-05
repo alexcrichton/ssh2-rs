@@ -308,6 +308,7 @@ pub enum MethodType {
     CompSc = raw::LIBSSH2_METHOD_COMP_SC as isize,
     LangCs = raw::LIBSSH2_METHOD_LANG_CS as isize,
     LangSc = raw::LIBSSH2_METHOD_LANG_SC as isize,
+    SignAlgo = raw::LIBSSH2_METHOD_SIGN_ALGO as isize,
 }
 
 /// When passed to `Channel::flush_stream`, flushes all extended data
