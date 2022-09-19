@@ -369,7 +369,7 @@ impl Sftp {
             };
             if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
                 let cap = ret.capacity();
-                ret.reserve(cap);
+                ret.reserve(cap * 2);
             } else {
                 break;
             }
@@ -609,7 +609,7 @@ impl File {
             };
             if rc == raw::LIBSSH2_ERROR_BUFFER_TOO_SMALL {
                 let cap = buf.capacity();
-                buf.reserve(cap);
+                buf.reserve(cap * 2);
             } else {
                 break;
             }
