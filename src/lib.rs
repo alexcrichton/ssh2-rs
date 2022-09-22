@@ -105,7 +105,7 @@
 //! let mut remote_file = sess.scp_send(Path::new("remote"),
 //!                                     0o644, 10, None).unwrap();
 //! remote_file.write(b"1234567890").unwrap();
-//! // Close the channel and wait for the whole content to be tranferred
+//! // Close the channel and wait for the whole content to be transferred
 //! remote_file.send_eof().unwrap();
 //! remote_file.wait_eof().unwrap();
 //! remote_file.close().unwrap();
