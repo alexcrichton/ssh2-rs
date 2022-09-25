@@ -2,6 +2,7 @@ use libc::{c_int, c_long, c_uint, c_ulong, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::convert::TryFrom;
 use std::ffi::CString;
+use std::ptr::null_mut;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::mem;
@@ -611,7 +612,7 @@ impl File {
                     locked.raw,
                     buf.as_mut_ptr() as *mut _,
                     buf.capacity() as size_t,
-                    0 as *mut _,
+                    null_mut(),
                     0,
                     &mut stat,
                 )

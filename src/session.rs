@@ -5,6 +5,7 @@ use libc::{self, c_char, c_int, c_long, c_uint, c_void};
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 use std::borrow::Cow;
 use std::ffi::CString;
+use std::ptr::{null, null_mut};
 use std::mem;
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -158,7 +159,7 @@ impl Session {
     pub fn new() -> Result<Session, Error> {
         ::init();
         unsafe {
-            let ret = raw::libssh2_session_init_ex(None, None, None, 0 as *mut _);
+            let ret = raw::libssh2_session_init_ex(None, None, None, null_mut());
             if ret.is_null() {
                 Err(Error::unknown())
             } else {
@@ -513,12 +514,12 @@ impl Session {
                 inner.raw,
                 username.as_ptr() as *const _,
                 username.len() as c_uint,
-                pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(0 as *const _),
+                pubkey.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                 privatekey.as_ptr(),
                 passphrase
                     .as_ref()
                     .map(|s| s.as_ptr())
-                    .unwrap_or(0 as *const _),
+                    .unwrap_or(null()),
             )
         })
     }
@@ -555,14 +556,14 @@ impl Session {
                 pubkeydata
                     .as_ref()
                     .map(|s| s.as_ptr())
-                    .unwrap_or(0 as *const _),
+                    .unwrap_or(null()),
                 pubkeydata_len as size_t,
                 privatekeydata.as_ptr(),
                 privatekeydata_len as size_t,
                 passphrase
                     .as_ref()
                     .map(|s| s.as_ptr())
-                    .unwrap_or(0 as *const _),
+                    .unwrap_or(null()),
             )
         })
     }
@@ -603,7 +604,7 @@ impl Session {
                 passphrase
                     .as_ref()
                     .map(|s| s.as_ptr())
-                    .unwrap_or(0 as *const _),
+                    .unwrap_or(null()),
                 hostname.as_ptr() as *const _,
                 hostname.len() as c_uint,
                 local_username.as_ptr() as *const _,
@@ -685,7 +686,7 @@ impl Session {
         let mut ret = Vec::new();
         let inner = self.inner();
         unsafe {
-            let mut ptr = 0 as *mut _;
+            let mut ptr = null_mut();
             let rc = raw::libssh2_session_supported_algs(inner.raw, method_type, &mut ptr);
             if rc <= 0 {
                 inner.rc(rc)?;
@@ -790,7 +791,7 @@ impl Session {
         unsafe {
             let ret = raw::libssh2_channel_forward_listen_ex(
                 inner.raw,
-                host.map(|s| s.as_ptr()).unwrap_or(0 as *const _),
+                host.map(|s| s.as_ptr()).unwrap_or(null()),
                 remote_port as c_int,
                 &mut bound_port,
                 queue_maxsize.unwrap_or(0) as c_int,
@@ -888,7 +889,7 @@ impl Session {
         let (message, message_len) = message
             .as_ref()
             .map(|s| (s.as_ptr(), s.as_bytes().len()))
-            .unwrap_or((0 as *const _, 0));
+            .unwrap_or((null(), 0));
         let inner = self.inner();
         unsafe {
             let ret = raw::libssh2_channel_open_ex(

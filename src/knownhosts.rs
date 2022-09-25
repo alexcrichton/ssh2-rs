@@ -2,6 +2,7 @@ use libc::{c_int, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::ffi::CString;
 use std::path::Path;
+use std::ptr::null_mut;
 use std::str;
 use std::sync::Arc;
 
@@ -150,8 +151,8 @@ impl KnownHosts {
 
     /// Retrieves the list of known hosts
     pub fn hosts(&self) -> Result<Vec<Host>, Error> {
-        let mut next = 0 as *mut _;
-        let mut prev = 0 as *mut _;
+        let mut next = null_mut();
+        let mut prev = null_mut();
         let sess = self.sess.lock();
         let mut hosts = vec![];
 
@@ -176,8 +177,8 @@ impl KnownHosts {
         sess: &MutexGuard<SessionInner>,
         host: &Host,
     ) -> Result<Option<*mut raw::libssh2_knownhost>, Error> {
-        let mut next = 0 as *mut _;
-        let mut prev = 0 as *mut _;
+        let mut next = null_mut();
+        let mut prev = null_mut();
 
         loop {
             match unsafe { raw::libssh2_knownhost_get(self.raw, &mut next, prev) } {
@@ -231,7 +232,7 @@ impl KnownHosts {
                 key.as_ptr() as *const _,
                 key.len() as size_t,
                 flags,
-                0 as *mut _,
+                null_mut(),
             );
             match rc {
                 raw::LIBSSH2_KNOWNHOST_CHECK_MATCH => CheckResult::Match,
@@ -267,13 +268,13 @@ impl KnownHosts {
             let rc = raw::libssh2_knownhost_addc(
                 self.raw,
                 host.as_ptr() as *mut _,
-                0 as *mut _,
+                null_mut(),
                 key.as_ptr() as *mut _,
                 key.len() as size_t,
                 comment.as_ptr() as *const _,
                 comment.len() as size_t,
                 flags,
-                0 as *mut _,
+                null_mut(),
             );
             sess.rc(rc)
         }

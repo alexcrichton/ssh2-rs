@@ -1,5 +1,6 @@
 use parking_lot::{Mutex, MutexGuard};
 use std::ffi::{CStr, CString};
+use std::ptr::null_mut;
 use std::slice;
 use std::str;
 use std::sync::Arc;
@@ -68,8 +69,8 @@ impl Agent {
     pub fn identities(&self) -> Result<Vec<PublicKey>, Error> {
         let sess = self.sess.lock();
         let mut res = vec![];
-        let mut prev = 0 as *mut _;
-        let mut next = 0 as *mut _;
+        let mut prev = null_mut();
+        let mut next = null_mut();
         loop {
             match unsafe { raw::libssh2_agent_get_identity(self.raw, &mut next, prev) } {
                 0 => {
@@ -88,8 +89,8 @@ impl Agent {
         sess: &MutexGuard<SessionInner>,
         identity: &PublicKey,
     ) -> Result<Option<*mut raw::libssh2_agent_publickey>, Error> {
-        let mut prev = 0 as *mut _;
-        let mut next = 0 as *mut _;
+        let mut prev = null_mut();
+        let mut next = null_mut();
         loop {
             match unsafe { raw::libssh2_agent_get_identity(self.raw, &mut next, prev) } {
                 0 => {

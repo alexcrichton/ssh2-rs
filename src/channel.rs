@@ -2,6 +2,7 @@ use libc::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::cmp;
 use std::ffi::CString;
+use std::ptr::{null, null_mut};
 use std::io;
 use std::io::prelude::*;
 use std::slice;
@@ -271,7 +272,7 @@ impl Channel {
         let (message, message_len) = message
             .as_ref()
             .map(|s| (s.as_ptr(), s.as_bytes().len()))
-            .unwrap_or((0 as *const _, 0));
+            .unwrap_or((null(), 0));
         let locked = self.lock();
         unsafe {
             let rc = raw::libssh2_channel_process_startup(
@@ -335,11 +336,11 @@ impl Channel {
     pub fn exit_signal(&self) -> Result<ExitSignal, Error> {
         let locked = self.lock();
         unsafe {
-            let mut sig = 0 as *mut _;
+            let mut sig = null_mut();
             let mut siglen = 0;
-            let mut msg = 0 as *mut _;
+            let mut msg = null_mut();
             let mut msglen = 0;
-            let mut lang = 0 as *mut _;
+            let mut lang = null_mut();
             let mut langlen = 0;
             let rc = raw::libssh2_channel_get_exit_signal(
                 locked.raw,
