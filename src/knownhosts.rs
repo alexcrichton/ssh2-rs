@@ -86,6 +86,8 @@ impl KnownHosts {
 
     /// Read a line as if it were from a known hosts file.
     pub fn read_str(&mut self, s: &str, kind: KnownHostFileKind) -> Result<(), Error> {
+        let s = CString::new(s)?;
+        let s = s.as_bytes();
         let sess = self.sess.lock();
         sess.rc(unsafe {
             raw::libssh2_knownhost_readline(
