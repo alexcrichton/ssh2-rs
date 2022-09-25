@@ -1,6 +1,7 @@
 use libc::{c_int, c_long, c_uint, c_ulong, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::convert::TryFrom;
+use std::ffi::CString;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::mem;
@@ -177,14 +178,14 @@ impl Sftp {
         mode: i32,
         open_type: OpenType,
     ) -> Result<File, Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
 
         let locked = self.lock()?;
         unsafe {
             let ret = raw::libssh2_sftp_open_ex(
                 locked.raw,
                 filename.as_ptr() as *const _,
-                filename.len() as c_uint,
+                filename.as_bytes().len() as c_uint,
                 flags.bits() as c_ulong,
                 mode as c_long,
                 open_type as c_int,
@@ -243,13 +244,13 @@ impl Sftp {
 
     /// Create a directory on the remote file system.
     pub fn mkdir(&self, filename: &Path, mode: i32) -> Result<(), Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
         Self::rc(&locked, unsafe {
             raw::libssh2_sftp_mkdir_ex(
                 locked.raw,
                 filename.as_ptr() as *const _,
-                filename.len() as c_uint,
+                filename.as_bytes().len() as c_uint,
                 mode as c_long,
             )
         })
@@ -257,20 +258,20 @@ impl Sftp {
 
     /// Remove a directory from the remote file system.
     pub fn rmdir(&self, filename: &Path) -> Result<(), Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
         locked.sess.rc(unsafe {
             raw::libssh2_sftp_rmdir_ex(
                 locked.raw,
                 filename.as_ptr() as *const _,
-                filename.len() as c_uint,
+                filename.as_bytes().len() as c_uint,
             )
         })
     }
 
     /// Get the metadata for a file, performed by stat(2)
     pub fn stat(&self, filename: &Path) -> Result<FileStat, Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
@@ -279,7 +280,7 @@ impl Sftp {
                 raw::libssh2_sftp_stat_ex(
                     locked.raw,
                     filename.as_ptr() as *const _,
-                    filename.len() as c_uint,
+                    filename.as_bytes().len() as c_uint,
                     raw::LIBSSH2_SFTP_STAT,
                     &mut ret,
                 ),
@@ -290,7 +291,7 @@ impl Sftp {
 
     /// Get the metadata for a file, performed by lstat(2)
     pub fn lstat(&self, filename: &Path) -> Result<FileStat, Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
         unsafe {
             let mut ret = mem::zeroed();
@@ -299,7 +300,7 @@ impl Sftp {
                 raw::libssh2_sftp_stat_ex(
                     locked.raw,
                     filename.as_ptr() as *const _,
-                    filename.len() as c_uint,
+                    filename.as_bytes().len() as c_uint,
                     raw::LIBSSH2_SFTP_LSTAT,
                     &mut ret,
                 ),
@@ -310,14 +311,14 @@ impl Sftp {
 
     /// Set the metadata for a file.
     pub fn setstat(&self, filename: &Path, stat: FileStat) -> Result<(), Error> {
-        let filename = util::path2bytes(filename)?;
+        let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
         Self::rc(&locked, unsafe {
             let mut raw = stat.raw();
             raw::libssh2_sftp_stat_ex(
                 locked.raw,
                 filename.as_ptr() as *const _,
-                filename.len() as c_uint,
+                filename.as_bytes().len() as c_uint,
                 raw::LIBSSH2_SFTP_SETSTAT,
                 &mut raw,
             )
@@ -326,16 +327,16 @@ impl Sftp {
 
     /// Create a symlink at `target` pointing at `path`.
     pub fn symlink(&self, path: &Path, target: &Path) -> Result<(), Error> {
-        let path = util::path2bytes(path)?;
-        let target = util::path2bytes(target)?;
+        let path = CString::new(util::path2bytes(path)?)?;
+        let target = CString::new(util::path2bytes(target)?)?;
         let locked = self.lock()?;
         locked.sess.rc(unsafe {
             raw::libssh2_sftp_symlink_ex(
                 locked.raw,
                 path.as_ptr() as *const _,
-                path.len() as c_uint,
+                path.as_bytes().len() as c_uint,
                 target.as_ptr() as *mut _,
-                target.len() as c_uint,
+                target.as_bytes().len() as c_uint,
                 raw::LIBSSH2_SFTP_SYMLINK,
             )
         })
@@ -352,7 +353,7 @@ impl Sftp {
     }
 
     fn readlink_op(&self, path: &Path, op: c_int) -> Result<PathBuf, Error> {
-        let path = util::path2bytes(path)?;
+        let path = CString::new(util::path2bytes(path)?)?;
         let mut ret = Vec::<u8>::with_capacity(128);
         let mut rc;
         let locked = self.lock()?;
@@ -361,7 +362,7 @@ impl Sftp {
                 raw::libssh2_sftp_symlink_ex(
                     locked.raw,
                     path.as_ptr() as *const _,
-                    path.len() as c_uint,
+                    path.as_bytes().len() as c_uint,
                     ret.as_ptr() as *mut _,
                     ret.capacity() as c_uint,
                     op,
@@ -395,16 +396,16 @@ impl Sftp {
     pub fn rename(&self, src: &Path, dst: &Path, flags: Option<RenameFlags>) -> Result<(), Error> {
         let flags =
             flags.unwrap_or(RenameFlags::ATOMIC | RenameFlags::OVERWRITE | RenameFlags::NATIVE);
-        let src = util::path2bytes(src)?;
-        let dst = util::path2bytes(dst)?;
+        let src = CString::new(util::path2bytes(src)?)?;
+        let dst = CString::new(util::path2bytes(dst)?)?;
         let locked = self.lock()?;
         Self::rc(&locked, unsafe {
             raw::libssh2_sftp_rename_ex(
                 locked.raw,
                 src.as_ptr() as *const _,
-                src.len() as c_uint,
+                src.as_bytes().len() as c_uint,
                 dst.as_ptr() as *const _,
-                dst.len() as c_uint,
+                dst.as_bytes().len() as c_uint,
                 flags.bits(),
             )
         })
@@ -412,10 +413,14 @@ impl Sftp {
 
     /// Remove a file on the remote filesystem
     pub fn unlink(&self, file: &Path) -> Result<(), Error> {
-        let file = util::path2bytes(file)?;
+        let file = CString::new(util::path2bytes(file)?)?;
         let locked = self.lock()?;
         Self::rc(&locked, unsafe {
-            raw::libssh2_sftp_unlink_ex(locked.raw, file.as_ptr() as *const _, file.len() as c_uint)
+            raw::libssh2_sftp_unlink_ex(
+                locked.raw,
+                file.as_ptr() as *const _,
+                file.as_bytes().len() as c_uint,
+            )
         })
     }
 
