@@ -771,11 +771,12 @@ impl Session {
         queue_maxsize: Option<u32>,
     ) -> Result<(Listener, u16), Error> {
         let mut bound_port = 0;
+        let host = host.map(|s| CString::new(s)).transpose()?;
         let inner = self.inner();
         unsafe {
             let ret = raw::libssh2_channel_forward_listen_ex(
                 inner.raw,
-                host.map(|s| s.as_ptr()).unwrap_or(0 as *const _) as *mut _,
+                host.map(|s| s.as_ptr()).unwrap_or(0 as *const _),
                 remote_port as c_int,
                 &mut bound_port,
                 queue_maxsize.unwrap_or(0) as c_int,
