@@ -331,6 +331,10 @@ impl Session {
     /// authentication (routed via PAM or another authentication backed)
     /// instead.
     pub fn userauth_password(&self, username: &str, password: &str) -> Result<(), Error> {
+        let username = CString::new(username)?;
+        let username = username.as_bytes();
+        let password = CString::new(password)?;
+        let password = password.as_bytes();
         let inner = self.inner();
         inner.rc(unsafe {
             raw::libssh2_userauth_password_ex(
@@ -445,6 +449,8 @@ impl Session {
             }));
         }
 
+        let username = CString::new(username)?;
+        let username = username.as_bytes();
         let inner = self.inner();
         unsafe {
             with_abstract(inner.raw, prompter as *mut P as *mut c_void, || {
@@ -490,6 +496,8 @@ impl Session {
         privatekey: &Path,
         passphrase: Option<&str>,
     ) -> Result<(), Error> {
+        let username = CString::new(username)?;
+        let username = username.as_bytes();
         let pubkey = match pubkey {
             Some(s) => Some(CString::new(util::path2bytes(s)?)?),
             None => None,
@@ -526,6 +534,8 @@ impl Session {
         privatekeydata: &str,
         passphrase: Option<&str>,
     ) -> Result<(), Error> {
+        let username = CString::new(username)?;
+        let username = username.as_bytes();
         let (pubkeydata, pubkeydata_len) = match pubkeydata {
             Some(s) => (Some(CString::new(s)?), s.len()),
             None => (None, 0),
@@ -578,6 +588,10 @@ impl Session {
             Some(local) => local,
             None => username,
         };
+        let username = CString::new(username)?;
+        let username = username.as_bytes();
+        let local_username = CString::new(local_username)?;
+        let local_username = local_username.as_bytes();
         let inner = self.inner();
         inner.rc(unsafe {
             raw::libssh2_userauth_hostbased_fromfile_ex(
@@ -868,7 +882,13 @@ impl Session {
         packet_size: u32,
         message: Option<&str>,
     ) -> Result<Channel, Error> {
-        let message_len = message.map(|s| s.len()).unwrap_or(0);
+        let channel_type = CString::new(channel_type)?;
+        let channel_type = channel_type.as_bytes();
+        let message = message.map(|s| CString::new(s)).transpose()?;
+        let (message, message_len) = message
+            .as_ref()
+            .map(|s| (s.as_ptr(), s.as_bytes().len()))
+            .unwrap_or((0 as *const _, 0));
         let inner = self.inner();
         unsafe {
             let ret = raw::libssh2_channel_open_ex(
@@ -877,10 +897,7 @@ impl Session {
                 channel_type.len() as c_uint,
                 window_size as c_uint,
                 packet_size as c_uint,
-                message
-                    .as_ref()
-                    .map(|s| s.as_ptr())
-                    .unwrap_or(0 as *const _) as *const _,
+                message,
                 message_len as c_uint,
             );
             let err = inner.last_error();
