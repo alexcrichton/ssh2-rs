@@ -1,6 +1,7 @@
 use libc::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::cmp;
+use std::ffi::CString;
 use std::io;
 use std::io::prelude::*;
 use std::slice;
@@ -124,6 +125,10 @@ impl Channel {
     /// Note that this does not make sense for all channel types and may be
     /// ignored by the server despite returning success.
     pub fn setenv(&mut self, var: &str, val: &str) -> Result<(), Error> {
+        let var = CString::new(var)?;
+        let var = var.as_bytes();
+        let val = CString::new(val)?;
+        let val = val.as_bytes();
         let locked = self.lock();
         unsafe {
             locked.sess.rc(raw::libssh2_channel_setenv_ex(
@@ -161,6 +166,8 @@ impl Channel {
         mode: Option<PtyModes>,
         dim: Option<(u32, u32, u32, u32)>,
     ) -> Result<(), Error> {
+        let term = CString::new(term)?;
+        let term = term.as_bytes();
         let locked = self.lock();
         let mode = mode.map(PtyModes::finish);
         let mode = mode.as_ref().map(Vec::as_slice).unwrap_or(&[]);
@@ -260,15 +267,18 @@ impl Channel {
     /// The SSH2 protocol currently defines shell, exec, and subsystem as
     /// standard process services.
     pub fn process_startup(&mut self, request: &str, message: Option<&str>) -> Result<(), Error> {
-        let message_len = message.map(|s| s.len()).unwrap_or(0);
-        let message = message.map(|s| s.as_ptr()).unwrap_or(0 as *const _);
+        let message = message.map(|s| CString::new(s)).transpose()?;
+        let (message, message_len) = message
+            .as_ref()
+            .map(|s| (s.as_ptr(), s.as_bytes().len()))
+            .unwrap_or((0 as *const _, 0));
         let locked = self.lock();
         unsafe {
             let rc = raw::libssh2_channel_process_startup(
                 locked.raw,
                 request.as_ptr() as *const _,
                 request.len() as c_uint,
-                message as *const _,
+                message,
                 message_len as c_uint,
             );
             locked.sess.rc(rc)
