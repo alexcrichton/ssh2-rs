@@ -218,6 +218,8 @@ impl From<Error> for io::Error {
         let kind = match err.code {
             ErrorCode::Session(raw::LIBSSH2_ERROR_EAGAIN) => io::ErrorKind::WouldBlock,
             ErrorCode::Session(raw::LIBSSH2_ERROR_TIMEOUT) => io::ErrorKind::TimedOut,
+            ErrorCode::SFTP(raw::LIBSSH2_FX_NO_SUCH_FILE)
+            | ErrorCode::SFTP(raw::LIBSSH2_FX_NO_SUCH_PATH) => io::ErrorKind::NotFound,
             _ => io::ErrorKind::Other,
         };
         io::Error::new(kind, err.msg)
