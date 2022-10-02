@@ -50,3 +50,31 @@ fn ops() {
     let files = sftp.readdir(td.path()).unwrap();
     assert_eq!(files.len(), 4);
 }
+
+#[test]
+fn not_found() {
+    let td = TempDir::new("foo").unwrap();
+
+    let sess = ::authed_session();
+    let sftp = sess.sftp().unwrap();
+
+    // Can't use unwrap_err here since File does not impl Debug.
+    let err = sftp
+        .opendir(&td.path().join("nonexistent"))
+        .err()
+        .expect("open nonexistent dir");
+    assert_eq!(err.to_string(), "[SFTP(2)] no such file");
+
+    let io_err: std::io::Error = err.into();
+    assert_eq!(io_err.kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(io_err.to_string(), "no such file");
+
+    let err = sftp
+        .stat(&td.path().join("nonexistent"))
+        .err()
+        .expect("stat nonexistent");
+    assert_eq!(err.to_string(), "[SFTP(2)] no such file");
+    let io_err: std::io::Error = err.into();
+    assert_eq!(io_err.kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(io_err.to_string(), "no such file");
+}
