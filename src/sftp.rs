@@ -2,11 +2,11 @@ use libc::{c_int, c_long, c_uint, c_ulong, size_t};
 use parking_lot::{Mutex, MutexGuard};
 use std::convert::TryFrom;
 use std::ffi::CString;
-use std::ptr::null_mut;
 use std::io::prelude::*;
 use std::io::{self, ErrorKind, SeekFrom};
 use std::mem;
 use std::path::{Path, PathBuf};
+use std::ptr::null_mut;
 use std::sync::Arc;
 
 use util;
@@ -237,7 +237,11 @@ impl Sftp {
                     ret.push((dirname.join(&filename), stat))
                 }
                 Err(ref e) if e.code() == ErrorCode::Session(raw::LIBSSH2_ERROR_FILE) => break,
-                Err(e) => return Err(e),
+                Err(e) => {
+                    if e.code() != ErrorCode::Session(raw::LIBSSH2_ERROR_EAGAIN) {
+                        return Err(e);
+                    }
+                }
             }
         }
         Ok(ret)
