@@ -673,14 +673,25 @@ impl File {
 
     #[doc(hidden)]
     pub fn close(&mut self) -> Result<(), Error> {
-        {
+        let rc = {
             let locked = self.lock()?;
             self.rc(&locked, unsafe {
                 raw::libssh2_sftp_close_handle(locked.raw)
-            })?;
+            })
+        };
+
+        // If EGAIN was returned, we'll need to call this again to complete the operation.
+        // If any other error was returned, or if it completed OK, we must not use the
+        // handle again.
+        match rc {
+            Err(e) if e.code() == ErrorCode::Session(raw::LIBSSH2_ERROR_EAGAIN) => {
+                Err(e)
+            },
+            rc => {
+                self.inner = None;
+                rc
+            }
         }
-        self.inner = None;
-        Ok(())
     }
 
     fn rc(&self, locked: &LockedFile, rc: libc::c_int) -> Result<(), Error> {
