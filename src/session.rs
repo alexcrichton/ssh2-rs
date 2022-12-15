@@ -662,6 +662,27 @@ impl Session {
         }
     }
 
+    /// Retrieve banner message from server, if available.
+    ///
+    /// When no such message is sent by server or if no authentication attempt has
+    /// been made, this function returns LIBSSH2_ERROR_MISSING_AUTH_BANNER.
+    ///
+    /// The return value is the userauth banner or None or an Error
+    pub fn userauth_banner(&self) -> Result<Option<&str>, Error> {
+        let mut userauth_banner = null_mut();
+        let inner = self.inner();
+        match unsafe { raw::libssh2_userauth_banner(inner.raw, &mut userauth_banner)} {
+            0 => {
+                unsafe {
+                    Ok(::opt_bytes(self, userauth_banner).and_then(|s| str::from_utf8(s).ok()))
+                }
+            },
+            rc => {
+                Err(Error::from_errno(ErrorCode::Session(rc)))
+            }
+        }
+    }
+
     /// Set preferred key exchange method
     ///
     /// The preferences provided are a comma delimited list of preferred methods
