@@ -82,7 +82,7 @@
 //! let mut s = String::new();
 //! channel.read_to_string(&mut s).unwrap();
 //! println!("{}", s);
-//! channel.wait_close();
+//! channel.wait_close().unwrap();
 //! println!("{}", channel.exit_status().unwrap());
 //! ```
 //!
