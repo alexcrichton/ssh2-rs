@@ -24,7 +24,7 @@ libssh2-sys = { path = "libssh2-sys", version = "0.3.0" }
 parking_lot = "0.11"
 
 [dev-dependencies]
-tempdir = "0.3"
+tempfile = "3"
 
 [workspace]
 members = ['systest']

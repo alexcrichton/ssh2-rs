@@ -1,6 +1,6 @@
 use std::fs::{self, File};
 use std::io::prelude::*;
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 #[test]
 fn smoke() {
@@ -10,7 +10,7 @@ fn smoke() {
 
 #[test]
 fn ops() {
-    let td = TempDir::new("foo").unwrap();
+    let td = TempDir::new().unwrap();
     File::create(&td.path().join("foo")).unwrap();
     fs::create_dir(&td.path().join("bar")).unwrap();
 
@@ -53,7 +53,7 @@ fn ops() {
 
 #[test]
 fn not_found() {
-    let td = TempDir::new("foo").unwrap();
+    let td = TempDir::new().unwrap();
 
     let sess = ::authed_session();
     let sftp = sess.sftp().unwrap();
