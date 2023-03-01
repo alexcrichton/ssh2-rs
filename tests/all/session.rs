@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::{self, prelude::*};
 use std::path::Path;
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 use ssh2::{BlockDirections, HashType, KeyboardInteractivePrompt, MethodType, Prompt, Session};
 
@@ -163,7 +163,7 @@ fn scp_recv() {
 
 #[test]
 fn scp_send() {
-    let td = TempDir::new("test").unwrap();
+    let td = TempDir::new().unwrap();
     let sess = ::authed_session();
     let mut ch = sess
         .scp_send(&td.path().join("foo"), 0o644, 6, None)
