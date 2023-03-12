@@ -32,10 +32,13 @@ cp $SSHDIR/id_rsa.pub $SSHDIR/authorized_keys
 
 ssh-keygen -f $SSHDIR/ssh_host_rsa_key -N '' -t rsa
 
+echo -n "Authorized access only!" > $SSHDIR/banner
+
 cat > $SSHDIR/sshd_config <<-EOT
 AuthorizedKeysFile=$SSHDIR/authorized_keys
 HostKey=$SSHDIR/ssh_host_rsa_key
 PidFile=$SSHDIR/sshd.pid
+Banner $SSHDIR/banner
 Subsystem sftp internal-sftp
 UsePAM yes
 X11Forwarding yes
