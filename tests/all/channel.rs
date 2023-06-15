@@ -1,6 +1,7 @@
 use ssh2::Channel;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
+use std::os::unix::net::UnixListener;
 use std::thread;
 
 /// Consume all available stdout and stderr data.
@@ -162,6 +163,29 @@ fn direct() {
     let sess = ::authed_session();
     let mut channel = sess
         .channel_direct_tcpip("127.0.0.1", addr.port(), None)
+        .unwrap();
+    channel.write_all(&[1, 2, 3]).unwrap();
+    let mut r = [0, 0, 0];
+    channel.read(&mut r).unwrap();
+    assert_eq!(r, [4, 5, 6]);
+    t.join().ok().unwrap();
+}
+
+#[test]
+fn direct_stream_local() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("ssh2-rs-test.sock");
+    let a = UnixListener::bind(&path).unwrap();
+    let t = thread::spawn(move || {
+        let mut s = a.accept().unwrap().0;
+        let mut b = [0, 0, 0];
+        s.read(&mut b).unwrap();
+        assert_eq!(b, [1, 2, 3]);
+        s.write_all(&[4, 5, 6]).unwrap();
+    });
+    let sess = ::authed_session();
+    let mut channel = sess
+        .channel_direct_streamlocal(path.to_str().unwrap(), None)
         .unwrap();
     channel.write_all(&[1, 2, 3]).unwrap();
     let mut r = [0, 0, 0];
