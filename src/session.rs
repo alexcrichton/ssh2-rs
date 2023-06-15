@@ -774,6 +774,39 @@ impl Session {
         }
     }
 
+    /// Tunnel a Unix domain socket connection through an SSH session.
+    ///
+    /// Tunnel a UNIX socket connection through the SSH transport via the remote
+    /// host to a third party. Communication from the client to the SSH server
+    /// remains encrypted, communication from the server to the 3rd party host
+    /// travels in cleartext.
+    ///
+    /// The optional `src` argument is the host/port to tell the SSH server
+    /// where the connection originated from.
+    ///
+    /// The `Channel` returned represents a connection between this host and the
+    /// specified remote host.
+    pub fn channel_direct_streamlocal(
+        &self,
+        socket_path: &str,
+        src: Option<(&str, u16)>,
+    ) -> Result<Channel, Error> {
+        let (shost, sport) = src.unwrap_or(("127.0.0.1", 22));
+        let path = CString::new(socket_path)?;
+        let shost = CString::new(shost)?;
+        let inner = self.inner();
+        unsafe {
+            let ret = raw::libssh2_channel_direct_streamlocal_ex(
+                inner.raw,
+                path.as_ptr(),
+                shost.as_ptr(),
+                sport as c_int,
+            );
+            let err = inner.last_error();
+            Channel::from_raw_opt(ret, err, &self.inner)
+        }
+    }
+
     /// Instruct the remote SSH server to begin listening for inbound TCP/IP
     /// connections.
     ///
