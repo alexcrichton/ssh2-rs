@@ -172,6 +172,8 @@ impl Sftp {
     }
 
     /// Open a handle to a file.
+    ///
+    /// The mode will represent the permissions ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
     pub fn open_mode(
         &self,
         filename: &Path,
