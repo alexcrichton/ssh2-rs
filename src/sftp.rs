@@ -173,7 +173,7 @@ impl Sftp {
 
     /// Open a handle to a file.
     ///
-    /// The mode will represent the permissions ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
+    /// The mode will represent the permissions for the file ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
     pub fn open_mode(
         &self,
         filename: &Path,
@@ -250,6 +250,8 @@ impl Sftp {
     }
 
     /// Create a directory on the remote file system.
+    /// 
+    /// The mode will set the permissions of the new directory ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
     pub fn mkdir(&self, filename: &Path, mode: i32) -> Result<(), Error> {
         let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
