@@ -498,6 +498,12 @@ extern "C" {
         shost: *const c_char,
         sport: c_int,
     ) -> *mut LIBSSH2_CHANNEL;
+    pub fn libssh2_channel_direct_streamlocal_ex(
+        ses: *mut LIBSSH2_SESSION,
+        socket_path: *const c_char,
+        shost: *const c_char,
+        sport: c_int,
+    ) -> *mut LIBSSH2_CHANNEL;
     pub fn libssh2_channel_forward_accept(listener: *mut LIBSSH2_LISTENER) -> *mut LIBSSH2_CHANNEL;
     pub fn libssh2_channel_forward_cancel(listener: *mut LIBSSH2_LISTENER) -> c_int;
     pub fn libssh2_channel_forward_listen_ex(
