@@ -1,8 +1,8 @@
 # ssh2-latest-rs
 
-[![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/linux/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=linux)
-[![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/Windows/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=Windows)
-[![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/macOS/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=macOS)
+[![Build Status](https://github.com/twitzelbos/ssh2-latest-rs/workflows/linux/badge.svg)](https://github.com/twitzelbos/ssh2-latest-rs/actions?workflow=linux)
+[![Build Status](https://github.com/twitzelbos/ssh2-latest-rs/workflows/Windows/badge.svg)](https://github.com/twitzelbos/ssh2-latest-rs/actions?workflow=Windows)
+[![Build Status](https://github.com/twitzelbos/ssh2-latest-rs/workflows/macOS/badge.svg)](https://github.com/twitzelbos/ssh2-latest-rs/actions?workflow=macOS)
 
 [Documentation](https://docs.rs/ssh2)
 
