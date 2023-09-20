@@ -1,4 +1,4 @@
-# ssh2-rs
+# ssh2-latest-rs
 
 [![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/linux/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=linux)
 [![Build Status](https://github.com/alexcrichton/ssh2-rs/workflows/Windows/badge.svg)](https://github.com/alexcrichton/ssh2-rs/actions?workflow=Windows)
@@ -6,7 +6,7 @@
 
 [Documentation](https://docs.rs/ssh2)
 
-Rust bindings to libssh2, an ssh client library.
+Rust bindings to libssh2, an ssh client library. This is a fork incorporating newer features than those presently availble in the parent repository.
 
 ## Usage
 
