@@ -464,7 +464,7 @@ impl Channel {
     /// close message in response.
     ///
     /// To wait for the remote end to close its connection as well, follow this
-    /// command with `wait_closed`
+    /// command with `wait_close`
     pub fn close(&mut self) -> Result<(), Error> {
         let locked = self.lock();
         unsafe { locked.sess.rc(raw::libssh2_channel_close(locked.raw)) }
