@@ -1,7 +1,6 @@
 use ssh2::Channel;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
-use std::os::unix::net::UnixListener;
 use std::thread;
 
 /// Consume all available stdout and stderr data.
@@ -171,8 +170,11 @@ fn direct() {
     t.join().ok().unwrap();
 }
 
+#[cfg(all(unix))]
 #[test]
 fn direct_stream_local() {
+    use std::os::unix::net::UnixListener;
+
     let d = tempfile::tempdir().unwrap();
     let path = d.path().join("ssh2-rs-test.sock");
     let a = UnixListener::bind(&path).unwrap();
