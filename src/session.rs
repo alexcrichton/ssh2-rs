@@ -860,7 +860,7 @@ impl Session {
 
     /// Send a file to the remote host via SCP.
     ///
-    /// The `remote_path` provided will the remote file name. The `times`
+    /// The `remote_path` provided will be the remote file name. The `times`
     /// argument is a tuple of (mtime, atime), and will default to the remote
     /// host's current time if not specified.
     ///
