@@ -23,6 +23,7 @@ use {Agent, Channel, HashType, KnownHosts, Listener, MethodType, Sftp};
 bitflags! {
     /// Flags which can be used with the session trace method to set
     /// the trace level.
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct TraceFlags: c_int {
         /// Authentication debugging
         const AUTH      = raw::LIBSSH2_TRACE_AUTH;
