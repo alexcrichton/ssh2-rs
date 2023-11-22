@@ -106,6 +106,7 @@ pub enum FileType {
 
 bitflags! {
     /// Options that can be used to configure how a file is opened
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct OpenFlags: c_ulong {
         /// Open the file for reading.
         const READ = raw::LIBSSH2_FXF_READ;
@@ -121,15 +122,16 @@ bitflags! {
         /// Forces an existing file with the same name to be truncated to zero
         /// length when creating a file by specifying `Create`. Using this flag
         /// implies the `Create` flag.
-        const TRUNCATE = raw::LIBSSH2_FXF_TRUNC | Self::CREATE.bits;
+        const TRUNCATE = raw::LIBSSH2_FXF_TRUNC | Self::CREATE.bits();
         /// Causes the request to fail if the named file already exists. Using
         /// this flag implies the `Create` flag.
-        const EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | Self::CREATE.bits;
+        const EXCLUSIVE = raw::LIBSSH2_FXF_EXCL | Self::CREATE.bits();
     }
 }
 
 bitflags! {
     /// Options to `Sftp::rename`.
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct RenameFlags: c_long {
         /// In a rename operation, overwrite the destination if it already
         /// exists. If this flag is not present then it is an error if the
