@@ -35,6 +35,13 @@ struct LockedChannel<'a> {
 /// implements the `Reader` and `Writer` traits to send and receive data.
 /// Whether or not I/O operations are blocking is mandated by the `blocking`
 /// flag on a channel's corresponding `Session`.
+///
+/// You may clone a `Channel` to obtain another handle to the same underlying
+/// channel, but note that all clones will share the same underlying SSH
+/// session and will be subject to the same blocking behavior. For more details
+/// on the implications of cloning and blocking operations, refer to the
+/// `Session` documentation.
+#[derive(Clone)]
 pub struct Channel {
     channel_inner: Arc<ChannelInner>,
 }
