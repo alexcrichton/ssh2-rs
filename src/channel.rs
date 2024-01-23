@@ -76,6 +76,13 @@ impl Channel {
 
 /// A channel can have a number of streams, each identified by an id, each of
 /// which implements the `Read` and `Write` traits.
+///
+/// You may clone a `Stream` to obtain another handle to the same underlying
+/// stream, but note that all clones will share the same underlying SSH
+/// session and will be subject to the same blocking behavior. For more details
+/// on the implications of cloning and blocking operations, refer to the
+/// `Session` documentation.
+#[derive(Clone)]
 pub struct Stream {
     channel_inner: Arc<ChannelInner>,
     id: i32,
