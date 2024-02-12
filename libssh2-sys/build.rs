@@ -99,8 +99,13 @@ fn main() {
         if env::var_os("CARGO_FEATURE_OPENSSL_ON_WIN32").is_some() {
             cfg.define("LIBSSH2_OPENSSL", None);
             cfg.define("HAVE_EVP_AES_128_CTR", None);
-            println!("cargo:rustc-link-lib=static=libssl");
-            println!("cargo:rustc-link-lib=static=libcrypto");
+            let lib_prefix = if target.contains("windows-msvc") {
+                "lib"
+            } else {
+                ""
+            };
+            println!("cargo:rustc-link-lib=static={lib_prefix}ssl");
+            println!("cargo:rustc-link-lib=static={lib_prefix}crypto");
         } else {
             cfg.define("LIBSSH2_WINCNG", None);
         }
