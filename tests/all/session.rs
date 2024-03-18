@@ -59,6 +59,19 @@ fn smoke_handshake() {
 }
 
 #[test]
+fn smoke_userauth_banner() {
+    let user = env::var("USER").unwrap();
+    let socket = ::socket();
+    let mut sess = Session::new().unwrap();
+    sess.set_tcp_stream(socket);
+    sess.handshake().unwrap();
+    sess.host_key().unwrap();
+    sess.auth_methods(&user).unwrap();
+    let banner = sess.userauth_banner().unwrap().unwrap();
+    assert!(banner=="Authorized access only!");
+}
+
+#[test]
 fn keyboard_interactive() {
     let user = env::var("USER").unwrap();
     let socket = ::socket();
