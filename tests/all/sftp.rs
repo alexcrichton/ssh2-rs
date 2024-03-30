@@ -16,7 +16,10 @@ fn ops() {
 
     let sess = ::authed_session();
     let sftp = sess.sftp().unwrap();
-    sftp.opendir(&td.path().join("bar")).unwrap();
+    let path = td.path().join("bar");
+    let path_str: &str = path.to_str().unwrap();
+    sftp.opendir(&path).unwrap();
+    sftp.opendir(path_str).unwrap();
     let mut foo = sftp.open(&td.path().join("foo")).unwrap();
     sftp.mkdir(&td.path().join("bar2"), 0o755).unwrap();
     assert!(fs::metadata(&td.path().join("bar2"))
@@ -47,8 +50,13 @@ fn ops() {
     let realpath = sftp.realpath(&td.path().join("foo2")).unwrap();
     assert_eq!(realpath, td.path().join("foo").canonicalize().unwrap());
 
-    let files = sftp.readdir(td.path()).unwrap();
-    assert_eq!(files.len(), 4);
+    let path = td.path();
+    let path_str: &str = path.to_str().unwrap();
+    let files = sftp.readdir(path).unwrap();
+    let files_from_str = sftp.readdir(path_str).unwrap();
+    for (f1, f2) in files.iter().zip(files_from_str.iter()) {
+        assert_eq!(f1, f2);
+    }
 }
 
 #[test]
