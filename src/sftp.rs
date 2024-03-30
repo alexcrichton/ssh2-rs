@@ -176,14 +176,14 @@ impl Sftp {
     /// Open a handle to a file.
     ///
     /// The mode will represent the permissions for the file ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
-    pub fn open_mode(
+    pub fn open_mode<T: AsRef<Path>>(
         &self,
-        filename: &Path,
+        filename: T,
         flags: OpenFlags,
         mode: i32,
         open_type: OpenType,
     ) -> Result<File, Error> {
-        let filename = CString::new(util::path2bytes(filename)?)?;
+        let filename = CString::new(util::path2bytes(filename.as_ref())?)?;
 
         let locked = self.lock()?;
         unsafe {
@@ -205,7 +205,7 @@ impl Sftp {
     }
 
     /// Helper to open a file in the `Read` mode.
-    pub fn open(&self, filename: &Path) -> Result<File, Error> {
+    pub fn open<T: AsRef<Path>>(&self, filename: T) -> Result<File, Error> {
         self.open_mode(filename, OpenFlags::READ, 0o644, OpenType::File)
     }
 
@@ -220,7 +220,7 @@ impl Sftp {
     }
 
     /// Helper to open a directory for reading its contents.
-    pub fn opendir(&self, dirname: &Path) -> Result<File, Error> {
+    pub fn opendir<T: AsRef<Path>>(&self, dirname: T) -> Result<File, Error> {
         self.open_mode(dirname, OpenFlags::READ, 0, OpenType::Dir)
     }
 
@@ -228,8 +228,8 @@ impl Sftp {
     ///
     /// The returned paths are all joined with `dirname` when returned, and the
     /// paths `.` and `..` are filtered out of the returned list.
-    pub fn readdir(&self, dirname: &Path) -> Result<Vec<(PathBuf, FileStat)>, Error> {
-        let mut dir = self.opendir(dirname)?;
+    pub fn readdir<T: AsRef<Path>>(&self, dirname: T) -> Result<Vec<(PathBuf, FileStat)>, Error> {
+        let mut dir = self.opendir(dirname.as_ref())?;
         let mut ret = Vec::new();
         loop {
             match dir.readdir() {
@@ -238,7 +238,7 @@ impl Sftp {
                         continue;
                     }
 
-                    ret.push((dirname.join(&filename), stat))
+                    ret.push((dirname.as_ref().join(&filename), stat))
                 }
                 Err(ref e) if e.code() == ErrorCode::Session(raw::LIBSSH2_ERROR_FILE) => break,
                 Err(e) => {
@@ -252,7 +252,7 @@ impl Sftp {
     }
 
     /// Create a directory on the remote file system.
-    /// 
+    ///
     /// The mode will set the permissions of the new directory ([Wikipedia](<https://en.wikipedia.org/wiki/File-system_permissions#Numeric_notation>)).
     pub fn mkdir(&self, filename: &Path, mode: i32) -> Result<(), Error> {
         let filename = CString::new(util::path2bytes(filename)?)?;
@@ -690,9 +690,7 @@ impl File {
         // If any other error was returned, or if it completed OK, we must not use the
         // handle again.
         match rc {
-            Err(e) if e.code() == ErrorCode::Session(raw::LIBSSH2_ERROR_EAGAIN) => {
-                Err(e)
-            },
+            Err(e) if e.code() == ErrorCode::Session(raw::LIBSSH2_ERROR_EAGAIN) => Err(e),
             rc => {
                 self.inner = None;
                 rc
