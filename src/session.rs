@@ -978,7 +978,7 @@ impl Session {
                 raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_256 => HostKeyType::Ecdsa256,
                 raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_384 => HostKeyType::Ecdsa384,
                 raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_521 => HostKeyType::Ecdsa521,
-                raw::LIBSSH2_HOSTKEY_TYPE_ED25519 => HostKeyType::Ed255219,
+                raw::LIBSSH2_HOSTKEY_TYPE_ED25519 => HostKeyType::Ed25519,
                 raw::LIBSSH2_HOSTKEY_TYPE_UNKNOWN => HostKeyType::Unknown,
                 _ => HostKeyType::Unknown,
             };

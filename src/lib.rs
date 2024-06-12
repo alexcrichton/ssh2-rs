@@ -292,7 +292,7 @@ pub enum HostKeyType {
     Ecdsa256 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_256 as isize,
     Ecdsa384 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_384 as isize,
     Ecdsa521 = raw::LIBSSH2_HOSTKEY_TYPE_ECDSA_521 as isize,
-    Ed255219 = raw::LIBSSH2_HOSTKEY_TYPE_ED25519 as isize,
+    Ed25519 = raw::LIBSSH2_HOSTKEY_TYPE_ED25519 as isize,
 }
 
 #[allow(missing_docs)]
@@ -356,7 +356,7 @@ pub enum KnownHostKeyFormat {
     Ecdsa256 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_256 as isize,
     Ecdsa384 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_384 as isize,
     Ecdsa521 = raw::LIBSSH2_KNOWNHOST_KEY_ECDSA_521 as isize,
-    Ed255219 = raw::LIBSSH2_KNOWNHOST_KEY_ED25519 as isize,
+    Ed25519 = raw::LIBSSH2_KNOWNHOST_KEY_ED25519 as isize,
 }
 
 impl From<HostKeyType> for KnownHostKeyFormat {
@@ -368,7 +368,7 @@ impl From<HostKeyType> for KnownHostKeyFormat {
             HostKeyType::Ecdsa256 => KnownHostKeyFormat::Ecdsa256,
             HostKeyType::Ecdsa384 => KnownHostKeyFormat::Ecdsa384,
             HostKeyType::Ecdsa521 => KnownHostKeyFormat::Ecdsa521,
-            HostKeyType::Ed255219 => KnownHostKeyFormat::Ed255219,
+            HostKeyType::Ed25519 => KnownHostKeyFormat::Ed25519,
         }
     }
 }
