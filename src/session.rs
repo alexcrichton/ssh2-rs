@@ -396,8 +396,13 @@ impl Session {
                     slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
                 };
                 let instruction = String::from_utf8_lossy(instruction);
-
+                if prompts.is_null() || num_prompts < 0 {
+                    return;
+                }
                 let prompts = unsafe { slice::from_raw_parts(prompts, num_prompts as usize) };
+                if responses.is_null() || num_prompts < 0 {
+                    return;
+                }
                 let responses =
                     unsafe { slice::from_raw_parts_mut(responses, num_prompts as usize) };
 
