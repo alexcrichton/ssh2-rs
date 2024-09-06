@@ -386,16 +386,29 @@ impl Session {
             // There's not much to be done with them though because the
             // signature of the callback doesn't allow reporting an error.
             let _ = catch_unwind(AssertUnwindSafe(|| {
+                if prompts.is_null() || responses.is_null() || num_prompts < 0 {
+                    return;
+                }
+
                 let prompter = unsafe { &mut **(abstrakt as *mut *mut P) };
 
-                let username =
-                    unsafe { slice::from_raw_parts(username as *const u8, username_len as usize) };
-                let username = String::from_utf8_lossy(username);
-
-                let instruction = unsafe {
-                    slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
+                let username = if !username.is_null() && username_len >= 0 {
+                    let username = unsafe {
+                        slice::from_raw_parts(username as *const u8, username_len as usize)
+                    };
+                    String::from_utf8_lossy(username)
+                } else {
+                    Cow::Borrowed("")
                 };
-                let instruction = String::from_utf8_lossy(instruction);
+
+                let instruction = if !instruction.is_null() && instruction_len >= 0 {
+                    let instruction = unsafe {
+                        slice::from_raw_parts(instruction as *const u8, instruction_len as usize)
+                    };
+                    String::from_utf8_lossy(instruction)
+                } else {
+                    Cow::Borrowed("")
+                };
 
                 let prompts = unsafe { slice::from_raw_parts(prompts, num_prompts as usize) };
                 let responses =
