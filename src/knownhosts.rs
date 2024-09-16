@@ -261,6 +261,7 @@ impl KnownHosts {
         fmt: ::KnownHostKeyFormat,
     ) -> Result<(), Error> {
         let host = CString::new(host)?;
+        let comment = CString::new(comment)?;
         let flags =
             raw::LIBSSH2_KNOWNHOST_TYPE_PLAIN | raw::LIBSSH2_KNOWNHOST_KEYENC_RAW | (fmt as c_int);
         let sess = self.sess.lock();
@@ -272,7 +273,7 @@ impl KnownHosts {
                 key.as_ptr() as *mut _,
                 key.len() as size_t,
                 comment.as_ptr() as *const _,
-                comment.len() as size_t,
+                comment.count_bytes() as size_t,
                 flags,
                 null_mut(),
             );
