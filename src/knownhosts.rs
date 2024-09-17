@@ -273,7 +273,7 @@ impl KnownHosts {
                 key.as_ptr() as *mut _,
                 key.len() as size_t,
                 comment.as_ptr() as *const _,
-                comment.count_bytes() as size_t,
+                comment.as_bytes().len() as size_t,
                 flags,
                 null_mut(),
             );
