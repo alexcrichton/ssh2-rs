@@ -21,11 +21,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
         target: ${{ matrix.env.TARGET }}
     - name: Build and test
       env:

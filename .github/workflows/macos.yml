@@ -18,11 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
+      uses: dtolnay/rust-toolchain@stable
     - name: Build and test
       run: |
         rustc -V

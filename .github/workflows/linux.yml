@@ -19,9 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust_toolchain }}
     - name: Build and test
       run: |
