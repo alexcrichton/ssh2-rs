@@ -7,6 +7,7 @@ set -x
 
 # Tell the tests to use the port number we're using to spawn this server
 export RUST_SSH2_FIXTURE_PORT=8022
+export RUST_BACKTRACE=1
 
 cleanup() {
   # Stop the ssh server and local ssh agent
