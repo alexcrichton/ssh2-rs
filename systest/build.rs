@@ -1,9 +1,9 @@
-extern crate ctest;
+extern crate ctest2;
 
 use std::env;
 
 fn main() {
-    let mut cfg = ctest::TestGenerator::new();
+    let mut cfg = ctest2::TestGenerator::new();
     cfg.header("libssh2.h")
         .header("libssh2_publickey.h")
         .header("libssh2_sftp.h")
