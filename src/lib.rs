@@ -67,7 +67,7 @@
 //!
 //! ```no_run
 //! use std::io::prelude::*;
-//! use std::net::{TcpStream};
+//! use std::net::TcpStream;
 //! use ssh2::Session;
 //!
 //! // Connect to the local SSH server
@@ -140,25 +140,25 @@
 //! ```
 //!
 //! ## Execute a Netconf XML payload
-//! 
+//!
 //! ```no_run
 //! use ssh2::{Channel, Session};
 //! use std::error::Error;
 //! use std::io::prelude::*;
 //! use std::net::TcpStream;
-//! 
+//!
 //! const HELLO: &str = "<hello xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\">
 //!   <capabilities>
 //!     <capability>urn:ietf:params:netconf:base:1.1</capability>
 //!   </capabilities>
 //! </hello>
 //! ]]>]]>";
-//! 
+//!
 //! const PAYLOAD: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 //!     <rpc xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.1\" message-id=\"2\">
 //!     <cli xmlns=\"http://cisco.com/ns/yang/cisco-nx-os-device\"><mode>EXEC</mode><cmdline>show version</cmdline></cli>
 //! </rpc>";
-//! 
+//!
 //! fn read(channel: &mut Channel) -> Result<String, Box<dyn Error>> {
 //!     let mut result = String::new();
 //!     loop {
@@ -183,25 +183,25 @@
 //!     }
 //!     Ok(result)
 //! }
-//! 
+//!
 //! fn main() -> Result<(), Box<dyn Error>> {
 //!     let tcp = TcpStream::connect("127.0.0.1:830")?;
 //!     let mut sess = Session::new()?;
 //!     sess.set_tcp_stream(tcp);
 //!     sess.handshake().unwrap();
 //!     sess.userauth_password("user", "pass")?;
-//! 
+//!
 //!     let mut channel = sess.channel_session()?;
 //!     channel.subsystem("netconf")?;
 //!     let result = read(&mut channel)?;
 //!     println!("Result from connection:\n{}", result);
-//! 
+//!
 //!     let payload = format!("{}\n#{}\n{}\n##\n", HELLO, PAYLOAD.len(), PAYLOAD);
 //!     let a = channel.write(payload.as_bytes())?;
 //!     println!("Written {} bytes payload", a);
 //!     let result = read(&mut channel)?;
 //!     println!("Result from payload execution:\n{}", result);
-//! 
+//!
 //!     channel.send_eof()?;
 //!     channel.wait_eof()?;
 //!     channel.close()?;
