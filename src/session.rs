@@ -838,7 +838,10 @@ impl Session {
         unsafe {
             let ret = raw::libssh2_channel_forward_listen_ex(
                 inner.raw,
-                host.map(|s| s.as_ptr()).unwrap_or(null()),
+                host
+                    .as_ref()
+                    .map(|s| s.as_ptr())
+                    .unwrap_or(null()),
                 remote_port as c_int,
                 &mut bound_port,
                 queue_maxsize.unwrap_or(0) as c_int,
