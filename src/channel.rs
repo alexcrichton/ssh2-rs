@@ -65,7 +65,7 @@ impl Channel {
         }
     }
 
-    fn lock(&self) -> LockedChannel {
+    fn lock(&self) -> LockedChannel<'_> {
         let sess = self.channel_inner.sess.lock();
         LockedChannel {
             sess,
@@ -519,7 +519,7 @@ impl Drop for ChannelInner {
 }
 
 impl Stream {
-    fn lock(&self) -> LockedStream {
+    fn lock(&self) -> LockedStream<'_> {
         let sess = self.channel_inner.sess.lock();
         LockedStream {
             sess,

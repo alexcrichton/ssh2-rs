@@ -4,14 +4,14 @@ use std::path::Path;
 use {raw, Error, ErrorCode};
 
 #[cfg(unix)]
-pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
+pub fn path2bytes(p: &Path) -> Result<Cow<'_, [u8]>, Error> {
     use std::ffi::OsStr;
     use std::os::unix::prelude::*;
     let s: &OsStr = p.as_ref();
     check(Cow::Borrowed(s.as_bytes()))
 }
 #[cfg(windows)]
-pub fn path2bytes(p: &Path) -> Result<Cow<[u8]>, Error> {
+pub fn path2bytes(p: &Path) -> Result<Cow<'_, [u8]>, Error> {
     p.to_str()
         .map(|s| s.as_bytes())
         .ok_or_else(|| {
