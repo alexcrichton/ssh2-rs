@@ -435,7 +435,7 @@ impl Sftp {
         })
     }
 
-    fn lock(&self) -> Result<LockedSftp, Error> {
+    fn lock(&self) -> Result<LockedSftp<'_>, Error> {
         match self.inner.as_ref() {
             Some(sftp_inner_drop_wrapper) => {
                 let sftp_inner = sftp_inner_drop_wrapper
@@ -658,7 +658,7 @@ impl File {
         self.rc(&locked, unsafe { raw::libssh2_sftp_fsync(locked.raw) })
     }
 
-    fn lock(&self) -> Result<LockedFile, Error> {
+    fn lock(&self) -> Result<LockedFile<'_>, Error> {
         match self.inner.as_ref() {
             Some(file_inner) => {
                 let sftp_inner = file_inner.sftp.0.as_ref().expect(

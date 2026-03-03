@@ -175,7 +175,7 @@ impl Session {
     }
 
     #[doc(hidden)]
-    pub fn raw(&self) -> MappedMutexGuard<raw::LIBSSH2_SESSION> {
+    pub fn raw(&self) -> MappedMutexGuard<'_, raw::LIBSSH2_SESSION> {
         let inner = self.inner();
         MutexGuard::map(inner, |inner| unsafe { &mut *inner.raw })
     }
@@ -1113,7 +1113,7 @@ impl Session {
         }
     }
 
-    fn inner(&self) -> MutexGuard<SessionInner> {
+    fn inner(&self) -> MutexGuard<'_, SessionInner> {
         self.inner.lock()
     }
 
