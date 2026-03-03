@@ -109,6 +109,7 @@ fn main() {
             };
             println!("cargo:rustc-link-lib=static={lib_prefix}ssl");
             println!("cargo:rustc-link-lib=static={lib_prefix}crypto");
+            println!("cargo:rustc-link-lib=advapi32");
         } else {
             cfg.define("LIBSSH2_WINCNG", None);
         }
