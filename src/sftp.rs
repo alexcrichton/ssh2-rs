@@ -271,7 +271,7 @@ impl Sftp {
     pub fn rmdir(&self, filename: &Path) -> Result<(), Error> {
         let filename = CString::new(util::path2bytes(filename)?)?;
         let locked = self.lock()?;
-        locked.sess.rc(unsafe {
+        Self::rc(&locked, unsafe {
             raw::libssh2_sftp_rmdir_ex(
                 locked.raw,
                 filename.as_ptr() as *const _,
@@ -341,7 +341,7 @@ impl Sftp {
         let path = CString::new(util::path2bytes(path)?)?;
         let target = CString::new(util::path2bytes(target)?)?;
         let locked = self.lock()?;
-        locked.sess.rc(unsafe {
+        Self::rc(&locked, unsafe {
             raw::libssh2_sftp_symlink_ex(
                 locked.raw,
                 path.as_ptr() as *const _,
