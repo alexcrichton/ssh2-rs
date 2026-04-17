@@ -404,6 +404,8 @@ extern "C" {
         username: *const c_char,
         identity: *mut libssh2_agent_publickey,
     ) -> c_int;
+    pub fn libssh2_agent_set_identity_path(agent: *mut LIBSSH2_AGENT, path: *const c_char);
+    pub fn libssh2_agent_get_identity_path(agent: *mut LIBSSH2_AGENT) -> *const c_char;
 
     // channels
     pub fn libssh2_channel_free(chan: *mut LIBSSH2_CHANNEL) -> c_int;
