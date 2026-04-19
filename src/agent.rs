@@ -1,10 +1,12 @@
 use parking_lot::{Mutex, MutexGuard};
 use std::ffi::{CStr, CString};
+use std::path::{Path, PathBuf};
 use std::ptr::null_mut;
 use std::slice;
 use std::str;
 use std::sync::Arc;
 
+use util;
 use {raw, Error, ErrorCode, SessionInner};
 
 /// A structure representing a connection to an SSH agent.
@@ -123,6 +125,27 @@ impl Agent {
                 username.as_ptr(),
                 raw_ident,
             ))
+        }
+    }
+
+    /// Set a custom agent socket path to connect to.
+    pub fn set_identity_path(&mut self, path: &Path) -> Result<(), Error> {
+        let path = CString::new(util::path2bytes(path)?)?;
+        unsafe {
+            raw::libssh2_agent_set_identity_path(self.raw, path.as_ptr());
+        }
+        Ok(())
+    }
+
+    /// Get the custom agent socket path, if set.
+    pub fn identity_path(&self) -> Option<PathBuf> {
+        unsafe {
+            let ptr = raw::libssh2_agent_get_identity_path(self.raw);
+            if ptr.is_null() {
+                None
+            } else {
+                Some(util::mkpath(CStr::from_ptr(ptr).to_bytes()))
+            }
         }
     }
 }

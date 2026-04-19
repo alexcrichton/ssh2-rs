@@ -388,7 +388,7 @@ impl Sftp {
         }
         Self::rc(&locked, rc).map(move |_| {
             unsafe { ret.set_len(rc as usize) }
-            mkpath(ret)
+            util::mkpath(&ret)
         })
     }
 
@@ -644,7 +644,7 @@ impl File {
                 unsafe {
                     buf.set_len(rc as usize);
                 }
-                (mkpath(buf), FileStat::from_raw(&stat))
+                (util::mkpath(&buf), FileStat::from_raw(&stat))
             })
         }
     }
@@ -906,16 +906,4 @@ impl FileType {
             other => FileType::Other(other),
         }
     }
-}
-
-#[cfg(unix)]
-fn mkpath(v: Vec<u8>) -> PathBuf {
-    use std::ffi::OsStr;
-    use std::os::unix::prelude::*;
-    PathBuf::from(OsStr::from_bytes(&v))
-}
-#[cfg(windows)]
-fn mkpath(v: Vec<u8>) -> PathBuf {
-    use std::str;
-    PathBuf::from(str::from_utf8(&v).unwrap())
 }

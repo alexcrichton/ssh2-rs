@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use {raw, Error, ErrorCode};
 
@@ -35,6 +35,18 @@ pub fn path2bytes(p: &Path) -> Result<Cow<'_, [u8]>, Error> {
             }
         })
         .and_then(check)
+}
+
+#[cfg(unix)]
+pub fn mkpath(bytes: &[u8]) -> PathBuf {
+    use std::ffi::OsStr;
+    use std::os::unix::prelude::*;
+    PathBuf::from(OsStr::from_bytes(bytes))
+}
+#[cfg(windows)]
+pub fn mkpath(bytes: &[u8]) -> PathBuf {
+    use std::str;
+    PathBuf::from(str::from_utf8(bytes).unwrap())
 }
 
 fn check(b: Cow<[u8]>) -> Result<Cow<[u8]>, Error> {
