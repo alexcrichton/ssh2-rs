@@ -220,6 +220,7 @@ impl From<Error> for io::Error {
             ErrorCode::Session(raw::LIBSSH2_ERROR_TIMEOUT) => io::ErrorKind::TimedOut,
             ErrorCode::SFTP(raw::LIBSSH2_FX_NO_SUCH_FILE)
             | ErrorCode::SFTP(raw::LIBSSH2_FX_NO_SUCH_PATH) => io::ErrorKind::NotFound,
+            ErrorCode::SFTP(raw::LIBSSH2_FX_FILE_ALREADY_EXISTS) => io::ErrorKind::AlreadyExists,
             _ => io::ErrorKind::Other,
         };
         io::Error::new(kind, err.msg)
