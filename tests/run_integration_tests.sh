@@ -42,7 +42,6 @@ Banner $SSHDIR/banner
 Subsystem sftp internal-sftp
 UsePAM yes
 X11Forwarding yes
-UsePrivilegeSeparation no
 PrintMotd yes
 PermitTunnel yes
 KbdInteractiveAuthentication yes
