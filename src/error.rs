@@ -113,7 +113,7 @@ impl Error {
     /// Generate an error for unknown failure
     pub fn unknown() -> Error {
         Error::new(
-            ErrorCode::Session(libc::c_int::min_value()),
+            ErrorCode::Session(libc::c_int::MIN),
             "no other error listed",
         )
     }
