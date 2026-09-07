@@ -54,7 +54,7 @@ fn smoke_handshake() {
         agent.userauth(&user, &identity).unwrap();
     }
     assert!(sess.authenticated());
-    sess.host_key_hash(HashType::Md5).unwrap();
+    sess.host_key_hash(HashType::Sha256).unwrap();
 }
 
 #[test]
