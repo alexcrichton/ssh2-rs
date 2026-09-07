@@ -101,7 +101,6 @@ fn main() {
 
     if target.contains("windows") {
         cfg.define("LIBSSH2_WIN32", None);
-        cfg.file("libssh2/src/agent_win.c");
 
         if env::var_os("CARGO_FEATURE_OPENSSL_ON_WIN32").is_some() {
             cfg.define("LIBSSH2_OPENSSL", None);
