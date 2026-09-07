@@ -100,7 +100,6 @@ fn main() {
     cfg.define("HAVE_LONGLONG", None);
 
     if target.contains("windows") {
-        cfg.include("libssh2/win32");
         cfg.define("LIBSSH2_WIN32", None);
         cfg.file("libssh2/src/agent_win.c");
 
