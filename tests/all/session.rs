@@ -25,8 +25,7 @@ fn smoke() {
     assert_eq!(sess.timeout(), 0);
     sess.set_compress(true);
     assert!(sess.host_key().is_none());
-    sess.method_pref(MethodType::Kex, "diffie-hellman-group14-sha1")
-        .unwrap();
+    sess.method_pref(MethodType::Kex, "curve25519-sha256").unwrap();
     assert!(sess.methods(MethodType::Kex).is_none());
     sess.set_blocking(true);
     sess.set_timeout(0);
